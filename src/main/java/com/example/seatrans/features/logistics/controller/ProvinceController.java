@@ -1,0 +1,106 @@
+package com.example.seatrans.features.logistics.controller;
+
+import com.example.seatrans.shared.dto.ApiResponse;
+import com.example.seatrans.features.logistics.dto.ProvinceDTO;
+import com.example.seatrans.features.logistics.dto.CreateProvinceRequest;
+import com.example.seatrans.features.logistics.service.ProvinceService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/provinces")
+public class ProvinceController {
+
+    @Autowired
+    private ProvinceService provinceService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ProvinceDTO>>> getAllProvinces() {
+        try {
+            List<ProvinceDTO> provinces = provinceService.getAllProvinces();
+            return ResponseEntity.ok(ApiResponse.success("Provinces retrieved successfully", provinces));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error retrieving provinces"));
+        }
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<List<ProvinceDTO>>> getActiveProvinces() {
+        try {
+            List<ProvinceDTO> provinces = provinceService.getActiveProvinces();
+            return ResponseEntity.ok(ApiResponse.success("Active provinces retrieved successfully", provinces));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error retrieving active provinces"));
+        }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<ProvinceDTO>>> searchProvinces(@RequestParam(required = false) String query) {
+        try {
+            List<ProvinceDTO> provinces = provinceService.searchProvinces(query);
+            return ResponseEntity.ok(ApiResponse.success("Search completed successfully", provinces));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error searching provinces"));
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<ProvinceDTO>> getProvinceById(@PathVariable Long id) {
+        try {
+            ProvinceDTO province = provinceService.getProvinceById(id);
+            if (province == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Province not found"));
+            }
+            return ResponseEntity.ok(ApiResponse.success("Province retrieved successfully", province));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error retrieving province"));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<ProvinceDTO>> createProvince(@RequestBody CreateProvinceRequest request) {
+        try {
+            ProvinceDTO province = provinceService.createProvince(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Province created successfully", province));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error creating province"));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ProvinceDTO>> updateProvince(@PathVariable Long id, @RequestBody CreateProvinceRequest request) {
+        try {
+            ProvinceDTO province = provinceService.updateProvince(id, request);
+            if (province == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Province not found"));
+            }
+            return ResponseEntity.ok(ApiResponse.success("Province updated successfully", province));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error updating province"));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteProvince(@PathVariable Long id) {
+        try {
+            provinceService.deleteProvince(id);
+            return ResponseEntity.ok(ApiResponse.success("Province deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error deleting province"));
+        }
+    }
+}

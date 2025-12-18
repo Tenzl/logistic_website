@@ -1,0 +1,48 @@
+### Test Fee Configuration APIs
+
+# 1. Get All Fee Configs - Shipping Agency
+GET http://localhost:8080/api/admin/fee-configs?serviceType=SHIPPING_AGENCY
+Content-Type: application/json
+
+###
+
+# 2. Get Fee Config By ID
+GET http://localhost:8080/api/admin/fee-configs/1
+Content-Type: application/json
+
+###
+
+# 3. Create Fee Config
+POST http://localhost:8080/api/admin/fee-configs
+Content-Type: application/json
+
+{
+  "feeName": "Test Port Fee",
+  "feeCode": "TEST_PORT_FEE",
+  "serviceType": "SHIPPING_AGENCY",
+  "formulaType": "FIXED",
+  "formula": "500",
+  "formulaDescription": "Fixed fee of $500",
+  "status": "ACTIVE",
+  "displayOrder": 1
+}
+
+###
+
+# 4. Update Fee Config
+PUT http://localhost:8080/api/admin/fee-configs/1
+Content-Type: application/json
+
+{
+  "feeName": "Updated Fee Name",
+  "formula": "600",
+  "formulaDescription": "Updated to $600"
+}
+
+###
+
+# 5. Delete Fee Config
+DELETE http://localhost:8080/api/admin/fee-configs/1
+Content-Type: application/json
+
+###
