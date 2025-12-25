@@ -1,0 +1,172 @@
+package com.example.seatrans.features.user.controller;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.seatrans.features.user.dto.AuthResponseDTO;
+import com.example.seatrans.features.user.dto.LoginDTO;
+import com.example.seatrans.features.user.dto.RefreshTokenRequest;
+import com.example.seatrans.features.user.dto.RegisterDTO;
+import com.example.seatrans.features.user.dto.UserDTO;
+import com.example.seatrans.features.user.model.User;
+import com.example.seatrans.features.user.service.UserService;
+import com.example.seatrans.shared.dto.ApiResponse;
+import com.example.seatrans.shared.exception.DuplicateUserException;
+import com.example.seatrans.shared.mapper.EntityMapper;
+import com.example.seatrans.shared.security.JwtTokenProvider;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Controller xá»­ lÃ½ authentication (Ä‘Äƒng kÃ½, Ä‘Äƒng nháº­p)
+ */
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@Validated
+public class AuthController {
+    private final UserService userService;
+    private final EntityMapper entityMapper;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    /**
+     * POST /api/auth/register/customer
+     * Đăng ký customer mới (ROLE_CUSTOMER) - trả về JWT token
+     */
+    @PostMapping("/register/customer")
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> registerCustomer(
+            @Valid @RequestBody RegisterDTO registerDTO) {
+        try {
+            User createdUser = userService.registerOrUpgradeCustomer(registerDTO);
+
+            UserDTO userDTO = entityMapper.toUserDTO(createdUser);
+
+            String token = jwtTokenProvider.generateToken(createdUser.getId(), createdUser.getUsername());
+            String refreshToken = jwtTokenProvider.generateRefreshToken(createdUser.getId(), createdUser.getUsername());
+
+            AuthResponseDTO authResponse = AuthResponseDTO.builder()
+                    .token(token)
+                    .refreshToken(refreshToken)
+                    .type("Bearer")
+                    .user(userDTO)
+                    .build();
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Customer registered successfully", authResponse));
+        } catch (DuplicateUserException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse
+                            .error(e.getMessage() != null ? e.getMessage() : "Email already in use. Please log in."));
+        }
+    }
+
+    /**
+     * POST /api/auth/login
+     * Đăng nhập - trả về JWT token
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
+            @Valid @RequestBody LoginDTO loginDTO) {
+        boolean isValid = userService.verifyCredentials(loginDTO.getUsername(), loginDTO.getPassword());
+
+        if (!isValid) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid username or password"));
+        }
+
+        User user = userService.getUserByUsernameOrEmail(loginDTO.getUsername());
+        userService.updateLastLogin(user.getId());
+
+        UserDTO userDTO = entityMapper.toUserDTO(user);
+
+        String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+
+        AuthResponseDTO authResponse = AuthResponseDTO.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .type("Bearer")
+                .user(userDTO)
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
+    }
+
+    /**
+     * POST /api/auth/refresh-token
+     * Cấp lại access token mới từ refresh token
+     */
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request) {
+
+        String refreshToken = request.getRefreshToken();
+
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid or expired refresh token"));
+        }
+
+        Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+        User user = userService.getUserById(userId);
+
+        String newToken = jwtTokenProvider.generateToken(user.getId(), user.getUsername());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+
+        UserDTO userDTO = entityMapper.toUserDTO(user);
+
+        AuthResponseDTO authResponse = AuthResponseDTO.builder()
+                .token(newToken)
+                .refreshToken(newRefreshToken)
+                .type("Bearer")
+                .user(userDTO)
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authResponse));
+    }
+
+    /**
+     * POST /api/auth/logout
+     * Đăng xuất (JWT token bị vô hiệu hóa trên client)
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout() {
+        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
+    }
+
+    /**
+     * GET /api/auth/current-user
+     * Lấy thông tin user hiện tại từ JWT token
+     */
+    @GetMapping("/current-user")
+    public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring(7);
+        if (!jwtTokenProvider.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid or expired token"));
+        }
+
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+        User user = userService.getUserById(userId);
+        UserDTO userDTO = entityMapper.toUserDTO(user);
+
+        return ResponseEntity.ok(ApiResponse.success("Current user fetched successfully", userDTO));
+    }
+}
