@@ -26,7 +26,9 @@ const getAuthHeaders = () => {
 export const provinceService = {
   getAllProvinces: async (): Promise<Province[]> => {
     const response = await fetch(`${API_BASE_URL}/provinces`, {
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
     
     if (!response.ok) {
@@ -39,13 +41,28 @@ export const provinceService = {
 
   getActiveProvinces: async (): Promise<Province[]> => {
     const response = await fetch(`${API_BASE_URL}/provinces/active`, {
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
     
     if (!response.ok) {
       throw new Error('Failed to fetch active provinces')
     }
     
+    const result: ApiResponse<Province[]> = await response.json()
+    return result.data
+  },
+
+  getProvincesWithPorts: async (activeOnly: boolean = true): Promise<Province[]> => {
+    const response = await fetch(`${API_BASE_URL}/provinces/with-ports?activeOnly=${activeOnly}`, {
+      headers: getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch provinces with ports')
+    }
+
     const result: ApiResponse<Province[]> = await response.json()
     return result.data
   },

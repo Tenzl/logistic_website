@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Mail, Building, Loader2, Phone, Globe2, Lock, Edit3, X } from 'lucide-react'
+import { User, Mail, Building, Loader2, Lock, Edit3, X } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
+import { PhoneInput } from '@/shared/components/ui/phone-input'
 import { Label } from '@/shared/components/ui/label'
 import { Button } from '@/shared/components/ui/button'
 import { useAuth } from '@/features/auth/context/AuthContext'
@@ -21,7 +22,6 @@ export function EditProfileTab() {
     email: '',
     company: '',
     phone: '',
-    nation: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
@@ -34,8 +34,7 @@ export function EditProfileTab() {
         fullName: user.fullName || '',
         email: user.email || '',
         company: user.company || '',
-        phone: user.phone || '',
-        nation: (user as any).nation || ''
+        phone: user.phone || ''
       }))
     }
   }, [user])
@@ -67,7 +66,6 @@ export function EditProfileTab() {
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        nation: formData.nation,
         company: formData.company,
       })
 
@@ -185,7 +183,6 @@ export function EditProfileTab() {
                       email: user.email || '',
                       company: user.company || '',
                       phone: user.phone || '',
-                      nation: (user as any).nation || '',
                     }))
                   }
                 }}
@@ -230,48 +227,31 @@ export function EditProfileTab() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="pl-9"
-                    placeholder="(+84) 0123 456 789"
-                    disabled={!editingProfile}
-                  />
-                </div>
+                <PhoneInput
+                  id="phone"
+                  international
+                  defaultCountry="VN"
+                  value={formData.phone}
+                  onChange={(v) => setFormData(prev => ({ ...prev, phone: v || '' }))}
+                  placeholder="(+84) 0123 456 789"
+                  disabled={!editingProfile}
+                  className="w-full"
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nation">Nation</Label>
+                <Label htmlFor="company">Company</Label>
                 <div className="relative">
-                  <Globe2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="nation"
-                    name="nation"
-                    value={formData.nation}
+                    id="company"
+                    name="company"
+                    value={formData.company}
                     onChange={handleChange}
                     className="pl-9"
-                    placeholder="Vietnam"
+                    placeholder="Company Name"
                     disabled={!editingProfile}
                   />
                 </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="company"
-                  name="company"
-                  value={formData.company}
-                  onChange={handleChange}
-                  className="pl-9"
-                  placeholder="Company Name"
-                  disabled={!editingProfile}
-                />
               </div>
             </div>
             {editingProfile && (

@@ -34,7 +34,7 @@ import lombok.NoArgsConstructor;
 public class ServiceFormField {
 
     public enum FieldType {
-        text, email, tel, textarea, select, number, date
+        text, email, tel, textarea, select, number, date, port
     }
 
     @Id
@@ -76,9 +76,6 @@ public class ServiceFormField {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
-
-    @Column(columnDefinition = "TEXT")
-    private String meta;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

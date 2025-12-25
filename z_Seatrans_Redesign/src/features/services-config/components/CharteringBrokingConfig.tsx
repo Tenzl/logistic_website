@@ -11,12 +11,14 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
     serviceName: 'Chartering & Broking',
     serviceIcon: Anchor,
     onNavigateHome,
-    serviceTypeId: 2, // Chartering & Broking ID
+    serviceTypeId: 2, // Chartering & Broking ID (backend seed)
 
     hero: {
       title: 'Chartering & Broking Services',
-      description: 'Thanks to the support of shipowners community, Seatrans is always recommended to have suitable tonnage with competitive rates to fix our charterer\'s shipments on time.',
-      image: 'https://images.unsplash.com/photo-1645255315921-09c386465750?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMGZyZWlnaHQlMjBzaGlwJTIwY2hhcnRlcmluZ3xlbnwxfHx8fDE3NjUwNzQzMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
+      description:
+        "Thanks to the support of shipowners community, Seatrans is always recommended to have suitable tonnage with competitive rates to fix our charterer's shipments on time.",
+      image:
+        'https://images.unsplash.com/photo-1645255315921-09c386465750?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMGZyZWlnaHQlMjBzaGlwJTIwY2hhcnRlcmluZ3xlbnwxfHx8fDE3NjUwNzQzMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
     },
 
     contacts: {
@@ -30,59 +32,59 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
           icon: Anchor,
           contacts: [
             { name: 'PHAN DUY CONG', mobile: '+84.905001077' },
-            { name: 'DO DUY AN', mobile: '+84.935015679' }
+            { name: 'DO DUY AN', mobile: '+84.935015679' },
           ],
-          email: 'chartering@seatrans.com.vn'
-        }
+          email: 'chartering@seatrans.com.vn',
+        },
       ],
       stats: [
         { icon: Ship, value: '100+', label: 'Vessels' },
         { icon: Globe, value: '15+', label: 'Trade Routes' },
         { icon: Package, value: '500K+', label: 'Tons/Year' },
-        { icon: FileText, value: '98%', label: 'On-Time Fixtures' }
-      ]
+        { icon: FileText, value: '98%', label: 'On-Time Fixtures' },
+      ],
     },
 
     services: {
       sectionTitle: 'Cargo & Tonnage Arrangements',
       sectionDescription: 'Seatrans arranges tonnages for major cargo types across key trade routes',
       items: [
-        { 
+        {
           name: 'Tapioca Chip',
           description: '7-20K tons per shipment Ex Vietnam to China (Shatian, Fangcheng, Lianyungang, Rizhao, Qingdao)',
-          icon: Package
+          icon: Package,
         },
-        { 
+        {
           name: 'Wood-Chip',
           description: '8-15K BDMT per shipment Ex Vietnam to China, Korea',
-          icon: TreePine
+          icon: TreePine,
         },
-        { 
+        {
           name: 'Wood-Pellets',
           description: '8-15K tons per shipment Ex Vietnam to Korea (Kunsan, Pyongteak)',
-          icon: TreePine
+          icon: TreePine,
         },
-        { 
+        {
           name: 'Fertilizer in Bulk',
           description: '5-10K tons per shipment Ex Fuzhou (CN), Nagoya (JP) to Vietnam',
-          icon: Wheat
+          icon: Wheat,
         },
-        { 
+        {
           name: 'Sand & Ore in Bulk',
           description: '7-10K tons per shipment Ex Vietnam to Huanghua (CN), Qingdao (CN), Taichung (TW)',
-          icon: Mountain
+          icon: Mountain,
         },
-        { 
+        {
           name: 'Round Logs',
           description: '3-5K cbm per shipment Ex Papua New Guinea & Malaysian ports to Vietnam',
-          icon: TreePine
+          icon: TreePine,
         },
-        { 
+        {
           name: 'Domestic Sea Transportation',
           description: 'Coastal shipping services within Vietnamese ports for domestic cargo',
-          icon: Truck
-        }
-      ]
+          icon: Truck,
+        },
+      ],
     },
 
     form: {
@@ -91,103 +93,17 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
       sectionDescription: 'Submit your cargo requirements and we will arrange suitable tonnage with competitive rates',
       submitButtonText: 'Submit Order',
       fields: [
-        { 
-          id: 'fullName', 
-          label: 'Full name', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Your full name', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'company', 
-          label: 'Company', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Your company', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'email', 
-          label: 'Email', 
-          type: 'email', 
-          required: true, 
-          placeholder: 'your@email.com', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'phone', 
-          label: 'Phone', 
-          type: 'tel', 
-          required: true, 
-          placeholder: '+84...', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'nation', 
-          label: 'Nation', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Your country', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'cargoQuantity', 
-          label: 'Cargo/Quantity', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'e.g., Tapioca chip 15,000 tons', 
-          gridSpan: 2 
-        },
-        { 
-          id: 'loadingPort', 
-          label: 'Loading port', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Port of loading', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'dischargingPort', 
-          label: 'Discharging port', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Port of discharge', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'laycanFrom', 
-          label: 'LAY CAN - From date', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'DD/MM/YYYY', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'laycanTo', 
-          label: 'LAY CAN - To date', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'DD/MM/YYYY', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'otherInfo', 
-          label: 'Other information (optional)', 
-          type: 'textarea', 
-          placeholder: 'Additional requirements, special handling, preferred vessel type...', 
-          gridSpan: 2 
-        }
+        { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'number', required: true, placeholder: 'e.g., Tapioca chip 15,000 tons', gridSpan: 2 },
+        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'laycanFrom', label: 'LAY CAN - From date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'laycanTo', label: 'LAY CAN - To date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details...', gridSpan: 2 },
       ],
       onSubmit: (data: any) => {
         console.log('Tonnage order submitted:', data)
         // Handle form submission
-      }
+      },
     },
 
     gallery: {

@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Loader2, Eye, Trash2, Mail, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Label } from '@/shared/components/ui/label'
 import axios from 'axios'
+import { authService } from '@/features/auth/services/authService'
 
 interface Inquiry {
   id: number
@@ -18,6 +19,7 @@ interface Inquiry {
   status: 'PENDING' | 'PROCESSING' | 'QUOTED' | 'COMPLETED' | 'CANCELLED'
   submittedAt: string
   updatedAt: string
+  details?: string
 }
 
 interface PageResponse<T> {
@@ -45,7 +47,10 @@ export function ManageInquiriesTab() {
     setIsLoading(true)
     try {
       const response = await axios.get<PageResponse<Inquiry>>('http://localhost:8080/api/admin/inquiries', {
-        params: { page, size: 20 }
+        params: { page, size: 20 },
+        headers: {
+          ...authService.getAuthHeader(),
+        },
       })
       const data = response.data
       setInquiries(data.content)
@@ -63,7 +68,11 @@ export function ManageInquiriesTab() {
 
     setIsDeleting(true)
     try {
-      await axios.delete(`http://localhost:8080/api/admin/inquiries/${id}`)
+      await axios.delete(`http://localhost:8080/api/admin/inquiries/${id}`, {
+        headers: {
+          ...authService.getAuthHeader(),
+        },
+      })
       setInquiries(prev => prev.filter(inquiry => inquiry.id !== id))
       setMessage({ type: 'success', text: 'Inquiry deleted successfully' })
       setSelectedInquiry(null)
@@ -78,10 +87,16 @@ export function ManageInquiriesTab() {
 
   const handleStatusChange = async (id: number, status: string) => {
     try {
-      await axios.patch(`http://localhost:8080/api/admin/inquiries/${id}/status`, { status })
+      await axios.patch(`http://localhost:8080/api/admin/inquiries/${id}/status`, { status }, {
+        headers: {
+          ...authService.getAuthHeader(),
+        },
+      })
       setInquiries(prev => prev.map(inquiry => 
         inquiry.id === id ? { ...inquiry, status: status as Inquiry['status'] } : inquiry
       ))
+      // Keep dialog state in sync with table updates
+      setSelectedInquiry(prev => prev && prev.id === id ? { ...prev, status: status as Inquiry['status'] } : prev)
       setMessage({ type: 'success', text: 'Status updated successfully' })
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
@@ -100,6 +115,26 @@ export function ManageInquiriesTab() {
     }
     const config = variants[status]
     return <Badge variant={config.variant}>{config.label}</Badge>
+  }
+
+  const formatKey = (key: string) =>
+    key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+      .trim()
+
+  const parseDetails = (details?: string) => {
+    if (!details) return []
+    try {
+      const parsed = typeof details === 'string' ? JSON.parse(details) : details
+      if (parsed && typeof parsed === 'object') {
+        return Object.entries(parsed as Record<string, unknown>)
+      }
+      return []
+    } catch (error) {
+      console.warn('Failed to parse inquiry details', error)
+      return []
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -221,8 +256,29 @@ export function ManageInquiriesTab() {
                                     </div>
                                   </div>
 
+                                  {(() => {
+                                    const detailEntries = parseDetails(selectedInquiry.details)
+                                    return (
+                                      <div className="space-y-3 pt-2">
+                                        <Label className="text-sm font-medium">Details</Label>
+                                        {detailEntries.length > 0 ? (
+                                          <div className="grid sm:grid-cols-2 gap-3">
+                                            {detailEntries.map(([key, value]) => (
+                                              <div key={key} className="rounded-md border p-3 bg-muted/30">
+                                                <p className="text-xs text-muted-foreground uppercase tracking-wide">{formatKey(key)}</p>
+                                                <p className="text-sm mt-1 break-words">{value === '' || value === null || value === undefined ? '—' : String(value)}</p>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <p className="text-sm text-muted-foreground italic">No detail data.</p>
+                                        )}
+                                      </div>
+                                    )
+                                  })()}
+
                                   <div className="flex justify-between pt-4 border-t">
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap">
                                       <Button
                                         variant="outline"
                                         size="sm"
@@ -234,10 +290,26 @@ export function ManageInquiriesTab() {
                                       <Button
                                         variant="outline"
                                         size="sm"
+                                        onClick={() => handleStatusChange(selectedInquiry.id, 'QUOTED')}
+                                        disabled={selectedInquiry.status === 'QUOTED'}
+                                      >
+                                        Mark Quoted
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
                                         onClick={() => handleStatusChange(selectedInquiry.id, 'COMPLETED')}
                                         disabled={selectedInquiry.status === 'COMPLETED'}
                                       >
                                         Mark Completed
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStatusChange(selectedInquiry.id, 'CANCELLED')}
+                                        disabled={selectedInquiry.status === 'CANCELLED'}
+                                      >
+                                        Mark Cancelled
                                       </Button>
                                     </div>
                                     <Button

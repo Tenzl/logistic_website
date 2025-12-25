@@ -33,7 +33,9 @@ const getAuthHeaders = () => {
 export const portService = {
   getAllPorts: async (): Promise<Port[]> => {
     const response = await fetch(`${API_BASE_URL}/ports`, {
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
     
     if (!response.ok) {
@@ -46,7 +48,9 @@ export const portService = {
 
   getPortsByProvince: async (provinceId: number): Promise<Port[]> => {
     const response = await fetch(`${API_BASE_URL}/ports/province/${provinceId}`, {
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
     
     if (!response.ok) {

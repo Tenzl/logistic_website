@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/features/auth/context/AuthContext'
 import { 
   User, 
   FileText, 
@@ -29,6 +30,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/shared/components/ui/sidebar'
+import { NavUser } from '@/shared/components/ui/nav-user'
 import { Separator } from '@/shared/components/ui/separator'
 import { EditProfileTab } from './EditProfileTab'
 import { AddImageTab } from './AddImageTab'
@@ -39,17 +41,21 @@ import { ManageInquiriesTab } from './ManageInquiriesTab'
 import { ManagePosts } from './ManagePosts'
 import { ManageCategories } from './ManageCategories'
 import { ManageServices } from './ManageServices'
-import { ManageFormFields } from './ManageFormFields'
 
 interface AdminPageProps {
   onNavigateHome: () => void
   initialSection?: AdminSection
 }
 
-type AdminSection = 'profile' | 'inquiry' | 'add-image' | 'manage-images' | 'services' | 'form-fields' | 'ports' | 'commodities' | 'categories' | 'posts'
+type AdminSection = 'profile' | 'inquiry' | 'add-image' | 'manage-images' | 'services' | 'ports' | 'commodities' | 'categories' | 'posts'
 
 export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminPageProps) {
   const [activeSection, setActiveSection] = useState<AdminSection>(initialSection)
+  const { user, isLoading } = useAuth()
+
+  const adminUser = user
+    ? { name: user.fullName || user.username, email: user.email, avatar: '' }
+    : { name: 'Admin User', email: 'admin@seatrans.com', avatar: '' }
 
   const menuItems = [
     { id: 'profile' as AdminSection, label: 'Edit Profile', icon: User, category: 'Profile' },
@@ -57,7 +63,6 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
     { id: 'add-image' as AdminSection, label: 'Add Image', icon: Upload, category: 'Image Management' },
     { id: 'manage-images' as AdminSection, label: 'Manage Images', icon: ImageIcon, category: 'Image Management' },
     { id: 'services' as AdminSection, label: 'Services', icon: Cog, category: 'Data Management' },
-    { id: 'form-fields' as AdminSection, label: 'Form Fields', icon: ListChecks, category: 'Data Management' },
     { id: 'ports' as AdminSection, label: 'Ports', icon: Anchor, category: 'Data Management' },
     { id: 'commodities' as AdminSection, label: 'Commodities', icon: Package, category: 'Data Management' },
     { id: 'categories' as AdminSection, label: 'Categories', icon: Database, category: 'Content Management' },
@@ -75,11 +80,19 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar
+          collapsible="icon"
+          variant="inset"
+          className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+        >
           <SidebarHeader>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  asChild
+                  className="bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
                   <a href="/">
                     <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                       <Shield className="size-4" />
@@ -99,20 +112,22 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
               {categories.map((category) => (
               <div key={category.name} className="mb-4">
                 <div className="px-3 py-2">
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70">
                     {category.name}
                   </h3>
                 </div>
                 <SidebarMenuSub>
                   {category.items.map((item) => {
                     const Icon = item.icon
+                    const isActive = activeSection === item.id
                     return (
                       <SidebarMenuSubItem key={item.id}>
                         <SidebarMenuSubButton
                           onClick={() => setActiveSection(item.id)}
-                          isActive={activeSection === item.id}
+                          isActive={isActive}
+                          className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
                         >
-                          <Icon className="size-4" />
+                          <Icon className={`size-4 ${isActive ? '!text-primary-foreground' : ''}`} />
                           <span>{item.label}</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -125,14 +140,13 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
         </SidebarContent>
         
         <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={onNavigateHome}>
-                <LayoutDashboard className="size-4" />
-                <span>Back to Site</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <div className="px-2 pb-2">
+            {isLoading ? (
+              <div className="text-xs text-muted-foreground px-2 py-3">Loading account...</div>
+            ) : (
+              <NavUser user={adminUser} />
+            )}
+          </div>
         </SidebarFooter>
       </Sidebar>
 
@@ -149,7 +163,6 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
           {activeSection === 'add-image' && <AddImageTab />}
           {activeSection === 'manage-images' && <ManageImagesTab />}
           {activeSection === 'services' && <ManageServices />}
-          {activeSection === 'form-fields' && <ManageFormFields />}
           {activeSection === 'ports' && <ManagePorts />}
           {activeSection === 'commodities' && <ManageImageTypes />}
           {activeSection === 'categories' && <ManageCategories />}

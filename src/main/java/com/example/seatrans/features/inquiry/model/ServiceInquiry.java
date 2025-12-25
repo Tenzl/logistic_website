@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.example.seatrans.features.auth.model.User;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -48,6 +49,7 @@ public class ServiceInquiry {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_type_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "imageTypes", "formFields"})
     private ServiceTypeEntity serviceType;
     
     @Column(name = "full_name", nullable = false, length = 255)
@@ -75,6 +77,7 @@ public class ServiceInquiry {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "processed_by")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private User processedBy;
     
     @Column(columnDefinition = "TEXT")

@@ -11,7 +11,7 @@ export function FreightForwarding({ onNavigateHome }: FreightForwardingProps) {
     serviceName: 'Freight Forwarding',
     serviceIcon: Package,
     onNavigateHome,
-    serviceTypeId: 3, // Freight Forwarding & Logistics ID
+    serviceTypeId: 3, // Freight Forwarding ID (backend seed)
 
     hero: {
       title: 'International Freight Forwarding',
@@ -85,19 +85,14 @@ export function FreightForwarding({ onNavigateHome }: FreightForwardingProps) {
       sectionDescription: 'Tell us about your shipment and we\'ll provide a competitive quote',
       submitButtonText: 'Get Quote',
       fields: [
-        { id: 'company', label: 'Company', type: 'text', required: true, placeholder: 'Your company', gridSpan: 1, identity: true },
-        { id: 'fullName', label: 'Contact Person', type: 'text', required: true, placeholder: 'Your name', gridSpan: 1, identity: true },
-        { id: 'email', label: 'Email', type: 'email', required: true, placeholder: 'your@email.com', gridSpan: 1, identity: true },
-        { id: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '+84...', gridSpan: 1, identity: true },
-        { id: 'nation', label: 'Nation', type: 'text', required: true, placeholder: 'Your country', gridSpan: 1, identity: true },
-        { id: 'serviceType', label: 'Service Type', type: 'select', required: true, placeholder: 'Select service', gridSpan: 1, options: [
-          'Air Freight', 'Sea Freight', 'Land Transport', 'Customs Clearance', 'Warehousing', 'Project Cargo'
-        ]},
-        { id: 'origin', label: 'Origin', type: 'text', required: true, placeholder: 'Departure location', gridSpan: 1 },
-        { id: 'destination', label: 'Destination', type: 'text', required: true, placeholder: 'Arrival location', gridSpan: 1 },
-        { id: 'cargoType', label: 'Cargo Type', type: 'text', placeholder: 'Type of goods', gridSpan: 1 },
-        { id: 'weight', label: 'Weight (kg)', type: 'number', placeholder: 'Total weight', gridSpan: 1 },
-        { id: 'dimensions', label: 'Dimensions', type: 'text', placeholder: 'L x W x H (cm)', gridSpan: 1 },
+        { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
+        { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
+        { id: 'container20', label: 'Container 20\' feet', type: 'number', placeholder: '0 cont', gridSpan: 1 },
+        { id: 'container40', label: 'Container 40\' feet', type: 'number', placeholder: '0 cont', gridSpan: 1 },
+        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'shipmentFrom', label: 'SHIPMENT TIME - From date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'shipmentTo', label: 'SHIPMENT TIME - To date', type: 'date', required: true, gridSpan: 1 },
         { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
       ],
       onSubmit: (data: any) => {

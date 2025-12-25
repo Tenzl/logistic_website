@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect } from 'react'
-import { FreightForwardingLogistics } from '@/features/services-config/components/TotalLogisticsConfig'
+import { FreightForwarding } from '@/features/services-config/components/FreightForwardingConfig'
 
 export default function FreightForwardingGalleryPage() {
   useEffect(() => {
     document.getElementById('service-gallery')?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
-  return <FreightForwardingLogistics />
+  return <FreightForwarding />
 }

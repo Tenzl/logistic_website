@@ -23,7 +23,6 @@ public class UserDTO {
     private String fullName;
     private String phone;
     private String company;
-    private String nation;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -58,6 +58,7 @@ export const authService = {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         // Backend accepts username; send both username and email with same credential to allow either
         body: JSON.stringify({ username: credential, email: credential, password } satisfies LoginRequest),
       })
@@ -111,11 +112,12 @@ export const authService = {
 
   register: async (username: string, email: string, fullName: string, password: string): Promise<SignupResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register/customer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ username, email, fullName, password } as SignupRequest),
       })
 
@@ -161,6 +163,7 @@ export const authService = {
           'Content-Type': 'application/json',
           ...authService.getAuthHeader(),
         },
+        credentials: 'include',
       })
 
       const result = await response.json()

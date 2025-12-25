@@ -109,11 +109,13 @@ public class AdminAuthFilter implements Filter {
                uri.equals("/api/auth/logout") ||
                uri.equals("/api/auth/register") ||
                uri.equals("/api/auth/register/customer") ||
+             uri.startsWith("/api/service-types") ||
+             uri.startsWith("/api/inquiries") ||
                uri.startsWith("/api/public/") ||
                uri.startsWith("/api/posts") ||
                uri.startsWith("/api/categories") ||
-               uri.startsWith("/api/provinces/") ||
-               uri.startsWith("/api/ports/") ||
+               uri.startsWith("/api/provinces") ||
+               uri.startsWith("/api/ports") ||
                uri.startsWith("/api/gallery/images") ||
                uri.startsWith("/api/gallery-images") ||
                uri.startsWith("/api/image-types") ||

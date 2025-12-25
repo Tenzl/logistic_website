@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { ReactNode } from 'react'
 import { LucideIcon } from 'lucide-react'
 import { Hero } from '@/features/landing/components/Hero'
 
@@ -8,7 +8,6 @@ import { ContactSection, ContactTeam, StatItem } from './sections/sections/Conta
 import { ServicesSection, ServiceItem } from './sections/sections/ServicesSection'
 import { FormSection, FormField, InquiryPayload } from './sections/sections/FormSection'
 import { GallerySection } from './sections/sections/GallerySection'
-import { fetchServiceFormFields } from '../services/formFieldService'
 
 export interface ContactPerson {
   name: string
@@ -88,53 +87,13 @@ export function ServiceTemplate({
   gallery,
   customSections
 }: ServiceTemplateProps) {
-  const [dynamicFields, setDynamicFields] = useState<FormField[]>([])
-  const [loadingFields, setLoadingFields] = useState(false)
-  const [fieldsError, setFieldsError] = useState<string | null>(null)
-
-  const identityFields: FormField[] = useMemo(() => ([
-    { id: 'fullName', label: 'Full name', type: 'text', required: true, placeholder: 'Your full name', gridSpan: 1, identity: true },
-    { id: 'company', label: 'Company', type: 'text', required: true, placeholder: 'Your company', gridSpan: 1, identity: true },
-    { id: 'email', label: 'Email', type: 'email', required: true, placeholder: 'your@email.com', gridSpan: 1, identity: true },
-    { id: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '+84...', gridSpan: 1, identity: true },
-    { id: 'nation', label: 'Nation', type: 'text', required: true, placeholder: 'Your country', gridSpan: 1, identity: true },
-  ]), [])
-
-  useEffect(() => {
-    if (!serviceTypeId || !form) return
-    const load = async () => {
-      setLoadingFields(true)
-      setFieldsError(null)
-      try {
-        const response = await fetchServiceFormFields(serviceTypeId)
-        const mapped: FormField[] = response.map(f => ({
-          id: f.key,
-          label: f.label,
-          type: f.type,
-          required: f.required,
-          placeholder: f.placeholder || '',
-          gridSpan: (f.gridSpan as 1 | 2 | 3 | undefined) ?? 1,
-          identity: false,
-          options: f.type === 'select' && f.options ? safeParseOptions(f.options) : undefined,
-        }))
-        setDynamicFields(mapped)
-      } catch (err) {
-        setFieldsError(err instanceof Error ? err.message : 'Failed to load form fields')
-        setDynamicFields([])
-      } finally {
-        setLoadingFields(false)
-      }
-    }
-    load()
-  }, [serviceTypeId, form])
-
   const mergedForm = form
     ? {
         ...form,
-        fields: [...identityFields, ...dynamicFields],
+        fields: form.fields,
         serviceTypeId,
-        loadingFields,
-        fieldsError,
+        loadingFields: false,
+        fieldsError: null,
       }
     : undefined
 
@@ -174,13 +133,4 @@ export function ServiceTemplate({
       </div>
     </div>
   )
-}
-
-function safeParseOptions(raw: string): string[] {
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.map(String) : []
-  } catch (e) {
-    return []
-  }
 }

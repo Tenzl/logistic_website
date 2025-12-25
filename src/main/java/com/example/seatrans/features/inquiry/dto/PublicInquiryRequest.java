@@ -26,9 +26,6 @@ public class PublicInquiryRequest {
     @NotBlank
     private String phone;
 
-    @NotBlank
-    private String nation;
-
     private String notes;
 
     private Map<String, Object> details;

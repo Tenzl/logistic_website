@@ -49,9 +49,6 @@ public class User {
 
     @Column(length = 255)
     private String company;
-
-    @Column(length = 100)
-    private String nation;
     
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -199,13 +196,7 @@ public class User {
         this.company = company;
     }
 
-    public String getNation() {
-        return nation;
-    }
 
-    public void setNation(String nation) {
-        this.nation = nation;
-    }
 
     public Boolean getIsActive() {
         return isActive;

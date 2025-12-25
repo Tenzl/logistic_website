@@ -19,8 +19,8 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (credential: string, password: string) => Promise<boolean>
-  register: (username: string, email: string, fullName: string, password: string) => Promise<boolean>
+  login: (credential: string, password: string) => Promise<{ success: boolean; message?: string }>
+  register: (username: string, email: string, fullName: string, password: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   refreshUser: () => Promise<void>
   profileComplete: boolean
@@ -54,22 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = async (credential: string, password: string): Promise<boolean> => {
+  const login = async (credential: string, password: string) => {
     const response = await authService.login(credential, password)
     if (response.success && response.data) {
       setUser(response.data.user)
-      return true
+      return { success: true }
     }
-    return false
+    return { success: false, message: response.message }
   }
 
-  const register = async (username: string, email: string, fullName: string, password: string): Promise<boolean> => {
+  const register = async (username: string, email: string, fullName: string, password: string) => {
     const response = await authService.register(username, email, fullName, password)
     if (response.success && response.data) {
       setUser(response.data.user)
-      return true
+      return { success: true }
     }
-    return false
+    return { success: false, message: response.message }
   }
 
   const logout = () => {

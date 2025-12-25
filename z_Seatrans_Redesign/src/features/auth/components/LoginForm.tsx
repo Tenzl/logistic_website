@@ -27,11 +27,11 @@ export function LoginForm({
     setIsLoading(true)
 
     try {
-      const success = await login(email, password)
-      if (success) {
+      const result = await login(email, password)
+      if (result.success) {
         router.push('/')
       } else {
-        setError('Invalid email or password')
+        setError(result.message || 'Login failed. Please check your credentials.')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

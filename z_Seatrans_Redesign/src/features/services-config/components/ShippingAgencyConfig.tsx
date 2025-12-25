@@ -95,19 +95,11 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
       sectionDescription: 'Submit your vessel details for a detailed port disbursement account',
       submitButtonText: 'Submit Inquiry',
       fields: [
-        { id: 'fullName', label: 'Full name', type: 'text', required: true, placeholder: 'Your full name', gridSpan: 1, identity: true },
-        { id: 'company', label: 'Company', type: 'text', required: true, placeholder: 'Your company', gridSpan: 1, identity: true },
-        { id: 'email', label: 'Email', type: 'email', required: true, placeholder: 'your@email.com', gridSpan: 1, identity: true },
-        { id: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '+84...', gridSpan: 1, identity: true },
-        { id: 'nation', label: 'Nation', type: 'text', required: true, placeholder: 'Your country', gridSpan: 1, identity: true },
         { id: 'dwt', label: 'DWT', type: 'number', placeholder: 'Tons', gridSpan: 1 },
         { id: 'grt', label: 'GRT', type: 'number', placeholder: 'Tons', gridSpan: 1 },
         { id: 'loa', label: 'LOA', type: 'number', placeholder: 'Meters', gridSpan: 1 },
-        { id: 'cargo', label: 'Cargo/Quantity', type: 'text', placeholder: 'Type and quantity of cargo', gridSpan: 2 },
-        { id: 'port', label: 'Port of call', type: 'select', required: true, placeholder: 'Select port', gridSpan: 1, options: [
-          'Haiphong', 'Ho Chi Minh', 'Da Nang', 'Quy Nhon', 'Vung Tau', 'Hai Duong', 'Nghi Son'
-        ]},
-        { id: 'portName', label: 'Port name', type: 'text', placeholder: 'Specific port/terminal name', gridSpan: 1 },
+        { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'text', required: true, placeholder: 'Type and quantity of cargo', gridSpan: 2 },
+        { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, gridSpan: 2 },
         { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details about your vessel or requirements...', gridSpan: 2 }
       ],
       onSubmit: (data) => {

@@ -42,7 +42,6 @@ public class EntityMapper {
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
                 .company(user.getCompany())
-                .nation(user.getNation())
                 .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())

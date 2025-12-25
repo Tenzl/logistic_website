@@ -38,7 +38,7 @@ export const menuData: MenuItem[] = [
       {
         id: 14,
         title: "Total Logistics",
-        path: "/",
+        path: "/total-logistics",
         description: "End-to-end integrated logistics services.",
         icon: Ship
       },

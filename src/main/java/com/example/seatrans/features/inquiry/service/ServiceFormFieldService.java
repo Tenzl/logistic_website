@@ -49,7 +49,6 @@ public class ServiceFormFieldService {
             .options(request.options())
             .position(request.position())
             .isActive(request.isActive())
-            .meta(request.meta())
             .build();
 
         repository.save(field);
@@ -74,7 +73,6 @@ public class ServiceFormFieldService {
         field.setOptions(request.options());
         field.setPosition(request.position());
         field.setIsActive(request.isActive());
-        field.setMeta(request.meta());
 
         return toDto(field);
     }
@@ -96,7 +94,6 @@ public class ServiceFormFieldService {
             .options(field.getOptions())
             .position(field.getPosition())
             .isActive(field.getIsActive())
-            .meta(field.getMeta())
             .build();
     }
 }

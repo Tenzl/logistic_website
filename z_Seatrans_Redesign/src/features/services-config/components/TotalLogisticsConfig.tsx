@@ -1,17 +1,17 @@
 import { Package, Truck, Plane, Ship, Warehouse, FileCheck, Globe, Clock } from 'lucide-react'
 import { ServiceTemplate, ServiceTemplateProps } from './ServiceTemplate'
 
-interface FreightForwardingLogisticsProps {
+interface TotalLogisticsProps {
   onNavigateHome?: () => void
 }
 
 // Configuration for Freight Forwarding & Logistics Service
-export function FreightForwardingLogistics({ onNavigateHome }: FreightForwardingLogisticsProps) {
+export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
   const config: ServiceTemplateProps = {
     serviceName: 'Freight Forwarding & Logistics',
     serviceIcon: Package,
     onNavigateHome,
-    serviceTypeId: 3, // Freight Forwarding ID
+    serviceTypeId: 4, // Freight Forwarding ID
 
     hero: {
       title: 'Freight Forwarding & Logistics',
@@ -94,114 +94,15 @@ export function FreightForwardingLogistics({ onNavigateHome }: FreightForwarding
       sectionDescription: 'Hello Seatrans Logistics, please offer us the best rates for our following shipment details:',
       submitButtonText: 'Get Quote',
       fields: [
-        { 
-          id: 'fullName', 
-          label: 'Full name', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Your full name', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'company', 
-          label: 'Company', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Your company', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'email', 
-          label: 'Email', 
-          type: 'email', 
-          required: true, 
-          placeholder: 'your@email.com', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'phone', 
-          label: 'Phone', 
-          type: 'tel', 
-          required: true, 
-          placeholder: '+84...', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'nation', 
-          label: 'Nation', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Your country', 
-          gridSpan: 1,
-          identity: true
-        },
-        { 
-          id: 'cargoName', 
-          label: 'Cargo name', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Type of cargo', 
-          gridSpan: 2 
-        },
-        { 
-          id: 'deliveryTerm', 
-          label: 'Delivery term', 
-          type: 'select', 
-          required: true, 
-          placeholder: 'Select delivery term', 
-          gridSpan: 2,
-          options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port', 'Airport/Airport']
-        },
-        { 
-          id: 'container20', 
-          label: 'Container 20\' feet', 
-          type: 'number', 
-          placeholder: '0 cont', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'container40', 
-          label: 'Container 40\' feet', 
-          type: 'number', 
-          placeholder: '0 cont', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'loadingPort', 
-          label: 'Loading port', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Port of loading', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'dischargingPort', 
-          label: 'Discharging port', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'Port of discharge', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'shipmentFrom', 
-          label: 'SHIPMENT TIME - From date', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'DD/MM/YYYY', 
-          gridSpan: 1 
-        },
-        { 
-          id: 'shipmentTo', 
-          label: 'SHIPMENT TIME - To date', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'DD/MM/YYYY', 
-          gridSpan: 1 
-        }
+        { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
+        { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
+        { id: 'container20', label: "Container 20' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
+        { id: 'container40', label: "Container 40' feet", type: 'number', placeholder: '0 cont', gridSpan: 1 },
+        { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
+        { id: 'shipmentFrom', label: 'SHIPMENT TIME - From date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'shipmentTo', label: 'SHIPMENT TIME - To date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'additionalInfo', label: 'Additional Information', type: 'textarea', placeholder: 'Special requirements, timeline, etc...', gridSpan: 2 }
       ],
       onSubmit: (data) => {
         console.log('Freight quote request submitted:', data)

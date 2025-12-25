@@ -41,8 +41,5 @@ public class RegisterDTO {
     @Pattern(regexp = "^[0-9+\\-\\s()]*$", message = "Invalid phone format")
     @Size(max = 20, message = "Phone must not exceed 20 characters")
     private String phone;
-    
-    @Size(max = 100, message = "Nation must not exceed 100 characters")
-    private String nation;
 }
 

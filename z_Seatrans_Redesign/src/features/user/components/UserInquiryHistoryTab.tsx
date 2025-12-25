@@ -14,6 +14,12 @@ interface Inquiry {
   contactInfo: string
   status: 'PENDING' | 'PROCESSING' | 'QUOTED' | 'COMPLETED' | 'CANCELLED'
   submittedAt: string
+  details?: string
+  serviceType?: {
+    id: number
+    name?: string
+    displayName?: string
+  }
 }
 
 interface PageResponse<T> {
@@ -29,24 +35,43 @@ export function UserInquiryHistoryTab() {
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
+
   useEffect(() => {
     const fetchInquiries = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch('http://localhost:8080/api/inquiries/me?page=0&size=20', {
-          headers: {
-            ...authService.getAuthHeader(),
-          },
+        const headers = {
+          ...authService.getAuthHeader(),
+        }
+
+        // If the user is not authenticated, short-circuit with a friendly message
+        if (!headers.Authorization) {
+          setMessage('Please log in to view your inquiries.')
+          setInquiries([])
+          return
+        }
+
+        const response = await fetch(`${API_BASE_URL}/inquiries/me?page=0&size=20`, {
+          headers,
+          credentials: 'include',
         })
         if (!response.ok) {
-            if (response.status === 401) throw new Error('Unauthorized')
+          if (response.status === 401) {
+            throw new Error('Unauthorized')
+          }
           throw new Error('Failed to fetch inquiries')
         }
         const data: PageResponse<Inquiry> = await response.json()
         setInquiries(data.content || [])
       } catch (error) {
         console.error('Error fetching inquiries:', error)
-        setMessage('Could not load inquiries. Please try again later.')
+        if ((error as Error).message === 'Unauthorized') {
+          setMessage('Please log in again to view your inquiries.')
+          authService.logout()
+        } else {
+          setMessage('Could not load inquiries. Please try again later.')
+        }
       } finally {
         setIsLoading(false)
       }
@@ -68,6 +93,32 @@ export function UserInquiryHistoryTab() {
   }
 
   const formatDate = (value: string) => new Date(value).toLocaleString()
+
+  const renderDetails = (raw?: string) => {
+    if (!raw) return <span className="text-muted-foreground">No details provided</span>
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      const entries = Object.entries(parsed)
+      if (!entries.length) return <span className="text-muted-foreground">No details provided</span>
+      return (
+        <div className="space-y-1">
+          {entries.map(([key, value]) => (
+            <div key={key} className="text-sm">
+              <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+              <span className="text-muted-foreground">{String(value ?? '')}</span>
+            </div>
+          ))}
+        </div>
+      )
+    } catch (err) {
+      return <span className="text-muted-foreground">{raw}</span>
+    }
+  }
+
+  const renderService = (inq: Inquiry) => {
+    const label = inq.serviceType?.displayName || inq.serviceType?.name || 'Service'
+    return <span className="font-medium">{label}</span>
+  }
 
   return (
     <Card>
@@ -95,9 +146,8 @@ export function UserInquiryHistoryTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Details</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
@@ -105,14 +155,10 @@ export function UserInquiryHistoryTab() {
               <TableBody>
                 {inquiries.map((inq) => (
                   <TableRow key={inq.id}>
-                    <TableCell>{inq.id}</TableCell>
-                    <TableCell className="font-medium">{inq.fullName}</TableCell>
-                    <TableCell className="flex items-center gap-2 text-sm">
-                      <Mail className="h-3 w-3" />
-                      {inq.contactInfo}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(inq.status)}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{formatDate(inq.submittedAt)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{renderService(inq)}</TableCell>
+                    <TableCell className="align-top">{renderDetails(inq.details)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{getStatusBadge(inq.status)}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">{formatDate(inq.submittedAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

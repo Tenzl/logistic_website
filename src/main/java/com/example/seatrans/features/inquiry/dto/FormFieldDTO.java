@@ -18,5 +18,4 @@ public class FormFieldDTO {
     private String options; // JSON string when select
     private Integer position;
     private Boolean isActive;
-    private String meta;
 }

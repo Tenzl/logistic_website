@@ -48,22 +48,34 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
       return
     }
 
+    // Frontend validation to match backend constraints
+    const usernameValid = /^[A-Za-z0-9_]{6,50}$/.test(formData.username)
+    if (!usernameValid) {
+      setError('Username must be 6-50 characters and only letters, numbers, underscore.')
+      return
+    }
+    const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(formData.password)
+    if (!passwordValid) {
+      setError('Password must be 8+ chars with uppercase, lowercase, and a number.')
+      return
+    }
+
     setIsLoading(true)
     try {
       // Use the username from the form
-      const success = await register(
+      const result = await register(
         formData.username, 
         formData.email, 
         formData.fullName, 
         formData.password
       )
-      
-      if (success) {
+
+      if (result.success) {
         // Redirect to login page for email verification
         // In the future, this will require email verification before login
         onNavigateLogin()
       } else {
-        setError('Registration failed. Please try again.')
+        setError(result.message || 'Registration failed. Please try again.')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')

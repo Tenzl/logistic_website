@@ -1,6 +1,8 @@
 package com.example.seatrans.features.auth.service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -90,17 +92,25 @@ public class UserService {
                 throw new DuplicateUserException("Email", dto.getEmail());
             }
 
-            if (!existing.getUsername().equals(dto.getUsername()) && userRepository.existsByUsername(dto.getUsername())) {
-                throw new DuplicateUserException("Username", dto.getUsername());
+            // When upgrading guest, always check if new username is available
+            // Guest's username may be email or null, so check new username isn't taken by someone else
+            String existingUsername = existing.getUsername();
+            boolean usernameChanging = (existingUsername == null || !existingUsername.equals(dto.getUsername()));
+            if (usernameChanging) {
+                // Exclude current user from duplicate check
+                var userWithUsername = userRepository.findByUsername(dto.getUsername());
+                if (userWithUsername.isPresent() && !userWithUsername.get().getId().equals(existing.getId())) {
+                    throw new DuplicateUserException("Username", dto.getUsername());
+                }
             }
 
             existing.setUsername(dto.getUsername());
             existing.setFullName(dto.getFullName());
             existing.setEmail(dto.getEmail());
             existing.setPhone(dto.getPhone());
-            existing.setNation(dto.getNation());
             existing.setPassword(passwordEncoder.encode(dto.getPassword()));
-            existing.setRoles(Set.of(customerRole));
+            // Use mutable set so Hibernate can manage the collection
+            existing.setRoles(new HashSet<>(Collections.singleton(customerRole)));
             return userRepository.save(existing);
         }
 
@@ -112,8 +122,7 @@ public class UserService {
         User user = new User(dto.getUsername(), dto.getEmail(), passwordEncoder.encode(dto.getPassword()));
         user.setFullName(dto.getFullName());
         user.setPhone(dto.getPhone());
-        user.setNation(dto.getNation());
-        user.setRoles(Set.of(customerRole));
+        user.setRoles(new HashSet<>(Collections.singleton(customerRole)));
         return userRepository.save(user);
     }
 
@@ -123,7 +132,7 @@ public class UserService {
      * - If email belongs to a guest: reuse and lightly refresh profile data.
      * - If email is new: create a guest with null username and a generated password.
      */
-    public User createOrReuseGuest(String fullName, String email, String phone, String nation) {
+    public User createOrReuseGuest(String fullName, String email, String phone, String company) {
         validateEmail(email);
 
         Role guestRole = roleRepository.findByName("ROLE_GUEST")
@@ -138,26 +147,29 @@ public class UserService {
             }
 
             // Refresh lightweight profile fields so the inquiry reflects latest info
+            if ((user.getUsername() == null || user.getUsername().isBlank())) {
+                user.setUsername(email); // ensure NOT NULL constraint is satisfied
+            }
             if (fullName != null && !fullName.isBlank()) {
                 user.setFullName(fullName);
             }
             if (phone != null && !phone.isBlank()) {
                 user.setPhone(phone);
             }
-            if (nation != null && !nation.isBlank()) {
-                user.setNation(nation);
+            if (company != null && !company.isBlank()) {
+                user.setCompany(company);
             }
             return userRepository.save(user);
         }
 
         User guest = new User();
-        guest.setUsername(null); // keep username empty for guest convention
+        guest.setUsername(email); // ensure NOT NULL; use email as username for guest
         guest.setEmail(email);
         guest.setFullName(fullName);
         guest.setPhone(phone);
-        guest.setNation(nation);
+        guest.setCompany(company);
         guest.setPassword(passwordEncoder.encode("guest-" + UUID.randomUUID()));
-        guest.setRoles(Set.of(guestRole));
+        guest.setRoles(new HashSet<>(Collections.singleton(guestRole)));
         return userRepository.save(guest);
     }
     
@@ -272,9 +284,7 @@ public class UserService {
         if (updatedUser.getCompany() != null) {
             existingUser.setCompany(updatedUser.getCompany());
         }
-        if (updatedUser.getNation() != null) {
-            existingUser.setNation(updatedUser.getNation());
-        }
+
         
         // Check email duplicate náº¿u thay Ä‘á»•i
         if (updatedUser.getEmail() != null && !updatedUser.getEmail().equals(existingUser.getEmail())) {

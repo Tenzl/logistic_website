@@ -13,9 +13,8 @@ public record FormFieldRequest(
     @NotNull FieldType type,
     @NotNull Boolean required,
     String placeholder,
-    @NotNull @Min(1) @Max(12) Integer gridSpan,
+    @NotNull @Min(1) @Max(3) Integer gridSpan,
     String options,
-    @NotNull Integer position,
-    @NotNull Boolean isActive,
-    String meta
+    @NotNull @Min(1) Integer position,
+    @NotNull Boolean isActive
 ) {}
