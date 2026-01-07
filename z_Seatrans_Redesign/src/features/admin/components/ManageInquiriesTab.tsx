@@ -24,6 +24,7 @@ interface Inquiry {
   submittedAt: string
   updatedAt: string
   details?: string
+  serviceSlug?: string
 }
 
 interface PageResponse<T> {
@@ -326,6 +327,7 @@ export function ManageInquiriesTab() {
                           </Button>
                           <InvoiceUploadDialog
                             inquiryId={inquiry.id}
+                            serviceSlug={inquiry.serviceSlug || 'general'}
                             documents={[]}
                             onUploadSuccess={handleDocumentUpload}
                             onDeleteSuccess={handleDocumentDelete}
@@ -341,33 +343,33 @@ export function ManageInquiriesTab() {
         </CardContent>
       </Card>
 
-        {/* Details Dialog */}
-        <Dialog open={!!detailInquiry} onOpenChange={(open) => {
-          if (!open) {
-            setDetailInquiry(null)
-          }
-        }}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Inquiry Details</DialogTitle>
-              <DialogDescription>Information submitted for this inquiry</DialogDescription>
-            </DialogHeader>
-            {detailInquiry && (
-              <div className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="text-sm"><span className="font-semibold">Name:</span> {detailInquiry.fullName}</div>
-                  <div className="text-sm"><span className="font-semibold">Email:</span> {detailInquiry.contactInfo}</div>
-                  <div className="text-sm"><span className="font-semibold">Phone:</span> {detailInquiry.phone || '—'}</div>
-                  <div className="text-sm"><span className="font-semibold">Company:</span> {detailInquiry.company || '—'}</div>
-                </div>
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-semibold mb-2">Provided Details</h4>
-                  {renderDetails(detailInquiry.details)}
-                </div>
+      {/* Details Dialog */}
+      <Dialog open={!!detailInquiry} onOpenChange={(open) => {
+        if (!open) {
+          setDetailInquiry(null)
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Inquiry Details</DialogTitle>
+            <DialogDescription>Information submitted for this inquiry</DialogDescription>
+          </DialogHeader>
+          {detailInquiry && (
+            <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="text-sm"><span className="font-semibold">Name:</span> {detailInquiry.fullName}</div>
+                <div className="text-sm"><span className="font-semibold">Email:</span> {detailInquiry.contactInfo}</div>
+                <div className="text-sm"><span className="font-semibold">Phone:</span> {detailInquiry.phone || '—'}</div>
+                <div className="text-sm"><span className="font-semibold">Company:</span> {detailInquiry.company || '—'}</div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-semibold mb-2">Provided Details</h4>
+                {renderDetails(detailInquiry.details)}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* PDF Preview Dialog */}
       {previewDocument && (
@@ -410,7 +412,9 @@ export function ManageInquiriesTab() {
               <Button onClick={async () => {
                 try {
                   if (previewDocument) {
-                    const blob = await documentService.downloadDocument(previewDocument.inquiryId, previewDocument.id)
+                    const inquiry = inquiries.find(inq => inq.id === previewDocument.inquiryId)
+                    const serviceSlug = inquiry?.serviceSlug || 'general'
+                    const blob = await documentService.downloadDocument(previewDocument.inquiryId, serviceSlug, previewDocument.id)
                     const url = URL.createObjectURL(blob)
                     const a = document.createElement('a')
                     a.href = url

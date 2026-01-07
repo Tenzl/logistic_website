@@ -91,7 +91,6 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
   const menuItems = [
     { id: 'profile' as AdminSection, label: 'Edit Profile', icon: User, category: 'Profile' },
-    { id: 'inquiry' as AdminSection, label: 'Inquiry History', icon: FileText, category: 'Inquiries' },
     { id: 'shipping-agency-inquiries' as AdminSection, label: 'Shipping Agency', icon: ListChecks, category: 'Inquiries' },
     { id: 'freight-forwarding-inquiries' as AdminSection, label: 'Freight Forwarding', icon: Package, category: 'Inquiries' },
     { id: 'logistics-inquiries' as AdminSection, label: 'Logistics', icon: Truck, category: 'Inquiries' },

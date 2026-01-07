@@ -49,7 +49,7 @@ export function Hero({ title, subtitle, image, primaryCTA, secondaryCTA, trustBa
         {/* Text Content Overlay */}
         {title && (
           <div className="relative z-10 h-full flex items-center justify-center text-center">
-            <div 
+            <div
               className="container max-w-5xl px-4"
               style={{
                 opacity: prefersReducedMotion ? 1 : (isInView ? 1 : 0),
@@ -58,7 +58,7 @@ export function Hero({ title, subtitle, image, primaryCTA, secondaryCTA, trustBa
               }}
             >
               {subtitle && (
-                <p 
+                <p
                   className="text-white/90 text-lg md:text-xl mb-3 tracking-wide uppercase"
                   style={{
                     opacity: prefersReducedMotion ? 1 : (isInView ? 1 : 0),
@@ -69,7 +69,7 @@ export function Hero({ title, subtitle, image, primaryCTA, secondaryCTA, trustBa
                   {subtitle}
                 </p>
               )}
-              <h1 
+              <h1
                 className="text-white text-4xl md:text-5xl lg:text-6xl mb-4 drop-shadow-lg uppercase"
                 style={{
                   opacity: prefersReducedMotion ? 1 : (isInView ? 1 : 0),

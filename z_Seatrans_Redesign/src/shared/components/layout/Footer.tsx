@@ -34,13 +34,13 @@ export function Footer() {
                   SEATRANS – South East Asia Transport & Logistics
                 </h3>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex items-start space-x-2">
                   <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span>51 - Luu Huu Phuoc str., Quinhon city VietNam</span>
                 </div>
-                
+
                 <div className="flex items-start space-x-2">
                   <Phone className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col sm:flex-row sm:items-center">
@@ -49,14 +49,14 @@ export function Footer() {
                     <span>Fax: +84.256.3520479</span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start space-x-2">
                   <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <a href="mailto:seatrans.info@seatrans.com.vn" className="hover:text-primary transition-colors break-all">
                     seatrans.info@seatrans.com.vn
                   </a>
                 </div>
-                
+
                 <div className="flex items-start space-x-2">
                   <Globe className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <a href="https://www.seatrans.com.vn" className="hover:text-primary transition-colors">
@@ -71,7 +71,7 @@ export function Footer() {
               <h4 className="uppercase text-[#202124] text-[16px] sm:text-[18px] leading-tight mb-4 md:mb-6" style={{ fontWeight: 800 }}>
                 Doing business together
               </h4>
-              
+
               <div className="text-sm space-y-1 mt-4">
                 <p className="leading-relaxed">Shipping Agency / Chartering & Ship-broking /</p>
                 <p className="leading-relaxed">Freight Forwarding & Logistics / Customs Clearance</p>
@@ -83,49 +83,49 @@ export function Footer() {
               <h4 className="uppercase text-[#202124] text-[16px] sm:text-[18px] leading-tight mb-4 md:mb-6" style={{ fontWeight: 800 }}>
                 Get to know us
               </h4>
-              
+
               <div className="mt-4">
                 <p className="text-sm mb-3">Follow SEATRANS</p>
                 <div className="flex md:justify-end space-x-3">
-                  <a 
-                    href="#" 
-                    target="_blank" 
+                  <a
+                    href="#"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
                     aria-label="Facebook"
                   >
                     <Facebook className="h-4 w-4" />
                   </a>
-                  <a 
-                    href="#" 
-                    target="_blank" 
+                  <a
+                    href="#"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
                     aria-label="Twitter"
                   >
                     <Twitter className="h-4 w-4" />
                   </a>
-                  <a 
-                    href="#" 
-                    target="_blank" 
+                  <a
+                    href="#"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
                     aria-label="Instagram"
                   >
                     <Instagram className="h-4 w-4" />
                   </a>
-                  <a 
-                    href="#" 
-                    target="_blank" 
+                  <a
+                    href="#"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
                     aria-label="LinkedIn"
                   >
                     <Linkedin className="h-4 w-4" />
                   </a>
-                  <a 
-                    href="#" 
-                    target="_blank" 
+                  <a
+                    href="#"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:border-primary hover:text-primary transition-colors"
                     aria-label="YouTube"

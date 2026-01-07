@@ -39,6 +39,7 @@ export type QuoteData = {
   transport_ls?: string | number
   boat_hire_entry?: string | number
   tally_fee?: string | number
+  pilotage_third_miles?: string | number
   AA_ROWS?: QuoteRow[]
   BB_ROWS?: QuoteRow[]
 }
@@ -139,12 +140,12 @@ const buildAARows = (
       if (loa >= 135) return { amount: 6792 }
       if (loa >= 90) return { amount: 3956 }
       if (loa >= 80) return { amount: 2308 }
-      return { amount:  1154 }
+      return { amount: 1154 }
     }
 
     const tugRate = pickTugRate(loaNumeric)
     const tugAssistance = tugRate.amount === undefined ? '' : formatAmount(tugRate.amount)
-    
+
     const pickMoorUnmoor = (value?: number | null) => {
       if (value === null || value === undefined) return { amount: undefined }
       if (value < 500) return { amount: 32 }
@@ -157,16 +158,16 @@ const buildAARows = (
 
     const moorUnmoorRate = pickMoorUnmoor(grtNumeric)
     const moorUnmoor = moorUnmoorRate.amount === undefined ? '' : formatAmount(moorUnmoorRate.amount)
-    
+
     const berthDueValue = grtNumeric === null ? null : 0.0031 * berthHoursValue * grtNumeric
     const berthDue = berthDueValue === null ? `0.0031*${grtDisplay}*${berthHoursValue}` : formatAmount(berthDueValue)
-    
+
     const anchorageFeesValue = grtNumeric === null ? null : 0.0005 * anchorageHoursValue * grtNumeric
     const anchorageFees = anchorageFeesValue === null ? `0.0005*${grtDisplay}*${anchorageHoursValue}` : formatAmount(anchorageFeesValue)
-    
+
     const quarantineFeeValue = 220
     const quarantineFee = formatAmount(quarantineFeeValue)
-    
+
     const showOceanFrtTax = (options?.frtTaxType || '').toLowerCase() === 'export'
     const oceanFrtTax = 'PLS ADVISE'
 
@@ -188,7 +189,7 @@ const buildAARows = (
     const berthDaysNumeric = berthHoursValue / 24
     const garbageRemovalValue = Math.ceil(berthDaysNumeric / 2) * 17
     const garbageRemoval = formatAmount(garbageRemovalValue)
-    
+
     const defaultRows: QuoteRow[] = [
       { item: 'Tonnage', details: 'USD 0.034 / GRT x 2 (out)', amount: tonnage },
       { item: 'Navigation due', details: 'USD 0.058 / GRT x 2 (in + out)', amount: navigationDue },
@@ -302,7 +303,7 @@ const buildBBRows = (
       </tr>`
   }
 
-  
+
   const cargoRate = pickCargoFee(cargoType || cargoName)
   const cargoQty = toNumber(cargoQtyMt)
   const cargoAmount = cargoRate !== undefined && cargoQty !== null ? cargoRate * cargoQty : undefined

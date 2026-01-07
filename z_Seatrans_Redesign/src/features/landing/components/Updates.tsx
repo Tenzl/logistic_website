@@ -86,10 +86,10 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
   const formatDate = (dateString?: string) => {
     if (!dateString) return ''
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     })
   }
 
@@ -133,7 +133,7 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
               >
                 <ChevronLeft className="h-6 w-6 transition-colors text-primary group-hover:text-white" />
               </button>
-              
+
               <button
                 onClick={scrollNext}
                 disabled={!canScrollNext}
@@ -146,11 +146,11 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
               <CarouselContent className="-ml-6">
                 {posts.map((post, index) => (
                   <CarouselItem key={post.id} className="pl-6 md:basis-1/2 lg:basis-1/4">
-                    <div 
+                    <div
                       className={`group relative rounded-md overflow-hidden cursor-pointer ${isInView ? 'fade-rise' : 'opacity-0'}`}
-                      style={{ 
+                      style={{
                         aspectRatio: '1 / 1.15',
-                        animationDelay: `${index * 60}ms` 
+                        animationDelay: `${index * 60}ms`
                       }}
                       onClick={() => onNavigateToArticle(post.id)}
                     >
@@ -166,9 +166,9 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
                           <Calendar className="w-16 h-16 text-primary/30" />
                         </div>
                       )}
-                      
+
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent transition-all duration-300 group-hover:from-black/90 group-hover:via-black/50"></div>
-                      
+
                       <div className="absolute inset-0 p-6 flex flex-col justify-between">
                         <div>
                           <div className="inline-block">
@@ -177,16 +177,16 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
                             </span>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-3">
                           <div className="text-white text-sm opacity-90">
                             {formatDate(post.publishedAt || post.createdAt)}
                           </div>
-                          
+
                           <h3 className="text-white text-lg font-semibold leading-tight line-clamp-4">
                             {post.title}
                           </h3>
-                          
+
                         </div>
                       </div>
                     </div>

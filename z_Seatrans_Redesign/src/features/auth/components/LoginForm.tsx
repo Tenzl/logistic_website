@@ -4,11 +4,12 @@ import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { Pending } from "@/shared/components/pending"
 import { useState } from "react"
 import { useAuth } from "@/features/auth/context/AuthContext"
 import { useRouter } from "next/navigation"
 import { Alert, AlertDescription } from "@/shared/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 
 export function LoginForm({
   className,
@@ -84,9 +85,12 @@ export function LoginForm({
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <Button type="submit" className="w-full hover-primary-effect" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
-        </Button>
+        <Pending isPending={isLoading}>
+          <Button type="submit" className="w-full hover-primary-effect">
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Logging in..." : "Login"}
+          </Button>
+        </Pending>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
             Or continue with

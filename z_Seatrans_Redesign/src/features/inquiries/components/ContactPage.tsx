@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowUp, Upload, X } from 'lucide-react'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -8,6 +8,19 @@ import { useState, useEffect } from 'react'
 import { provinceService, Province } from '@/features/logistics/services/provinceService'
 import { portService } from '@/features/logistics/services/portService'
 import { useAuth } from '@/features/auth/context/AuthContext'
+import { toast } from 'sonner'
+import {
+  FileUpload,
+  FileUploadDropzone,
+  FileUploadItem,
+  FileUploadItemDelete,
+  FileUploadItemMetadata,
+  FileUploadItemPreview,
+  FileUploadItemProgress,
+  FileUploadList,
+  type FileUploadProps,
+  FileUploadTrigger,
+} from '@/shared/components/ui/file-upload'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
@@ -71,6 +84,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const [files, setFiles] = useState<File[]>([])
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
 
   // Hardcoded department contacts with full information
   const departmentContacts = [
@@ -202,6 +216,42 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
 
   const handleRemoveFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index))
+  }
+
+  const onUpload: NonNullable<FileUploadProps["onUpload"]> = async (files, { onProgress, onSuccess, onError }) => {
+    try {
+      setIsUploading(true)
+      const uploadPromises = files.map(async (file) => {
+        try {
+          const totalChunks = 10
+          let uploadedChunks = 0
+
+          for (let i = 0; i < totalChunks; i++) {
+            await new Promise((resolve) => setTimeout(resolve, Math.random() * 200 + 100))
+            uploadedChunks++
+            const progress = (uploadedChunks / totalChunks) * 100
+            onProgress(file, progress)
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          onSuccess(file)
+        } catch (error) {
+          onError(file, error instanceof Error ? error : new Error("Upload failed"))
+        } finally {
+          setIsUploading(false)
+        }
+      })
+
+      await Promise.all(uploadPromises)
+    } catch (error) {
+      console.error("Unexpected error during upload:", error)
+    }
+  }
+
+  const onFileReject = (file: File, message: string) => {
+    toast(message, {
+      description: `"${file.name.length > 20 ? `${file.name.slice(0, 20)}...` : file.name}" has been rejected`,
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -790,64 +840,83 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     </div>
                   </div>
 
-                  {/* Message */}
+                  {/* Message & Attachments - Integrated Chat Input */}
                   <div>
                     <Label htmlFor="message">Your Request *</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      placeholder="Please provide detailed information about your special request..."
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      required
-                      rows={6}
-                      className="mt-2 resize-none"
-                    />
-                  </div>
-
-                  {/* Attachments */}
-                  <div>
-                    <Label htmlFor="attachments">Attachments (Optional)</Label>
-                    <div className="mt-2">
-                      <label className="flex items-center justify-center w-full px-4 py-2 border border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                        <Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">
-                          {files.length > 0 ? `${files.length} file(s) selected` : 'Upload files'}
-                        </span>
-                        <input
-                          type="file"
-                          id="attachments"
-                          name="attachments"
-                          multiple
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                    
-                    {/* Display selected files */}
-                    {files.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <Paperclip className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                              <span className="text-sm truncate">{file.name}</span>
-                              <span className="text-xs text-muted-foreground flex-shrink-0">
-                                ({(file.size / 1024).toFixed(1)} KB)
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFile(index)}
-                              className="text-destructive hover:text-destructive/80 ml-2 flex-shrink-0"
-                            >
-                              <span className="text-xs">Remove</span>
-                            </button>
+                    <FileUpload
+                      value={files}
+                      onValueChange={setFiles}
+                      onUpload={onUpload}
+                      onFileReject={onFileReject}
+                      maxFiles={10}
+                      maxSize={5 * 1024 * 1024}
+                      className="relative mt-2"
+                      multiple
+                      disabled={isUploading}
+                    >
+                      <FileUploadDropzone
+                        tabIndex={-1}
+                        onClick={(event) => event.preventDefault()}
+                        className="absolute top-0 left-0 z-0 flex size-full items-center justify-center rounded-lg border-2 border-dashed bg-background/50 p-0 opacity-0 backdrop-blur transition-opacity duration-200 ease-out data-[dragging]:z-10 data-[dragging]:opacity-100"
+                      >
+                        <div className="flex flex-col items-center gap-1 text-center">
+                          <div className="flex items-center justify-center rounded-full border p-2.5">
+                            <Upload className="size-6 text-muted-foreground" />
                           </div>
-                        ))}
+                          <p className="font-medium text-sm">Drag & drop files here</p>
+                          <p className="text-muted-foreground text-xs">
+                            Upload max 10 files each up to 5MB
+                          </p>
+                        </div>
+                      </FileUploadDropzone>
+                      <div className="relative flex w-full flex-col gap-2.5 rounded-lg border border-input px-3 py-2 outline-none focus-within:ring-1 focus-within:ring-ring/50">
+                        <FileUploadList
+                          orientation="horizontal"
+                          className="overflow-x-auto px-0 py-1"
+                        >
+                          {files.map((file, index) => (
+                            <FileUploadItem key={index} value={file} className="max-w-52 p-1.5">
+                              <FileUploadItemPreview className="size-8 [&>svg]:size-5">
+                                <FileUploadItemProgress variant="fill" />
+                              </FileUploadItemPreview>
+                              <FileUploadItemMetadata size="sm" />
+                              <FileUploadItemDelete asChild>
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="absolute -top-1 -right-1 size-4 shrink-0 cursor-pointer rounded-full"
+                                >
+                                  <X className="size-2.5" />
+                                </Button>
+                              </FileUploadItemDelete>
+                            </FileUploadItem>
+                          ))}
+                        </FileUploadList>
+                        <Textarea
+                          id="message"
+                          name="message"
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          placeholder="Please provide detailed information about your special request..."
+                          required
+                          disabled={isUploading}
+                          className="field-sizing-content min-h-[120px] w-full resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
+                          <FileUploadTrigger asChild>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="size-7 rounded-sm"
+                            >
+                              <Paperclip className="size-3.5" />
+                              <span className="sr-only">Attach file</span>
+                            </Button>
+                          </FileUploadTrigger>
+                        </div>
                       </div>
-                    )}
+                    </FileUpload>
                   </div>
 
                   <Button type="submit" className="w-full hover-lift" size="lg">

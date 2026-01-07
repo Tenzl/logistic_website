@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
+import { Pending } from '@/shared/components/pending'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Ship, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
@@ -259,20 +260,15 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
               </div>
 
               {/* Signup Button */}
-              <Button
-                type="submit"
-                className="w-full transition-all duration-200 hover:shadow-lg"
-                disabled={!agreeToTerms || isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Account...
-                  </>
-                ) : (
-                  'Create Account'
-                )}
-              </Button>
+              <Pending isPending={isLoading} disabled={!agreeToTerms}>
+                <Button
+                  type="submit"
+                  className="w-full transition-all duration-200 hover:shadow-lg"
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                </Button>
+              </Pending>
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, Image as ImageIcon, Loader2, Check, MapPin, Anchor, Briefcase, Trash2, Info } from 'lucide-react'
+import { Upload, Image as ImageIcon, Loader2, Check, MapPin, Anchor, Briefcase, Trash2, Info, X } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
 import { Button } from '@/shared/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { useToast } from '@/shared/hooks/use-toast'
+import { toast as sonnerToast } from 'sonner'
 import Image from 'next/image'
 import { provinceService, Province } from '@/features/logistics/services/provinceService'
 import { portService, Port } from '@/features/logistics/services/portService'
@@ -21,6 +22,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table'
+import {
+  FileUpload,
+  FileUploadDropzone,
+  FileUploadItem,
+  FileUploadItemDelete,
+  FileUploadItemMetadata,
+  FileUploadItemPreview,
+  FileUploadList,
+  FileUploadTrigger,
+} from '@/shared/components/ui/file-upload'
 
 export function AddImageTab() {
   const { toast } = useToast()
@@ -74,6 +85,12 @@ export function AddImageTab() {
       setExistingCount(null)
     }
   }, [selectedProvince, selectedPort, selectedService, selectedImageType])
+
+  const onFileReject = (file: File, message: string) => {
+    sonnerToast(message, {
+      description: `"${file.name.length > 20 ? `${file.name.slice(0, 20)}...` : file.name}" has been rejected`,
+    })
+  }
 
   const loadProvinces = async () => {
     try {
@@ -278,30 +295,47 @@ export function AddImageTab() {
 
           {/* File Upload */}
           <div className="space-y-2">
-            <Label>Image File</Label>
-            <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
-              <input
-                id="image"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <label htmlFor="image" className="cursor-pointer">
-                {preview ? (
-                  <div className="relative w-full h-64 mb-4">
-                    <Image src={preview} alt="Preview" fill className="object-contain" />
+            <Label>Image File(s)</Label>
+            <FileUpload
+              maxFiles={MAX_IMAGES}
+              maxSize={10 * 1024 * 1024}
+              className="w-full"
+              value={pendingFiles}
+              onValueChange={setPendingFiles}
+              onFileReject={onFileReject}
+              multiple
+              accept="image/*"
+            >
+              <FileUploadDropzone>
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <div className="flex items-center justify-center rounded-full border p-2.5">
+                    <Upload className="size-6 text-muted-foreground" />
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <ImageIcon className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
-                  </div>
-                )}
-              </label>
-            </div>
+                  <p className="font-medium text-sm">Drag & drop images here</p>
+                  <p className="text-muted-foreground text-xs">
+                    Or click to browse (max {MAX_IMAGES} files, up to 10MB each)
+                  </p>
+                </div>
+                <FileUploadTrigger asChild>
+                  <Button variant="outline" size="sm" className="mt-2 w-fit">
+                    Browse files
+                  </Button>
+                </FileUploadTrigger>
+              </FileUploadDropzone>
+              <FileUploadList>
+                {pendingFiles.map((file, index) => (
+                  <FileUploadItem key={index} value={file}>
+                    <FileUploadItemPreview />
+                    <FileUploadItemMetadata />
+                    <FileUploadItemDelete asChild>
+                      <Button variant="ghost" size="icon" className="size-7">
+                        <X />
+                      </Button>
+                    </FileUploadItemDelete>
+                  </FileUploadItem>
+                ))}
+              </FileUploadList>
+            </FileUpload>
           </div>
 
           <Button type="submit" disabled={disableUpload} className="w-full">
@@ -331,53 +365,6 @@ export function AddImageTab() {
               {duplicateCount > 0 && (
                 <span className="text-orange-600 font-medium">Remove {duplicateCount} duplicate file(s).</span>
               )}
-            </div>
-          )}
-
-          {/* Pending files table */}
-          {pendingFiles.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-sm font-semibold">Files to upload ({pendingFiles.length})</div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8">#</TableHead>
-                    <TableHead className="w-20">Preview</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="w-32">Size</TableHead>
-                    <TableHead className="w-24">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingFiles.map((file, idx) => (
-                    <TableRow key={`${file.name}-${idx}`}>
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell>
-                        <div className="h-12 w-16 overflow-hidden rounded border bg-muted">
-                          <Image
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            width={64}
-                            height={48}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>{file.name}</TableCell>
-                      <TableCell>{(file.size / 1024).toFixed(1)} KB</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </div>
           )}
         </form>

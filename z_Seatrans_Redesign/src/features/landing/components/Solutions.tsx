@@ -97,7 +97,7 @@ export function Solutions({ onNavigate }: SolutionsProps) {
   const [activeTab, setActiveTab] = useState('shipping-agency')
   const [expandedDetails, setExpandedDetails] = useState(false)
   const [animatedMetrics, setAnimatedMetrics] = useState<Record<string, boolean>>({})
-  const [ ref, isInView ] = useIntersectionObserver()
+  const [ref, isInView] = useIntersectionObserver()
 
   // Animate metrics when they come into view
   useEffect(() => {
