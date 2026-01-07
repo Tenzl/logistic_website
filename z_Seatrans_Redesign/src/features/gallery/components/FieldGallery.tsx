@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import NProgress from 'nprogress'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/shared/components/ui/dialog'
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { Eye } from 'lucide-react'
+import { Eye, ArrowRight } from 'lucide-react'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 
@@ -27,6 +29,14 @@ const serviceNameMap: Record<string, string> = {
   'Total Logistics': 'Logistics'
 }
 
+// Map service to gallery page URLs
+const serviceGalleryUrls: Record<string, string> = {
+  'Shipping Agency': '/shipping-agency#gallery',
+  'Chartering & Broking': '/chartering-broking#gallery',
+  'Freight Forwarding': '/freight-forwarding#gallery',
+  'Total Logistics': '/total-logistics#gallery'
+}
+
 // Helper function to construct proper image URL
 const getImageUrl = (url: string) => {
   if (!url) return ''
@@ -43,6 +53,7 @@ const getImageUrl = (url: string) => {
 }
 
 export function FieldGallery() {
+  const router = useRouter()
   const [selectedService, setSelectedService] = useState('Shipping Agency')
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,7 +68,7 @@ export function FieldGallery() {
         if (!response.ok) throw new Error('Failed to fetch gallery images')
         
         const data: GalleryImage[] = await response.json()
-        console.log('Fetched images:', data)
+    
         setGalleryImages(data)
       } catch (error) {
         console.error('Error loading gallery images:', error)
@@ -80,7 +91,7 @@ export function FieldGallery() {
       <section className="py-20 bg-background">
         <div className="container">
           <div className={`section-heading ${isInView ? 'fade-rise' : 'opacity-0'}`}>
-          <h2>Field Operations Gallery</h2>
+          <h2>Field Operations <span className="text-primary">Gallery</span></h2>
           <p>
             Explore our comprehensive operations across major ports and facilities in the Asia-Pacific region.
           </p>
@@ -172,6 +183,23 @@ export function FieldGallery() {
                 </Dialog>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* View More Button - Centered */}
+        {!loading && filteredData.length > 0 && (
+          <div className={`flex justify-center mt-8 ${isInView ? 'fade-rise stagger-3' : 'opacity-0'}`}>
+            <Button
+              size="lg"
+              onClick={() => {
+                NProgress.start()
+                router.push(serviceGalleryUrls[selectedService])
+              }}
+              className="group"
+            >
+              View More {selectedService} Gallery
+              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </div>
         )}
         </div>

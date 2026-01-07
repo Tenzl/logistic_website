@@ -112,9 +112,9 @@ export function ManageImageTypes() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    const serviceId = editingType?.serviceTypeId || (selectedService ? Number(selectedService) : null)
+    const serviceId = selectedService ? Number(selectedService) : null
     if (!serviceId) {
       toast({ title: 'Choose a service', description: 'Select a service before saving.', variant: 'destructive' })
       return
@@ -122,12 +122,8 @@ export function ManageImageTypes() {
 
     try {
       const token = localStorage.getItem('auth_token')
-      const url = editingType
-        ? `${API_BASE_URL}/api/image-types/${editingType.id}`
-        : `${API_BASE_URL}/api/image-types`
-      
-      const response = await fetch(url, {
-        method: editingType ? 'PUT' : 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/image-types`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -144,7 +140,53 @@ export function ManageImageTypes() {
       if (response.ok) {
         toast({
           title: 'Success',
-          description: `Image type ${editingType ? 'updated' : 'created'} successfully`
+          description: 'Image type created successfully'
+        })
+        if (selectedService) fetchImageTypes(selectedService)
+        setFormData({ name: '', displayName: '', description: '' })
+      } else {
+        throw new Error('Operation failed')
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create image type',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const serviceId = editingType?.serviceTypeId
+    if (!serviceId || !editingType) {
+      toast({ title: 'Choose a service', description: 'Select a service before saving.', variant: 'destructive' })
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token')
+      const url = `${API_BASE_URL}/api/image-types/${editingType.id}`
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          serviceTypeId: serviceId,
+          name: formData.name,
+          displayName: formData.displayName,
+          description: formData.description,
+          requiredImageCount: null
+        })
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Image type updated successfully'
         })
         if (selectedService) {
           fetchImageTypes(selectedService)
@@ -156,7 +198,7 @@ export function ManageImageTypes() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: `Failed to ${editingType ? 'update' : 'create'} image type`,
+        description: 'Failed to update image type',
         variant: 'destructive'
       })
     }
@@ -223,147 +265,201 @@ export function ManageImageTypes() {
   }
 
   return (
-    <>
+    <div className="space-y-6">
+      {/* Card 1: Service selector */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                Manage Image Types
-              </CardTitle>
-              <CardDescription>
-                Choose a service to see and manage its commodities
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-3">
-              <Select value={selectedService} onValueChange={setSelectedService}>
-                <SelectTrigger className="w-56">
-                  <Cog className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Select service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.displayName || s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={() => setDialogOpen(true)} disabled={!selectedService}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Type
-            </Button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Manage Image Types
+          </CardTitle>
+          <CardDescription>Select a service to manage its commodities</CardDescription>
         </CardHeader>
         <CardContent>
-          {!selectedService && (
-            <div className="text-sm text-muted-foreground mb-4">Select a service to view its commodities.</div>
-          )}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Display Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {imageTypes.map((type) => (
-                <TableRow key={type.id}>
-                  <TableCell className="font-medium">{type.name}</TableCell>
-                  <TableCell>{type.displayName || '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {type.description || 'No description'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{type.serviceTypeName || services.find(s => s.id === type.serviceTypeId)?.displayName || '—'}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(type)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(type.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+          <Label className="mb-2 block" htmlFor="service">
+            Service
+          </Label>
+          <Select value={selectedService} onValueChange={setSelectedService}>
+            <SelectTrigger id="service" className="w-full">
+              <Cog className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Select service" />
+            </SelectTrigger>
+            <SelectContent>
+              {services.map((s) => (
+                <SelectItem key={s.id} value={s.id.toString()}>
+                  {s.displayName || s.name}
+                </SelectItem>
               ))}
-            </TableBody>
-          </Table>
-          {imageTypes.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              {selectedService ? 'No image types for this service. Add one to organize your gallery.' : 'No service selected.'}
-            </div>
-          )}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingType ? 'Edit Image Type' : 'Add New Image Type'}</DialogTitle>
-            <DialogDescription>
-              {editingType ? 'Update image type information' : 'Create a new category for organizing gallery images'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Type Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Ships, Ports, Cargo"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
-                <Input
-                  id="displayName"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                  placeholder="Shown to users"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of this image type"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {editingType ? 'Update' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+      {!selectedService ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Choose a service to add and manage its image types.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Card 2: Add new image type */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Add New Image Type</CardTitle>
+              <CardDescription>Create a new commodity for this service</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="grid gap-4 md:grid-cols-3" onSubmit={handleCreate}>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Type Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g., Ships, Cargo"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Display Name</Label>
+                  <Input
+                    id="displayName"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                    placeholder="Shown to users"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-3">
+                  <Label htmlFor="description">Description (Optional)</Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div className="md:col-span-3 flex justify-end">
+                  <Button type="submit">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Type
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Card 3: List image types */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Image Types</CardTitle>
+              <CardDescription>Manage commodities for the selected service</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Display Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {imageTypes.map((type) => (
+                    <TableRow key={type.id}>
+                      <TableCell className="font-medium">{type.name}</TableCell>
+                      <TableCell>{type.displayName || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {type.description || 'No description'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{type.serviceTypeName || services.find(s => s.id === type.serviceTypeId)?.displayName || '—'}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(type)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(type.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {imageTypes.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No image types for this service. Add one above.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Edit Dialog */}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Image Type</DialogTitle>
+                <DialogDescription>Update image type information</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Type Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Ships, Ports, Cargo"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Display Name</Label>
+                    <Input
+                      id="displayName"
+                      value={formData.displayName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                      placeholder="Shown to users"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description (Optional)</Label>
+                    <Input
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description of this image type"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    Update
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
+    </div>
   )
 }

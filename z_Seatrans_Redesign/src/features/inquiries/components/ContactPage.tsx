@@ -4,109 +4,76 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { provinceService, Province } from '@/features/logistics/services/provinceService'
+import { portService } from '@/features/logistics/services/portService'
+import { useAuth } from '@/features/auth/context/AuthContext'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 interface ContactPageProps {
   onNavigateHome: () => void
 }
 
 interface Office {
-  id: string
+  id: number
   name: string
   city: string
   region: string
   address: string
+  latitude?: number
+  longitude?: number
   manager: {
     name: string
     title: string
     mobile: string
     email: string
   }
-  coordinates: {
-    lat: number
-    lng: number
+  coordinates?: {
+    lat?: number
+    lng?: number
   }
-  isHeadquarter?: boolean
+  isHeadquarter: boolean
+  isActive: boolean
+}
+
+interface Department {
+  id: number
+  name: string
+  displayName?: string
+  slug: string
+  description: string
+  isActive: boolean
 }
 
 export function ContactPage({ onNavigateHome }: ContactPageProps) {
-  const [ heroRef, heroVisible ] = useIntersectionObserver({ threshold: 0.1 })
-  const [ mapRef, mapVisible ] = useIntersectionObserver({ threshold: 0.1 })
-  const [ departmentsRef, departmentsVisible ] = useIntersectionObserver({ threshold: 0.1 })
-  const [ formRef, formVisible ] = useIntersectionObserver({ threshold: 0.1 })
+  const { user } = useAuth()
+  const [heroRef, heroVisible] = useIntersectionObserver({ threshold: 0.1 })
+  const [mapRef, mapVisible] = useIntersectionObserver({ threshold: 0.1 })
+  const [departmentsRef, departmentsVisible] = useIntersectionObserver({ threshold: 0.1 })
+  const [formRef, formVisible] = useIntersectionObserver({ threshold: 0.1 })
 
-  const offices: Office[] = [
-    {
-      id: 'ho-chi-minh',
-      name: 'Head Office',
-      city: 'Ho Chi Minh City',
-      region: 'Southern Vietnam',
-      address: '26 Nguyen Hue, Ben Nghe Ward, District 1, Ho Chi Minh City, Vietnam',
-      manager: {
-        name: 'Minh Khang (Mr)',
-        title: 'Office Supervisor',
-        mobile: '+84 90-111-2233',
-        email: 'hcm.office@seatrans.com.vn'
-      },
-      coordinates: { lat: 10.7769, lng: 106.7009 },
-      isHeadquarter: true
-    },
-    {
-      id: 'hai-phong',
-      name: 'Hai Phong Branch',
-      city: 'Hai Phong',
-      region: 'Northern Vietnam',
-      address: '12 Lach Tray Street, Ngo Quyen District, Hai Phong, Vietnam',
-      manager: {
-        name: 'Quang Huy (Mr)',
-        title: 'Branch Manager',
-        mobile: '+84 90-222-3344',
-        email: 'haiphong.branch@seatrans.com.vn'
-      },
-      coordinates: { lat: 20.8449, lng: 106.6881 }
-    },
-    {
-      id: 'da-nang',
-      name: 'Da Nang Branch',
-      city: 'Da Nang',
-      region: 'Central Vietnam',
-      address: '88 Bach Dang Street, Hai Chau District, Da Nang, Vietnam',
-      manager: {
-        name: 'Thao Nguyen (Ms)',
-        title: 'Branch Manager',
-        mobile: '+84 90-333-4455',
-        email: 'danang.branch@seatrans.com.vn'
-      },
-      coordinates: { lat: 16.0544, lng: 108.2022 }
-    },
-    {
-      id: 'can-tho',
-      name: 'Can Tho Branch',
-      city: 'Can Tho',
-      region: 'Mekong Delta',
-      address: '45 Hoa Binh Avenue, Ninh Kieu District, Can Tho, Vietnam',
-      manager: {
-        name: 'Thanh Dat (Mr)',
-        title: 'Branch Manager',
-        mobile: '+84 90-444-5566',
-        email: 'cantho.branch@seatrans.com.vn'
-      },
-      coordinates: { lat: 10.0452, lng: 105.7469 }
-    }
-  ]
-
-  const [selectedOffice, setSelectedOffice] = useState<Office>(offices[0])
+  const [offices, setOffices] = useState<Office[]>([])
+  const [selectedOffice, setSelectedOffice] = useState<Office | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [provincesWithPorts, setProvincesWithPorts] = useState<Province[]>([])
   const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    company: '',
     subject: '',
     office: '',
     department: '',
-    message: '',
-    contactPreference: 'Email'
+    message: ''
   })
+  const [files, setFiles] = useState<File[]>([])
   const [formSubmitted, setFormSubmitted] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const departments = [
+  // Hardcoded department contacts with full information
+  const departmentContacts = [
     {
       title: 'Shipping Agency',
       icon: Ship,
@@ -145,11 +112,78 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     }
   ]
 
-  // Generate map URL centered on selected office
+  // Fetch offices and service types on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch offices from backend
+        const officesResponse = await fetch(`${API_URL}/api/offices/active`)
+        const officesData = await officesResponse.json()
+        
+        if (officesData.success && officesData.data) {
+          setOffices(officesData.data)
+          // Set first office as default selected
+          if (officesData.data.length > 0) {
+            setSelectedOffice(officesData.data[0])
+          }
+        }
+        
+        // Fetch active service types
+        const servicesResponse = await fetch(`${API_URL}/api/service-types/active`)
+        const servicesData = await servicesResponse.json()
+        
+        if (servicesData.success && servicesData.data) {
+          setDepartments(servicesData.data.map((s: any) => ({
+            id: s.id,
+            name: s.displayName || s.name,
+            displayName: s.displayName,
+            slug: s.slug,
+            description: s.description || '',
+            isActive: s.isActive
+          })))
+        }
+        
+        // Load provinces with ports for form selection
+        const allProvinces = await provinceService.getAllProvinces()
+        const allPorts = await portService.getAllPorts()
+        const provinceIdsWithPorts = new Set(allPorts.map(port => port.provinceId))
+        const filtered = allProvinces.filter(province => provinceIdsWithPorts.has(province.id))
+        setProvincesWithPorts(filtered)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        // Fallback to empty arrays
+        setOffices([])
+        setDepartments([])
+        setProvincesWithPorts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
+
+  const getCoordinateQuery = (office: Office) => {
+    const lat = office.coordinates?.lat ?? office.latitude
+    const lng = office.coordinates?.lng ?? office.longitude
+    return lat !== undefined && lng !== undefined ? `${lat},${lng}` : ''
+  }
+
+  // Generate map URL using address first (fallback to lat/lng)
   const generateMapUrl = () => {
-    // Use Google Maps Embed with marker at exact coordinates
-    const { lat, lng } = selectedOffice.coordinates
-    return `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`
+    if (!selectedOffice) return ''
+    const coordQuery = getCoordinateQuery(selectedOffice)
+    const query = selectedOffice.address?.trim()
+      ? encodeURIComponent(selectedOffice.address)
+      : coordQuery
+    return query ? `https://maps.google.com/maps?q=${query}&z=16&output=embed` : ''
+  }
+
+  const handleSelectOffice = (office: Office) => {
+    setSelectedOffice(office)
+    setIsDrawerOpen(false)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -160,27 +194,76 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Special request submitted:', formData)
-    setFormSubmitted(true)
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setFormSubmitted(false)
-      setFormData({
-        subject: '',
-        office: '',
-        department: '',
-        message: '',
-        contactPreference: 'Email'
-      })
-    }, 3000)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files))
+    }
   }
 
-  const handleSelectOffice = (office: Office) => {
-    setSelectedOffice(office)
-    setIsDrawerOpen(false)
+  const handleRemoveFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      // Create FormData for file upload
+      const submitData = new FormData()
+      
+      // Add inquiry data as JSON
+      const inquiryData = {
+        serviceTypeSlug: 'special-request',
+        fullName: user ? user.fullName : formData.fullName,
+        email: user ? user.email : formData.email,
+        phone: user ? (user.phone || '') : formData.phone,
+        company: user ? (user.company || '') : formData.company,
+        subject: formData.subject,
+        preferredProvinceId: formData.office ? parseInt(formData.office) : null,
+        relatedDepartmentId: formData.department ? parseInt(formData.department) : null,
+        message: formData.message
+      }
+      
+      submitData.append('inquiry', new Blob([JSON.stringify(inquiryData)], {
+        type: 'application/json'
+      }))
+      
+      // Add files if any
+      files.forEach((file) => {
+        submitData.append('files', file)
+      })
+      
+      // Submit to backend
+      const response = await fetch(`${API_URL}/api/inquiries`, {
+        method: 'POST',
+        body: submitData
+      })
+      
+      if (response.ok) {
+        console.log('Special request submitted successfully')
+        setFormSubmitted(true)
+        
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setFormSubmitted(false)
+          setFormData({
+            fullName: '',
+            email: '',
+            phone: '',
+            company: '',
+            subject: '',
+            office: '',
+            department: '',
+            message: ''
+          })
+          setFiles([])
+        }, 3000)
+      } else {
+        console.error('Failed to submit special request')
+      }
+    } catch (error) {
+      console.error('Error submitting special request:', error)
+    }
   }
 
   return (
@@ -240,244 +323,261 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             </p>
           </div>
 
-          <div className={`flex flex-col lg:flex-row gap-6 ${mapVisible ? 'fade-rise' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
-            {/* Left Column: 2 Cards (Selector Top + Panel Bottom) - 600px total */}
-            <div className="w-full lg:w-[clamp(420px,38vw,560px)] flex-shrink-0 flex flex-col gap-3">
-              
-              {/* Card A: Office Selector (Top) - 160px → 360px */}
-              <div 
-                className="bg-card border rounded-2xl shadow-lg"
-                style={{
-                  height: isDrawerOpen ? '360px' : '160px',
-                  transition: 'height 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  willChange: 'height',
-                  overflow: 'hidden'
-                }}
-              >
-                {/* Header - Always visible with Office Name (H2) + Responsible */}
-                <div className="px-6 pt-6 pb-4 border-b">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-2xl">{selectedOffice.city}</h2>
-                        {selectedOffice.isHeadquarter && (
-                          <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
-                            HQ
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{selectedOffice.manager.name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedOffice.manager.title}</p>
-                    </div>
-                    <Button
-                      variant={isDrawerOpen ? "secondary" : "outline"}
-                      size="sm"
-                      onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-                      className="flex-shrink-0"
-                    >
-                      <Building2 className="mr-2 h-3.5 w-3.5" />
-                      {isDrawerOpen ? 'Close' : 'Change Office'}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Dropdown List - Appears when OPEN */}
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading offices...</p>
+            </div>
+          ) : selectedOffice ? (
+            <div className={`flex flex-col lg:flex-row gap-6 ${mapVisible ? 'fade-rise' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
+              {/* Left Column: 2 Cards (Selector Top + Panel Bottom) - 600px total */}
+              <div className="w-full lg:w-[clamp(420px,38vw,560px)] flex-shrink-0 flex flex-col gap-3">
+                
+                {/* Card A: Office Selector (Top) - 160px → 360px */}
                 <div 
+                  className="bg-card border rounded-2xl shadow-lg"
                   style={{
-                    height: isDrawerOpen ? '248px' : '0px',
-                    opacity: isDrawerOpen ? 1 : 0,
-                    transform: isDrawerOpen ? 'translateY(0)' : 'translateY(-6px)',
-                    transition: 'height 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-                    pointerEvents: isDrawerOpen ? 'auto' : 'none',
+                    height: isDrawerOpen ? '360px' : '160px',
+                    transition: 'height 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    willChange: 'height',
                     overflow: 'hidden'
                   }}
                 >
-                  <div className="p-4 h-full overflow-auto">
-                    <h3 className="text-sm mb-3 text-muted-foreground uppercase tracking-wide">Select Office</h3>
-                    <div className="space-y-2">
-                      {offices.map((office) => (
-                        <button
-                          key={office.id}
-                          onClick={() => handleSelectOffice(office)}
-                          className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-150 ${
-                            selectedOffice.id === office.id
-                              ? 'bg-primary/10 border border-primary'
-                              : 'hover:bg-muted border border-transparent'
-                          }`}
-                          style={{
-                            height: '52px'
-                          }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <p className="font-medium text-sm">{office.city}</p>
-                                {office.isHeadquarter && (
-                                  <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
-                                    HQ
-                                  </span>
-                                )}
+                  {/* Header - Always visible with Office Name (H2) + Responsible */}
+                  <div className="px-6 pt-6 pb-4 border-b">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h2 className="text-2xl">{selectedOffice.city}</h2>
+                          {selectedOffice.isHeadquarter && (
+                            <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
+                              HQ
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{selectedOffice.manager.name}</p>
+                        <p className="text-xs text-muted-foreground">{selectedOffice.manager.title}</p>
+                      </div>
+                      <Button
+                        variant={isDrawerOpen ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                        className="flex-shrink-0"
+                      >
+                        <Building2 className="mr-2 h-3.5 w-3.5" />
+                        {isDrawerOpen ? 'Close' : 'Change Office'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Dropdown List - Appears when OPEN */}
+                  <div 
+                    style={{
+                      height: isDrawerOpen ? '248px' : '0px',
+                      opacity: isDrawerOpen ? 1 : 0,
+                      transform: isDrawerOpen ? 'translateY(0)' : 'translateY(-6px)',
+                      transition: 'height 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      pointerEvents: isDrawerOpen ? 'auto' : 'none',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="p-4 h-full overflow-auto">
+                      <h3 className="text-sm mb-3 text-muted-foreground uppercase tracking-wide">Select Office</h3>
+                      <div className="space-y-2">
+                        {offices.map((office) => (
+                          <button
+                            key={office.id}
+                            onClick={() => handleSelectOffice(office)}
+                            className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-150 ${
+                              selectedOffice.id === office.id
+                                ? 'bg-primary/10 border border-primary'
+                                : 'hover:bg-muted border border-transparent'
+                            }`}
+                            style={{
+                              height: '52px'
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <p className="font-medium text-sm">{office.city}</p>
+                                  {office.isHeadquarter && (
+                                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded">
+                                      HQ
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">{office.manager.name}</p>
                               </div>
-                              <p className="text-xs text-muted-foreground">{office.manager.name}</p>
+                              {selectedOffice.id === office.id && (
+                                <Check className="h-4 w-4 text-primary" />
+                              )}
                             </div>
-                            {selectedOffice.id === office.id && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Card B: Office Panel (Bottom) - 428px → 228px */}
-              <div 
-                className="bg-card border rounded-2xl shadow-lg relative"
-                style={{
-                  height: isDrawerOpen ? '228px' : '428px',
-                  transition: 'height 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  willChange: 'height',
-                  overflow: 'hidden'
-                }}
-              >
-                {/* Full Details Content - Visible when CLOSED */}
+                {/* Card B: Office Panel (Bottom) - 428px → 228px */}
                 <div 
-                  className="absolute inset-0 px-6 py-6"
+                  className="bg-card border rounded-2xl shadow-lg relative"
                   style={{
-                    opacity: isDrawerOpen ? 0 : 1,
-                    transform: isDrawerOpen ? 'translateY(-4px)' : 'translateY(0)',
-                    transition: 'opacity 200ms ease-out, transform 200ms ease-out',
-                    pointerEvents: isDrawerOpen ? 'none' : 'auto'
+                    height: isDrawerOpen ? '228px' : '428px',
+                    transition: 'height 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    willChange: 'height',
+                    overflow: 'hidden'
                   }}
                 >
-                  {/* Region */}
-                  <div className="mb-5">
-                    <p className="text-xs text-muted-foreground mb-1">Region</p>
-                    <p className="text-sm font-medium">{selectedOffice.region}</p>
-                  </div>
-
-                  {/* Address */}
-                  <div className="mb-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-medium">Address</p>
+                  {/* Full Details Content - Visible when CLOSED */}
+                  <div 
+                    className="absolute inset-0 px-6 py-6"
+                    style={{
+                      opacity: isDrawerOpen ? 0 : 1,
+                      transform: isDrawerOpen ? 'translateY(-4px)' : 'translateY(0)',
+                      transition: 'opacity 200ms ease-out, transform 200ms ease-out',
+                      pointerEvents: isDrawerOpen ? 'none' : 'auto'
+                    }}
+                  >
+                    {/* Region */}
+                    <div className="mb-5">
+                      <p className="text-xs text-muted-foreground mb-1">Region</p>
+                      <p className="text-sm font-medium">{selectedOffice.region}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {selectedOffice.address}
-                    </p>
-                  </div>
 
-                  {/* Phone */}
-                  <div className="mb-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Phone className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-medium">Phone</p>
+                    {/* Address */}
+                    <div className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-medium">Address</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {selectedOffice.address}
+                      </p>
                     </div>
-                    <a 
-                      href={`tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
-                      className="text-sm text-primary hover:underline block"
-                    >
-                      {selectedOffice.manager.mobile}
-                    </a>
-                  </div>
 
-                  {/* Email */}
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Mail className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-medium">Email</p>
+                    {/* Phone */}
+                    <div className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Phone className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-medium">Phone</p>
+                      </div>
+                      <a 
+                        href={`tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
+                        className="text-sm text-primary hover:underline block"
+                      >
+                        {selectedOffice.manager.mobile}
+                      </a>
                     </div>
-                    <a 
-                      href={`mailto:${selectedOffice.manager.email}`}
-                      className="text-sm text-primary hover:underline block break-all"
-                    >
-                      {selectedOffice.manager.email}
-                    </a>
+
+                    {/* Email */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Mail className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-medium">Email</p>
+                      </div>
+                      <a 
+                        href={`mailto:${selectedOffice.manager.email}`}
+                        className="text-sm text-primary hover:underline block break-all"
+                      >
+                        {selectedOffice.manager.email}
+                      </a>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          const query = selectedOffice.address?.trim()
+                            ? encodeURIComponent(selectedOffice.address)
+                            : getCoordinateQuery(selectedOffice)
+                          if (query) {
+                            window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+                          }
+                        }}
+                      >
+                        <MapPin className="mr-1 h-3.5 w-3.5" />
+                        Directions
+                      </Button>
+                      <Button 
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => window.location.href = `tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
+                      >
+                        <Phone className="mr-1 h-3.5 w-3.5" />
+                        Call
+                      </Button>
+                    </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${selectedOffice.coordinates.lat},${selectedOffice.coordinates.lng}`, '_blank')}
-                    >
-                      <MapPin className="mr-1 h-3.5 w-3.5" />
-                      Directions
-                    </Button>
-                    <Button 
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => window.location.href = `tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
-                    >
-                      <Phone className="mr-1 h-3.5 w-3.5" />
-                      Call
-                    </Button>
+                  {/* Compact Contact Only - Visible when OPEN */}
+                  <div 
+                    className="absolute inset-0 px-6 py-6 flex flex-col justify-center"
+                    style={{
+                      opacity: isDrawerOpen ? 1 : 0,
+                      transform: isDrawerOpen ? 'translateY(0)' : 'translateY(6px)',
+                      transition: `opacity 300ms ease-out ${isDrawerOpen ? '100ms' : '0ms'}, transform 300ms ease-out ${isDrawerOpen ? '100ms' : '0ms'}`,
+                      pointerEvents: isDrawerOpen ? 'auto' : 'none'
+                    }}
+                  >
+                    <h3 className="text-sm font-medium mb-4 text-muted-foreground">Quick Contact</h3>
+                    
+                    {/* Phone */}
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Phone className="h-5 w-5 text-primary" />
+                        <p className="text-sm font-medium">Phone</p>
+                      </div>
+                      <a 
+                        href={`tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
+                        className="text-lg text-primary hover:underline block font-medium"
+                      >
+                        {selectedOffice.manager.mobile}
+                      </a>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Mail className="h-5 w-5 text-primary" />
+                        <p className="text-sm font-medium">Email</p>
+                      </div>
+                      <a 
+                        href={`mailto:${selectedOffice.manager.email}`}
+                        className="text-sm text-primary hover:underline block break-all"
+                      >
+                        {selectedOffice.manager.email}
+                      </a>
+                    </div>
                   </div>
                 </div>
 
-                {/* Compact Contact Only - Visible when OPEN */}
-                <div 
-                  className="absolute inset-0 px-6 py-6 flex flex-col justify-center"
-                  style={{
-                    opacity: isDrawerOpen ? 1 : 0,
-                    transform: isDrawerOpen ? 'translateY(0)' : 'translateY(6px)',
-                    transition: `opacity 300ms ease-out ${isDrawerOpen ? '100ms' : '0ms'}, transform 300ms ease-out ${isDrawerOpen ? '100ms' : '0ms'}`,
-                    pointerEvents: isDrawerOpen ? 'auto' : 'none'
-                  }}
-                >
-                  <h3 className="text-sm font-medium mb-4 text-muted-foreground">Quick Contact</h3>
-                  
-                  {/* Phone */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Phone className="h-5 w-5 text-primary" />
-                      <p className="text-sm font-medium">Phone</p>
-                    </div>
-                    <a 
-                      href={`tel:${selectedOffice.manager.mobile.replace(/\s/g, '')}`}
-                      className="text-lg text-primary hover:underline block font-medium"
-                    >
-                      {selectedOffice.manager.mobile}
-                    </a>
-                  </div>
+              </div>
 
-                  {/* Email */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Mail className="h-5 w-5 text-primary" />
-                      <p className="text-sm font-medium">Email</p>
-                    </div>
-                    <a 
-                      href={`mailto:${selectedOffice.manager.email}`}
-                      className="text-sm text-primary hover:underline block break-all"
-                    >
-                      {selectedOffice.manager.email}
-                    </a>
-                  </div>
+              {/* Right Column: Map Panel (fixed 600px height) */}
+              <div className="flex-1">
+                <div className="h-[600px] rounded-2xl overflow-hidden border shadow-lg">
+                  <iframe
+                    src={generateMapUrl()}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title={`${selectedOffice.name} Location`}
+                  />
                 </div>
               </div>
-
             </div>
-
-            {/* Right Column: Map Panel (fixed 600px height) */}
-            <div className="flex-1">
-              <div className="h-[600px] rounded-2xl overflow-hidden border shadow-lg">
-                <iframe
-                  src={generateMapUrl()}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title={`${selectedOffice.name} Location`}
-                />
-              </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No offices available</p>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -492,7 +592,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {departments.map((dept, index) => {
+            {departmentContacts.map((dept, index) => {
               const Icon = dept.icon
               return (
                 <div
@@ -566,6 +666,73 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
             ) : (
               <div className="bg-card border rounded-lg p-8 shadow-sm">
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Contact Information - Only show when not authenticated */}
+                  {!user && (
+                    <>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Full Name */}
+                        <div>
+                          <Label htmlFor="fullName">Full Name *</Label>
+                          <Input
+                            type="text"
+                            id="fullName"
+                            name="fullName"
+                            placeholder="Your full name"
+                            value={formData.fullName}
+                            onChange={handleInputChange}
+                            required
+                            className="mt-2"
+                          />
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <Label htmlFor="email">Email *</Label>
+                          <Input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="your.email@company.com"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            required
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Phone */}
+                        <div>
+                          <Label htmlFor="phone">Phone (Optional)</Label>
+                          <Input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            placeholder="+84 ..."
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            className="mt-2"
+                          />
+                        </div>
+
+                        {/* Company */}
+                        <div>
+                          <Label htmlFor="company">Company (Optional)</Label>
+                          <Input
+                            type="text"
+                            id="company"
+                            name="company"
+                            placeholder="Your company name"
+                            value={formData.company}
+                            onChange={handleInputChange}
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {/* Subject */}
                   <div>
                     <Label htmlFor="subject">Subject *</Label>
@@ -582,20 +749,21 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6">
-                    {/* Office Selection */}
+                    {/* Province Selection */}
                     <div>
-                      <Label htmlFor="office">Preferred Office (Optional)</Label>
+                      <Label htmlFor="office">Preferred Province (Optional)</Label>
                       <select
                         id="office"
                         name="office"
                         value={formData.office}
                         onChange={handleInputChange}
+                        disabled={loading}
                         className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                       >
-                        <option value="">Select office...</option>
-                        {offices.map(office => (
-                          <option key={office.id} value={office.id}>
-                            {office.city} {office.isHeadquarter ? '(HQ)' : ''}
+                        <option value="">Select province...</option>
+                        {provincesWithPorts.map(province => (
+                          <option key={province.id} value={province.id}>
+                            {province.name}
                           </option>
                         ))}
                       </select>
@@ -609,12 +777,13 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         name="department"
                         value={formData.department}
                         onChange={handleInputChange}
+                        disabled={loading}
                         className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                       >
                         <option value="">Select department...</option>
                         {departments.map(dept => (
-                          <option key={dept.title} value={dept.title}>
-                            {dept.title}
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
                           </option>
                         ))}
                       </select>
@@ -636,40 +805,49 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     />
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Contact Preference */}
-                    <div>
-                      <Label htmlFor="contactPreference">Contact Preference</Label>
-                      <select
-                        id="contactPreference"
-                        name="contactPreference"
-                        value={formData.contactPreference}
-                        onChange={handleInputChange}
-                        className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
-                      >
-                        <option value="Email">Email</option>
-                        <option value="Phone">Phone</option>
-                        <option value="Either">Either</option>
-                      </select>
+                  {/* Attachments */}
+                  <div>
+                    <Label htmlFor="attachments">Attachments (Optional)</Label>
+                    <div className="mt-2">
+                      <label className="flex items-center justify-center w-full px-4 py-2 border border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {files.length > 0 ? `${files.length} file(s) selected` : 'Upload files'}
+                        </span>
+                        <input
+                          type="file"
+                          id="attachments"
+                          name="attachments"
+                          multiple
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
-
-                    {/* Attachments */}
-                    <div>
-                      <Label htmlFor="attachments">Attachments (Optional)</Label>
-                      <div className="mt-2">
-                        <label className="flex items-center justify-center w-full px-4 py-2 border border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                          <Paperclip className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Upload files</span>
-                          <input
-                            type="file"
-                            id="attachments"
-                            name="attachments"
-                            multiple
-                            className="hidden"
-                          />
-                        </label>
+                    
+                    {/* Display selected files */}
+                    {files.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {files.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Paperclip className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                              <span className="text-sm truncate">{file.name}</span>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
+                                ({(file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(index)}
+                              className="text-destructive hover:text-destructive/80 ml-2 flex-shrink-0"
+                            >
+                              <span className="text-xs">Remove</span>
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <Button type="submit" className="w-full hover-lift" size="lg">

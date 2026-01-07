@@ -1,21 +1,31 @@
 package com.example.seatrans.features.auth.controller;
 
-import com.example.seatrans.shared.dto.ApiResponse;
-import com.example.seatrans.features.auth.dto.EmployeeDTO;
-import com.example.seatrans.features.auth.model.Employee;
-import com.example.seatrans.features.auth.model.enums.Department;
-import com.example.seatrans.shared.mapper.EntityMapper;
-import com.example.seatrans.features.auth.service.EmployeeService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.seatrans.features.auth.dto.EmployeeDTO;
+import com.example.seatrans.features.auth.model.Employee;
+import com.example.seatrans.features.auth.service.EmployeeService;
+import com.example.seatrans.shared.dto.ApiResponse;
+import com.example.seatrans.shared.mapper.EntityMapper;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Controller xá»­ lÃ½ Employee management
@@ -24,6 +34,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/employees")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE')")
 public class EmployeeController {
     
     private final EmployeeService employeeService;
@@ -123,34 +134,6 @@ public class EmployeeController {
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<List<EmployeeDTO>>> getActiveEmployees() {
         List<Employee> employees = employeeService.getActiveEmployees();
-        List<EmployeeDTO> employeeDTOs = employees.stream()
-                .map(entityMapper::toEmployeeDTO)
-                .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(ApiResponse.success(employeeDTOs));
-    }
-    
-    /**
-     * GET /api/employees/department/{department}
-     * Láº¥y employees theo department
-     */
-    @GetMapping("/department/{department}")
-    public ResponseEntity<ApiResponse<List<EmployeeDTO>>> getEmployeesByDepartment(@PathVariable Department department) {
-        List<Employee> employees = employeeService.getEmployeesByDepartment(department);
-        List<EmployeeDTO> employeeDTOs = employees.stream()
-                .map(entityMapper::toEmployeeDTO)
-                .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(ApiResponse.success(employeeDTOs));
-    }
-    
-    /**
-     * GET /api/employees/department/{department}/active
-     * Láº¥y active employees theo department
-     */
-    @GetMapping("/department/{department}/active")
-    public ResponseEntity<ApiResponse<List<EmployeeDTO>>> getActiveEmployeesByDepartment(@PathVariable Department department) {
-        List<Employee> employees = employeeService.getActiveEmployeesByDepartment(department);
         List<EmployeeDTO> employeeDTOs = employees.stream()
                 .map(entityMapper::toEmployeeDTO)
                 .collect(Collectors.toList());
@@ -271,20 +254,6 @@ public class EmployeeController {
                 .collect(Collectors.toList());
         
         return ResponseEntity.ok(ApiResponse.success(subordinateDTOs));
-    }
-    
-    /**
-     * GET /api/employees/{id}/colleagues
-     * Láº¥y colleagues (cÃ¹ng department)
-     */
-    @GetMapping("/{id}/colleagues")
-    public ResponseEntity<ApiResponse<List<EmployeeDTO>>> getColleagues(@PathVariable Long id) {
-        List<Employee> colleagues = employeeService.getColleagues(id);
-        List<EmployeeDTO> colleagueDTOs = colleagues.stream()
-                .map(entityMapper::toEmployeeDTO)
-                .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(ApiResponse.success(colleagueDTOs));
     }
     
     // ==================== Salary & Commission ====================

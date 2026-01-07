@@ -1,4 +1,5 @@
 /* Google Fonts - Import một lần duy nhất */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap");
@@ -46,7 +47,7 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Typography */
-    --font-sans: "Roboto", sans-serif;
+    --font-sans: "Archivo", sans-serif;
     --font-serif: "Merriweather", serif;
     --font-mono: "Fira Code", monospace;
 
@@ -139,7 +140,6 @@
 }
 */
 
-
   .dark {
     --background: 217 10% 15%;
     --foreground: 240 10% 4%;
@@ -173,7 +173,7 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-    --font-sans: "Roboto", sans-serif;
+    --font-sans: "Archivo", sans-serif;
     --font-serif: "Merriweather", serif;
     --font-mono: "Fira Code", monospace;
     --radius: 0.5rem;
@@ -256,6 +256,10 @@
 
   body {
     letter-spacing: var(--tracking-normal);
+    font-family: var(--font-sans);
+  }
+  .theme {
+    --animate-spin-around: spin-around 0.8s linear infinite;
   }
 }
 
@@ -569,6 +573,17 @@
     to {
       opacity: 0;
       transform: rotateX(-8deg) scale(0.98);
+    }
+  }
+}
+
+@theme inline {
+  @keyframes spin-around {
+  0% {
+    transform: rotate(-90deg);
+    }
+  100% {
+    transform: rotate(270deg);
     }
   }
 }

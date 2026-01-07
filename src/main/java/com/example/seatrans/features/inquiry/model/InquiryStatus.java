@@ -5,7 +5,7 @@ package com.example.seatrans.features.inquiry.model;
  * Represents the lifecycle status of a service inquiry
  */
 public enum InquiryStatus {
-    PENDING,      // New inquiry, not yet reviewed
+    PENDING,      // Newly submitted, not yet processed
     PROCESSING,   // Being processed by staff
     QUOTED,       // Quote sent to customer
     COMPLETED,    // Inquiry completed/closed

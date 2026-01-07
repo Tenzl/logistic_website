@@ -136,7 +136,7 @@ export function Solutions({ onNavigate }: SolutionsProps) {
 
             {/* Live Preview Card */}
             <div className={`${isInView ? 'fade-rise stagger-2' : 'opacity-0'}`}>
-              <Card className="overflow-hidden rounded-t-none border-t-0">
+              <Card className="overflow-hidden rounded-t-none border-t-0 pb-0 lg:flex">
                 <div className="grid lg:grid-cols-2">
                   {/* Content */}
                   <CardContent className="p-8 space-y-6">

@@ -11,7 +11,7 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
     serviceName: 'Chartering & Broking',
     serviceIcon: Anchor,
     onNavigateHome,
-    serviceTypeId: 2, // Chartering & Broking ID (backend seed)
+    serviceTypeId: 3, // Chartering & Broking ID (backend seed)
 
     hero: {
       title: 'Chartering & Broking Services',
@@ -23,7 +23,7 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
 
     contacts: {
       showEmergencyBadge: false,
-      sectionTitle: 'Contact Our Broking Team',
+      sectionTitle: 'Contact our Broking Team',
       sectionDescription: 'Our experienced chartering professionals are ready to arrange suitable tonnage for your cargo',
       teams: [
         {
@@ -89,15 +89,17 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
 
     form: {
       badgeText: 'Request Tonnage',
-      sectionTitle: 'TONNAGE/VESSEL ORDER',
+      sectionTitle: 'Tonnage/Vessel order',
       sectionDescription: 'Submit your cargo requirements and we will arrange suitable tonnage with competitive rates',
       submitButtonText: 'Submit Order',
+      submitPath: '/inquiries',
+      serviceTypeSlug: 'chartering-ship-broking',
       fields: [
         { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'number', required: true, placeholder: 'e.g., Tapioca chip 15,000 tons', gridSpan: 2 },
         { id: 'loadingPort', label: 'Loading port', type: 'port', required: true, gridSpan: 1 },
         { id: 'dischargingPort', label: 'Discharging port', type: 'port', required: true, gridSpan: 1 },
-        { id: 'laycanFrom', label: 'LAY CAN - From date', type: 'date', required: true, gridSpan: 1 },
-        { id: 'laycanTo', label: 'LAY CAN - To date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'laycanFrom', label: 'Laycan - From date', type: 'date', required: true, gridSpan: 1 },
+        { id: 'laycanTo', label: 'Laycan - To date', type: 'date', required: true, gridSpan: 1 },
         { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details...', gridSpan: 2 },
       ],
       onSubmit: (data: any) => {
@@ -110,38 +112,6 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
       enabled: true,
       sectionTitle: 'Our Chartering Operations',
       sectionDescription: 'Major cargo operations and trade routes across Asia-Pacific region'
-    },
-
-    caseStudies: {
-      badgeText: 'Success Stories',
-      sectionTitle: 'Recent Fixtures',
-      sectionDescription: 'Successful tonnage arrangements delivering competitive rates and on-time performance',
-      items: [
-        {
-          title: 'Tapioca Chip Shipment to China',
-          client: 'Agricultural Exporter',
-          challenge: 'Required 15,000 tons of tapioca chip shipped from Vietnam to Qingdao with tight laycan window.',
-          solution: 'Arranged suitable 20K DWT bulk carrier with experienced owners, competitive freight rate, and flexible loading schedule.',
-          result: 'Cargo loaded and delivered within laycan, client saved 12% on freight costs',
-          image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80'
-        },
-        {
-          title: 'Wood Pellets to Korea',
-          client: 'Biomass Energy Company',
-          challenge: 'Regular monthly shipments of 10K tons wood pellets from Vietnam to Kunsan, Korea.',
-          solution: 'Secured long-term COA with reliable tonnage provider, ensuring consistent vessel availability and stable rates.',
-          result: '12 consecutive on-time deliveries, 18% cost reduction vs spot market',
-          image: 'https://images.unsplash.com/photo-1509389344381-e973fca0b0d4?w=800&q=80'
-        },
-        {
-          title: 'Round Logs from PNG',
-          client: 'Timber Processing Plant',
-          challenge: 'Import 4,000 cbm round logs from Papua New Guinea to Vietnam, specialized handling required.',
-          solution: 'Identified geared bulk carrier with log handling experience, coordinated stevedoring at both ports.',
-          result: 'Zero cargo damage, smooth customs clearance, repeat business secured',
-          image: 'https://images.unsplash.com/photo-1542223616-9de9adb5e3e8?w=800&q=80'
-        }
-      ]
     }
   }
 

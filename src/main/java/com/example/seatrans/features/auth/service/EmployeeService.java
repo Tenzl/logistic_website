@@ -1,20 +1,21 @@
 package com.example.seatrans.features.auth.service;
 
-import com.example.seatrans.features.auth.model.Employee;
-import com.example.seatrans.features.auth.model.User;
-import com.example.seatrans.features.auth.model.enums.Department;
-import com.example.seatrans.shared.exception.EmployeeNotFoundException;
-import com.example.seatrans.shared.exception.InvalidEmployeeDataException;
-import com.example.seatrans.shared.exception.UserNotFoundException;
-import com.example.seatrans.features.auth.repository.EmployeeRepository;
-import com.example.seatrans.features.auth.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.seatrans.features.auth.model.Employee;
+import com.example.seatrans.features.auth.model.User;
+import com.example.seatrans.features.auth.repository.EmployeeRepository;
+import com.example.seatrans.features.auth.repository.UserRepository;
+import com.example.seatrans.shared.exception.EmployeeNotFoundException;
+import com.example.seatrans.shared.exception.InvalidEmployeeDataException;
+import com.example.seatrans.shared.exception.UserNotFoundException;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Service xá»­ lÃ½ business logic cho Employee
@@ -110,22 +111,6 @@ public class EmployeeService {
     }
     
     /**
-     * Láº¥y employees theo department
-     */
-    @Transactional(readOnly = true)
-    public List<Employee> getEmployeesByDepartment(Department department) {
-        return employeeRepository.findByDepartment(department);
-    }
-    
-    /**
-     * Láº¥y active employees theo department
-     */
-    @Transactional(readOnly = true)
-    public List<Employee> getActiveEmployeesByDepartment(Department department) {
-        return employeeRepository.findByDepartmentAndIsActiveTrue(department);
-    }
-    
-    /**
      * TÃ¬m kiáº¿m employees
      */
     @Transactional(readOnly = true)
@@ -140,11 +125,7 @@ public class EmployeeService {
      */
     public Employee updateEmployee(Long employeeId, Employee updatedEmployee) {
         Employee existingEmployee = getEmployeeById(employeeId);
-        
-        // Update fields
-        if (updatedEmployee.getDepartment() != null) {
-            existingEmployee.setDepartment(updatedEmployee.getDepartment());
-        }
+
         if (updatedEmployee.getPosition() != null) {
             existingEmployee.setPosition(updatedEmployee.getPosition());
         }
@@ -249,14 +230,6 @@ public class EmployeeService {
         Employee manager = getEmployeeById(managerId);
         Employee employee = getEmployeeById(employeeId);
         return manager.isManagerOf(employee);
-    }
-    
-    /**
-     * Láº¥y colleagues (cÃ¹ng department)
-     */
-    @Transactional(readOnly = true)
-    public List<Employee> getColleagues(Long employeeId) {
-        return employeeRepository.findColleagues(employeeId);
     }
     
     // ==================== Salary & Commission ====================
@@ -401,14 +374,6 @@ public class EmployeeService {
     }
     
     /**
-     * Äáº¿m employees theo department
-     */
-    @Transactional(readOnly = true)
-    public Long countEmployeesByDepartment(Department department) {
-        return employeeRepository.countByDepartment(department);
-    }
-    
-    /**
      * TÃ­nh tá»•ng payroll
      */
     @Transactional(readOnly = true)
@@ -424,13 +389,7 @@ public class EmployeeService {
         return employeeRepository.getAverageSalary();
     }
     
-    /**
-     * TÃ­nh trung bÃ¬nh salary theo department
-     */
-    @Transactional(readOnly = true)
-    public Double getAverageSalaryByDepartment(Department department) {
-        return employeeRepository.getAverageSalaryByDepartment(department);
-    }
+    // Department-related features removed
 }
 
 

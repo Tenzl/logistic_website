@@ -5,17 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Button } from '@/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Badge } from '@/shared/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { Loader2, Eye, Trash2, Mail, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { Label } from '@/shared/components/ui/label'
+import { Loader2, Mail, AlertCircle, FileText, CheckCircle2, Download, Trash2 } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import axios from 'axios'
 import { authService } from '@/features/auth/services/authService'
+import { documentService, InquiryDocument } from '@/features/inquiries/services/documentService'
+import { InvoiceUploadDialog } from '@/features/inquiries/components/InvoiceUploadDialog'
 
 interface Inquiry {
   id: number
   fullName: string
   contactInfo: string
+  phone?: string
+  company?: string
   status: 'PENDING' | 'PROCESSING' | 'QUOTED' | 'COMPLETED' | 'CANCELLED'
   submittedAt: string
   updatedAt: string
@@ -32,158 +36,208 @@ interface PageResponse<T> {
 
 export function ManageInquiriesTab() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
-  const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [detailInquiry, setDetailInquiry] = useState<Inquiry | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [previewDocument, setPreviewDocument] = useState<InquiryDocument | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [templateHtml, setTemplateHtml] = useState<string | null>(null)
 
   useEffect(() => {
     fetchInquiries()
-  }, [page])
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
+  const handleDocumentUpload = (document: InquiryDocument) => {
+    setInquiries(prev => prev.map(inquiry =>
+      inquiry.id === document.inquiryId && document.documentType === 'INVOICE'
+        ? { ...inquiry, status: 'QUOTED' }
+        : inquiry
+    ))
+    setMessage({ type: 'success', text: 'Document uploaded successfully' })
+    setTimeout(() => setMessage(null), 3000)
+  }
+
+  const handleDocumentDelete = (documentId: number) => {
+    setMessage({ type: 'success', text: 'Document deleted successfully' })
+    setTimeout(() => setMessage(null), 3000)
+  }
+
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
 
   const fetchInquiries = async () => {
     setIsLoading(true)
     try {
-      const response = await axios.get<PageResponse<Inquiry>>('http://localhost:8080/api/admin/inquiries', {
-        params: { page, size: 20 },
-        headers: {
-          ...authService.getAuthHeader(),
-        },
+      const token = authService.getToken()
+      const response = await axios.get<PageResponse<Inquiry>>(`${API_BASE}/api/admin/inquiries`, {
+        params: { page: 0, size: 10 },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       const data = response.data
       setInquiries(data.content)
-      setTotalPages(data.totalPages)
-    } catch (error) {
-      console.error('Error fetching inquiries:', error)
-      setMessage({ type: 'error', text: 'Failed to load inquiries' })
+    } catch (err) {
+      // Surface backend message to help diagnose 400 errors (e.g., validation/token issues)
+      if (axios.isAxiosError(err)) {
+        console.error('Failed to fetch inquiries:', err.response?.status, err.response?.data || err.message)
+        const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        setMessage({ type: 'error', text: detail || 'Failed to load inquiries' })
+      } else {
+        console.error('Failed to fetch inquiries:', err)
+        setMessage({ type: 'error', text: 'Failed to load inquiries' })
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this inquiry?')) return
-
-    setIsDeleting(true)
+  const handleStatusChange = async (id: number, status: Inquiry['status']) => {
     try {
-      await axios.delete(`http://localhost:8080/api/admin/inquiries/${id}`, {
-        headers: {
-          ...authService.getAuthHeader(),
-        },
+      const token = authService.getToken()
+      await axios.patch(`${API_BASE}/api/admin/inquiries/${id}/status`, { status }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
-      setInquiries(prev => prev.filter(inquiry => inquiry.id !== id))
-      setMessage({ type: 'success', text: 'Inquiry deleted successfully' })
-      setSelectedInquiry(null)
+      setInquiries(prev => prev.map(inquiry => inquiry.id === id ? { ...inquiry, status } : inquiry))
+      setMessage({ type: 'success', text: 'Status updated successfully' })
       setTimeout(() => setMessage(null), 3000)
-    } catch (error) {
-      console.error('Error deleting inquiry:', error)
-      setMessage({ type: 'error', text: 'Failed to delete inquiry' })
-    } finally {
-      setIsDeleting(false)
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error('Failed to update status:', err.response?.status, err.response?.data || err.message)
+        const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        setMessage({ type: 'error', text: detail || 'Failed to update status' })
+      } else {
+        setMessage({ type: 'error', text: 'Failed to update status' })
+      }
     }
   }
 
-  const handleStatusChange = async (id: number, status: string) => {
+  const handleDelete = async (id: number) => {
+    const confirmed = typeof window !== 'undefined' ? window.confirm('Delete this inquiry? This action cannot be undone.') : true
+    if (!confirmed) return
     try {
-      await axios.patch(`http://localhost:8080/api/admin/inquiries/${id}/status`, { status }, {
-        headers: {
-          ...authService.getAuthHeader(),
-        },
+      setDeletingId(id)
+      const token = authService.getToken()
+      await axios.delete(`/api/admin/inquiries/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
-      setInquiries(prev => prev.map(inquiry => 
-        inquiry.id === id ? { ...inquiry, status: status as Inquiry['status'] } : inquiry
-      ))
-      // Keep dialog state in sync with table updates
-      setSelectedInquiry(prev => prev && prev.id === id ? { ...prev, status: status as Inquiry['status'] } : prev)
-      setMessage({ type: 'success', text: 'Status updated successfully' })
+      setInquiries(prev => prev.filter(inq => inq.id !== id))
+      setMessage({ type: 'success', text: 'Inquiry deleted' })
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error('Failed to delete inquiry:', err.response?.status, err.response?.data || err.message)
+        const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        setMessage({ type: 'error', text: detail || 'Failed to delete inquiry' })
+      } else {
+        console.error('Failed to delete inquiry:', err)
+        setMessage({ type: 'error', text: 'Failed to delete inquiry' })
+      }
+    } finally {
+      setDeletingId(null)
       setTimeout(() => setMessage(null), 3000)
-    } catch (error) {
-      console.error('Error updating status:', error)
-      setMessage({ type: 'error', text: 'Failed to update status' })
     }
+  }
+
+  const loadTemplate = async () => {
+    if (templateHtml) return templateHtml
+    const res = await fetch('/templates/quote.html')
+    const text = await res.text()
+    setTemplateHtml(text)
+    return text
+  }
+
+  const handlePreviewPdf = async (inquiry: Inquiry) => {
+    try {
+      const html = await loadTemplate()
+      if (!html) return
+      const win = window.open('', '_blank')
+      if (win) {
+        win.document.write(html)
+        win.document.close()
+      }
+    } catch (err) {
+      console.error('Failed to preview quote template', err)
+      setMessage({ type: 'error', text: 'Could not load quote template' })
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString()
   }
 
   const getStatusBadge = (status: Inquiry['status']) => {
-    const variants: Record<Inquiry['status'], { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      PENDING: { variant: 'destructive', label: 'Pending' },
-      PROCESSING: { variant: 'secondary', label: 'Processing' },
-      QUOTED: { variant: 'default', label: 'Quoted' },
-      COMPLETED: { variant: 'default', label: 'Completed' },
-      CANCELLED: { variant: 'outline', label: 'Cancelled' }
+    const variants: Record<Inquiry['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      PENDING: 'secondary',
+      PROCESSING: 'default',
+      QUOTED: 'outline',
+      COMPLETED: 'default',
+      CANCELLED: 'destructive'
     }
-    const config = variants[status]
-    return <Badge variant={config.variant}>{config.label}</Badge>
+
+    return <Badge variant={variants[status]}>{status}</Badge>
   }
 
-  const formatKey = (key: string) =>
-    key
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase())
-      .trim()
-
-  const parseDetails = (details?: string) => {
-    if (!details) return []
+  const renderDetails = (raw?: string) => {
+    if (!raw) return <span className="text-muted-foreground">No details provided</span>
     try {
-      const parsed = typeof details === 'string' ? JSON.parse(details) : details
-      if (parsed && typeof parsed === 'object') {
-        return Object.entries(parsed as Record<string, unknown>)
-      }
-      return []
-    } catch (error) {
-      console.warn('Failed to parse inquiry details', error)
-      return []
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      const entries = Object.entries(parsed)
+      if (!entries.length) return <span className="text-muted-foreground">No details provided</span>
+
+      const formatKey = (key: string) =>
+        key
+          .replace(/_/g, ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+
+      return (
+        <div className="grid sm:grid-cols-2 gap-3">
+          {entries.map(([key, value]) => (
+            <div key={key} className="rounded-md border p-3 bg-muted/30">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{formatKey(key)}</p>
+              <p className="text-sm mt-1 break-words">{value === '' || value === null || value === undefined ? '—' : String(value)}</p>
+            </div>
+          ))}
+        </div>
+      )
+    } catch (err) {
+      return <span className="text-muted-foreground">{raw}</span>
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
+  const statusOptions: Inquiry['status'][] = ['PENDING', 'PROCESSING', 'QUOTED', 'COMPLETED', 'CANCELLED']
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Manage Inquiries</h2>
-        <p className="text-muted-foreground">
-          Review and respond to customer inquiries
-        </p>
-      </div>
-
-      {message && (
-        <Alert variant={message.type === 'error' ? 'destructive' : 'default'}>
-          {message.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4" />
-          ) : (
-            <AlertCircle className="h-4 w-4" />
-          )}
-          <AlertDescription>{message.text}</AlertDescription>
-        </Alert>
-      )}
-
+    <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>All Inquiries ({inquiries.length})</CardTitle>
-          <CardDescription>
-            Manage customer inquiries and contact requests
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-xl">Customer Inquiries</CardTitle>
+            <CardDescription>Manage incoming inquiries and documents</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
-          {inquiries.length === 0 ? (
+          {message && (
+            <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : inquiries.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No inquiries yet</p>
@@ -212,123 +266,70 @@ export function ManageInquiriesTab() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(inquiry.status)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <div className="inline-flex cursor-pointer">{getStatusBadge(inquiry.status)}</div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[180px]">
+                            {statusOptions.map((statusOption) => (
+                              <DropdownMenuItem
+                                key={statusOption}
+                                onClick={() => handleStatusChange(inquiry.id, statusOption)}
+                                className="flex items-center gap-2"
+                              >
+                                {inquiry.status === statusOption && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                                <span>{statusOption}</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(inquiry.submittedAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedInquiry(inquiry)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Inquiry Details</DialogTitle>
-                                <DialogDescription>
-                                  Review inquiry information and update status
-                                </DialogDescription>
-                              </DialogHeader>
-                              {selectedInquiry && (
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label className="text-sm font-medium">Full Name</Label>
-                                      <p className="text-sm mt-1">{selectedInquiry.fullName}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Contact</Label>
-                                      <p className="text-sm mt-1 break-all">{selectedInquiry.contactInfo}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Status</Label>
-                                      <div className="mt-1">{getStatusBadge(selectedInquiry.status)}</div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Date</Label>
-                                      <p className="text-sm mt-1">{formatDate(selectedInquiry.submittedAt)}</p>
-                                    </div>
-                                  </div>
-
-                                  {(() => {
-                                    const detailEntries = parseDetails(selectedInquiry.details)
-                                    return (
-                                      <div className="space-y-3 pt-2">
-                                        <Label className="text-sm font-medium">Details</Label>
-                                        {detailEntries.length > 0 ? (
-                                          <div className="grid sm:grid-cols-2 gap-3">
-                                            {detailEntries.map(([key, value]) => (
-                                              <div key={key} className="rounded-md border p-3 bg-muted/30">
-                                                <p className="text-xs text-muted-foreground uppercase tracking-wide">{formatKey(key)}</p>
-                                                <p className="text-sm mt-1 break-words">{value === '' || value === null || value === undefined ? '—' : String(value)}</p>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        ) : (
-                                          <p className="text-sm text-muted-foreground italic">No detail data.</p>
-                                        )}
-                                      </div>
-                                    )
-                                  })()}
-
-                                  <div className="flex justify-between pt-4 border-t">
-                                    <div className="flex gap-2 flex-wrap">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleStatusChange(selectedInquiry.id, 'PROCESSING')}
-                                        disabled={selectedInquiry.status === 'PROCESSING'}
-                                      >
-                                        Mark Processing
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleStatusChange(selectedInquiry.id, 'QUOTED')}
-                                        disabled={selectedInquiry.status === 'QUOTED'}
-                                      >
-                                        Mark Quoted
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleStatusChange(selectedInquiry.id, 'COMPLETED')}
-                                        disabled={selectedInquiry.status === 'COMPLETED'}
-                                      >
-                                        Mark Completed
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleStatusChange(selectedInquiry.id, 'CANCELLED')}
-                                        disabled={selectedInquiry.status === 'CANCELLED'}
-                                      >
-                                        Mark Cancelled
-                                      </Button>
-                                    </div>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => handleDelete(selectedInquiry.id)}
-                                      disabled={isDeleting}
-                                    >
-                                      {isDeleting ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDetailInquiry(inquiry)}
+                            className="gap-2"
+                            title="View details"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Details
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handlePreviewPdf(inquiry)}
+                            className="gap-2"
+                            title="View PDF template"
+                          >
+                            <Download className="h-4 w-4" />
+                            View PDF
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => handleDelete(inquiry.id)}
+                            disabled={deletingId === inquiry.id}
+                            title="Delete inquiry"
+                          >
+                            {deletingId === inquiry.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <InvoiceUploadDialog
+                            inquiryId={inquiry.id}
+                            documents={[]}
+                            onUploadSuccess={handleDocumentUpload}
+                            onDeleteSuccess={handleDocumentDelete}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -339,6 +340,106 @@ export function ManageInquiriesTab() {
           )}
         </CardContent>
       </Card>
+
+        {/* Details Dialog */}
+        <Dialog open={!!detailInquiry} onOpenChange={(open) => {
+          if (!open) {
+            setDetailInquiry(null)
+          }
+        }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Inquiry Details</DialogTitle>
+              <DialogDescription>Information submitted for this inquiry</DialogDescription>
+            </DialogHeader>
+            {detailInquiry && (
+              <div className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="text-sm"><span className="font-semibold">Name:</span> {detailInquiry.fullName}</div>
+                  <div className="text-sm"><span className="font-semibold">Email:</span> {detailInquiry.contactInfo}</div>
+                  <div className="text-sm"><span className="font-semibold">Phone:</span> {detailInquiry.phone || '—'}</div>
+                  <div className="text-sm"><span className="font-semibold">Company:</span> {detailInquiry.company || '—'}</div>
+                </div>
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-semibold mb-2">Provided Details</h4>
+                  {renderDetails(detailInquiry.details)}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+      {/* PDF Preview Dialog */}
+      {previewDocument && (
+        <Dialog open={!!previewDocument} onOpenChange={(open) => {
+          if (!open) {
+            setPreviewDocument(null)
+            if (previewUrl) {
+              URL.revokeObjectURL(previewUrl)
+              setPreviewUrl(null)
+            }
+          }
+        }}>
+          <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{previewDocument.originalFileName}</DialogTitle>
+              <DialogDescription>
+                <div className="flex gap-4 text-xs text-gray-600 mt-2">
+                  <span>{documentService.getDocumentTypeLabel(previewDocument.documentType)}</span>
+                  <span>•</span>
+                  <span>{documentService.formatFileSize(previewDocument.fileSize)}</span>
+                  <span>•</span>
+                  <span>{new Date(previewDocument.uploadedAt).toLocaleString()}</span>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 min-h-0">
+              {loadingPreview ? (
+                <div className="flex items-center justify-center h-full bg-gray-100 rounded-lg">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : previewUrl ? (
+                <iframe src={previewUrl} className="w-full h-full rounded-lg border" title="PDF Preview" />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gray-100 rounded-lg">
+                  <FileText className="h-10 w-10 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={async () => {
+                try {
+                  if (previewDocument) {
+                    const blob = await documentService.downloadDocument(previewDocument.inquiryId, previewDocument.id)
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = previewDocument.originalFileName
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    URL.revokeObjectURL(url)
+                  }
+                } catch (err) {
+                  setMessage({ type: 'error', text: 'Failed to download document' })
+                }
+              }} className="gap-2">
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setPreviewDocument(null)
+                if (previewUrl) {
+                  URL.revokeObjectURL(previewUrl)
+                  setPreviewUrl(null)
+                }
+              }}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

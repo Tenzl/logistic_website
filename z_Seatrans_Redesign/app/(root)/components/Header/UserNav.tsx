@@ -26,6 +26,9 @@ export function UserNav({ user, onLogout }: UserNavProps) {
     router.push(path)
   }
 
+  const isInternal = user.roleGroup === 'INTERNAL'
+  const isExternal = user.roleGroup === 'EXTERNAL'
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,15 +75,17 @@ export function UserNav({ user, onLogout }: UserNavProps) {
               )}
             </div>
 
-                    <button
-                      onClick={() => handleNavigate('/dashboard')}
-                      className="block w-full px-4 py-3 text-left text-sm hover:bg-accent text-foreground flex items-center space-x-2 transition-colors"
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      <span>User Dashboard</span>
-                    </button>
+            {isExternal && (
+              <button
+                onClick={() => handleNavigate('/dashboard')}
+                className="block w-full px-4 py-3 text-left text-sm hover:bg-accent text-foreground flex items-center space-x-2 transition-colors"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>User Dashboard</span>
+              </button>
+            )}
 
-            {user.roleGroup === 'INTERNAL' && (
+            {isInternal && (
               <button
                 onClick={() => handleNavigate('/admin')}
                 className="block w-full px-4 py-3 text-left text-sm hover:bg-accent text-foreground flex items-center space-x-2 transition-colors"

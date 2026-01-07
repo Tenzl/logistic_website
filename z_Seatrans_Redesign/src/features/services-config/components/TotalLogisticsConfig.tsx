@@ -11,7 +11,7 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
     serviceName: 'Freight Forwarding & Logistics',
     serviceIcon: Package,
     onNavigateHome,
-    serviceTypeId: 4, // Freight Forwarding ID
+    serviceTypeId: 4, // Logistics ID
 
     hero: {
       title: 'Freight Forwarding & Logistics',
@@ -21,7 +21,7 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
 
     contacts: {
       showEmergencyBadge: false,
-      sectionTitle: 'Contact Our Logistics Team',
+      sectionTitle: 'Contact our Logistics Team',
       sectionDescription: 'Our freight forwarding experts are ready to provide you with the best rates and solutions',
       teams: [
         {
@@ -90,9 +90,11 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
 
     form: {
       badgeText: 'Get Best Rates',
-      sectionTitle: 'REQUEST A QUOTE',
+      sectionTitle: 'Request a quote',
       sectionDescription: 'Hello Seatrans Logistics, please offer us the best rates for our following shipment details:',
       submitButtonText: 'Get Quote',
+      submitPath: '/inquiries',
+      serviceTypeSlug: 'total-logistics',
       fields: [
         { id: 'cargoName', label: 'Cargo name', type: 'text', required: true, placeholder: 'Type of cargo', gridSpan: 2 },
         { id: 'deliveryTerm', label: 'Delivery term', type: 'select', required: true, placeholder: 'Select delivery term', gridSpan: 1, options: ['CY/CY', 'CY/Door', 'Door/CY', 'Door/Door', 'Port/Port'] },
@@ -114,38 +116,6 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
       enabled: true,
       sectionTitle: 'Our Logistics Operations',
       sectionDescription: 'Door-to-door freight forwarding services across multiple transport modes'
-    },
-
-    caseStudies: {
-      badgeText: 'Client Success',
-      sectionTitle: 'Logistics Excellence',
-      sectionDescription: 'Real-world examples of our freight forwarding solutions',
-      items: [
-        {
-          title: 'Door-to-Door Electronics Shipment',
-          client: 'Electronics Manufacturer',
-          challenge: 'Urgent delivery of high-value electronics from Vietnam factory to European retailers with strict deadline.',
-          solution: 'Coordinated FCL ocean freight with bonded warehousing, customs pre-clearance, and final mile delivery to 5 distribution centers.',
-          result: 'All shipments delivered on-time, zero damage, 20% cost savings vs air freight',
-          image: 'https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=800&q=80'
-        },
-        {
-          title: 'Multimodal Automotive Parts',
-          client: 'Auto Parts Distributor',
-          challenge: 'Just-in-time delivery system requiring seamless coordination between sea, air, and land transport.',
-          solution: 'Implemented weekly LCL consolidation with air backup option, inland trucking network, and real-time tracking.',
-          result: '99.5% on-time delivery rate over 12 months, production never delayed',
-          image: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&q=80'
-        },
-        {
-          title: 'Textile Export Program',
-          client: 'Garment Exporter',
-          challenge: 'Managing 50+ FCL shipments monthly to US and EU with complex customs requirements.',
-          solution: 'Dedicated team handling documentation, customs clearance, warehousing, and container optimization.',
-          result: 'Reduced shipping costs by 18%, improved container utilization to 95%',
-          image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&q=80'
-        }
-      ]
     }
   }
 

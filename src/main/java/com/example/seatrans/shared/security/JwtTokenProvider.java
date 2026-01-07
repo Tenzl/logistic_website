@@ -1,22 +1,37 @@
 package com.example.seatrans.shared.security;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.example.seatrans.features.auth.model.User;
+
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 
 /**
- * JWT Token Provider
- * Xử lý tạo, validate, parse JWT token
+ * JWT Token Provider Implementation
+ * Handles JWT token generation, validation, and parsing
  */
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider implements TokenProvider {
+    
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
+
+    private static final String CLAIM_ROLES = "roles";
     
     @Value("${app.jwt.secret:seatrans-secret-key-change-in-production-please-make-it-very-long-and-secure}")
     private String jwtSecret;
@@ -44,23 +59,43 @@ public class JwtTokenProvider {
      * Generate JWT token
      */
     public String generateToken(Long userId, String username) {
-        return generateToken(userId, username, jwtExpirationMs);
+        return generateToken(userId, username, jwtExpirationMs, null);
     }
 
     /**
      * Generate Refresh Token
      */
     public String generateRefreshToken(Long userId, String username) {
-        return generateToken(userId, username, refreshExpirationMs);
+        return generateToken(userId, username, refreshExpirationMs, null);
     }
 
-    private String generateToken(Long userId, String username, long expirationMs) {
+    /**
+     * Generate JWT token embedding role names for authorization.
+     */
+    @Override
+    public String generateToken(User user) {
+        Set<String> roleNames = user.getRoles().stream()
+                .map(role -> role.getName())
+                .collect(Collectors.toSet());
+        return generateToken(user.getId(), user.getUsername(), jwtExpirationMs, roleNames);
+    }
+
+    @Override
+    public String generateRefreshToken(User user) {
+        Set<String> roleNames = user.getRoles().stream()
+                .map(role -> role.getName())
+                .collect(Collectors.toSet());
+        return generateToken(user.getId(), user.getUsername(), refreshExpirationMs, roleNames);
+    }
+
+    private String generateToken(Long userId, String username, long expirationMs, Set<String> roleNames) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
         
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
+            .claim(CLAIM_ROLES, roleNames)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(Keys.hmacShaKeyFor(secretKey), SignatureAlgorithm.HS512)
@@ -70,6 +105,7 @@ public class JwtTokenProvider {
     /**
      * Get username from JWT token
      */
+    @Override
     public String getUsernameFromToken(String token) {
         Claims claims = getAllClaimsFromToken(token);
         return claims.getSubject();
@@ -78,14 +114,36 @@ public class JwtTokenProvider {
     /**
      * Get userId from JWT token
      */
+    @Override
     public Long getUserIdFromToken(String token) {
         Claims claims = getAllClaimsFromToken(token);
         return claims.get("userId", Long.class);
+    }
+
+    /**
+     * Extract role names embedded in JWT (may be null/empty for legacy tokens).
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        Object roles = claims.get(CLAIM_ROLES);
+        if (roles == null) {
+            return List.of();
+        }
+        if (roles instanceof List<?> list) {
+            return list.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .collect(Collectors.toList());
+        }
+        return List.of();
     }
     
     /**
      * Validate JWT token
      */
+    @Override
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -93,11 +151,18 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (Exception e) {
-            System.err.println("JWT Validation Error: " + e.getMessage());
-            e.printStackTrace();
-            return false;
+        } catch (SignatureException e) {
+            log.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.error("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.error("JWT token is expired: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.error("JWT token is unsupported: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("JWT claims string is empty: {}", e.getMessage());
         }
+        return false;
     }
     
     /**

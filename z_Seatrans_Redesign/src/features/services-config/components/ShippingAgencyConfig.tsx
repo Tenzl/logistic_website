@@ -21,7 +21,7 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
 
     contacts: {
       showEmergencyBadge: true,
-      sectionTitle: 'Contact Our Team',
+      sectionTitle: 'Contact our Team',
       sectionDescription: 'Our experienced team is ready to assist you with immediate support',
       teams: [
         {
@@ -53,7 +53,7 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
     },
 
     services: {
-      sectionTitle: 'SEATRANS - AGENCY SERVICES',
+      sectionTitle: 'Seatrans - Agency Services',
       sectionDescription: 'Complete vessel support services for all your maritime needs',
       items: [
         { 
@@ -91,17 +91,51 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
 
     form: {
       badgeText: 'Get a Quote',
-      sectionTitle: 'PORT D/A INQUIRY',
+      sectionTitle: 'Port D/A inquiry',
       sectionDescription: 'Submit your vessel details for a detailed port disbursement account',
       submitButtonText: 'Submit Inquiry',
-      fields: [
-        { id: 'dwt', label: 'DWT', type: 'number', placeholder: 'Tons', gridSpan: 1 },
-        { id: 'grt', label: 'GRT', type: 'number', placeholder: 'Tons', gridSpan: 1 },
-        { id: 'loa', label: 'LOA', type: 'number', placeholder: 'Meters', gridSpan: 1 },
-        { id: 'cargoQuantity', label: 'Cargo/Quantity', type: 'text', required: true, placeholder: 'Type and quantity of cargo', gridSpan: 2 },
-        { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, gridSpan: 2 },
-        { id: 'otherInfo', label: 'Other information (optional)', type: 'textarea', placeholder: 'Any additional details about your vessel or requirements...', gridSpan: 2 }
+      submitPath: '/inquiries',
+      serviceTypeSlug: 'shipping-agency',
+      sections: [
+        {
+          title: 'Party & Vessel',
+          fields: [
+            { id: 'to', label: 'To (Shipowner)', type: 'text', required: true, placeholder: 'Owner/Principal name', gridSpan: 1 },
+            { id: 'mv', label: 'MV (Vessel name)', type: 'mv-prefix', required: true, placeholder: 'MV Your Vessel', gridSpan: 1 },
+            { id: 'grt', label: 'GRT', type: 'number', placeholder: 'Gross tonnage', gridSpan: 1 },
+            { id: 'dwt', label: 'DWT', type: 'number', placeholder: 'Deadweight (tons)', gridSpan: 1 },
+            { id: 'loa', label: 'LOA', type: 'number', placeholder: 'Length overall (m)', gridSpan: 1 },
+            { id: 'eta', label: 'ETA', type: 'date', required: false, placeholder: 'dd/mm/yyyy', gridSpan: 1 },
+          ]
+        },
+        {
+          title: 'Cargo',
+          fields: [
+            { id: 'cargoType', label: 'Cargo type', type: 'select', required: true, options: ['IN BULK', 'IN BAGS', 'IN EQUIPMENT'], gridSpan: 1 },
+            { id: 'cargoName', label: 'Cargo name', type: 'select', required: true, options: ['WOOD PELLET', 'WOODCHIP', 'EQUIPMENT', 'OTHER'], placeholder: 'Select or choose OTHER', gridSpan: 1 },
+            { id: 'cargoNameOther', label: 'Cargo name (if OTHER)', type: 'text', placeholder: 'Enter cargo name', gridSpan: 2, showWhen: { field: 'cargoName', value: 'other' } },
+            { id: 'quantityTons', label: 'Quantity (tons)', type: 'number', required: true, placeholder: 'e.g., 15000', gridSpan: 1 },
+          ]
+        },
+        {
+          title: 'Trade & Port',
+          fields: [
+            { id: 'frtTaxType', label: 'Frt tax type (import/export)', type: 'select', required: true, options: ['Import', 'Export'], gridSpan: 1, helperText: 'Export may incur freight tax; import may not.', enableSearch: false },
+            { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'e.g., Quy Nhon, HCM...', gridSpan: 1 },
+            { id: 'dischargeLoadingLocation', label: 'Discharge/Loading at', type: 'select', required: true, options: ['Berth', 'Anchorage'], gridSpan: 1, enableSearch: false }
+          ]
+        },
+        {
+          title: 'Service options',
+          fields: [
+            { id: 'boatHireAmount', label: 'Boat-hire for entry quarantine (USD)', type: 'number', placeholder: '0', gridSpan: 1, required: false },
+            { id: 'tallyFeeAmount', label: "Ship's side tally fee (USD)", type: 'number', placeholder: '0', gridSpan: 1, required: false },
+            { id: 'transportLs', label: 'Transport/Communication in L/S (optional)', type: 'number', placeholder: '0', gridSpan: 2 },
+            { id: 'transportQuarantine', label: 'Transport for entry quarantine formality (optional)', type: 'number', placeholder: '0', gridSpan: 2 },
+          ]
+        }
       ],
+      fields: [],
       onSubmit: (data) => {
         console.log('Form submitted:', data)
         // Handle form submission
@@ -112,38 +146,6 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
       enabled: true,
       sectionTitle: 'Our Shipping Agency Operations',
       sectionDescription: 'Browse images from our shipping agency services across Vietnamese ports'
-    },
-
-    caseStudies: {
-      badgeText: 'Success Stories',
-      sectionTitle: 'Case Studies',
-      sectionDescription: 'Real-world examples of our agency services in action',
-      items: [
-        {
-          title: 'Bulk Carrier Emergency Support',
-          client: 'International Shipping Co.',
-          challenge: 'Engine failure requiring urgent repair coordination in Haiphong',
-          solution: 'Coordinated emergency engineering team, secured spare parts within 8 hours, and managed port authority communications.',
-          result: 'Vessel operational in 36 hours, saving $120K in demurrage costs',
-          image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&q=80'
-        },
-        {
-          title: 'Complex Crew Change Operation',
-          client: 'Pacific Maritime Lines',
-          challenge: 'Multi-national crew change during COVID-19 restrictions',
-          solution: 'Managed visa applications for 15 crew members from 6 countries, coordinated quarantine facilities, and arranged safe transfers.',
-          result: 'Successful crew change with zero delays and full compliance',
-          image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800&q=80'
-        },
-        {
-          title: 'Container Vessel Quick Turnaround',
-          client: 'Global Freight Services',
-          challenge: 'Tight schedule requiring expedited port clearance and bunkering',
-          solution: 'Pre-cleared documentation, coordinated simultaneous bunkering and loading operations, streamlined customs process.',
-          result: 'Port stay reduced by 18 hours, ahead of schedule departure',
-          image: 'https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?w=800&q=80'
-        }
-      ]
     }
   }
 

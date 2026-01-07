@@ -1,9 +1,14 @@
 package com.example.seatrans.shared.config;
 
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -16,8 +21,6 @@ import com.example.seatrans.shared.security.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
-
 /**
  * Simplified Security Configuration
  * Uses JWT authentication for stateless API
@@ -25,6 +28,7 @@ import java.util.Arrays;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     
@@ -65,8 +69,50 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                        "{\"success\":false,\"message\":\"Authentication required\",\"path\":\"" + request.getRequestURI() + "\"}"
+                    );
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                        "{\"success\":false,\"message\":\"Access denied\",\"path\":\"" + request.getRequestURI() + "\"}"
+                    );
+                })
+            )
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
+                // Let Spring's error controller respond without auth (prevents masking real errors as 401)
+                .requestMatchers("/error").permitAll()
+                // Allow CORS preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Public content endpoints
+                .requestMatchers("/api/provinces/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/ports/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers("/api/posts/**").permitAll()
+                .requestMatchers("/api/gallery/**", "/api/gallery-images/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/image-types/**").permitAll()
+                .requestMatchers("/api/offices/**").permitAll()
+                .requestMatchers("/api/service-types/**").permitAll()
+                // User inquiry history (authenticated users only)
+                .requestMatchers(HttpMethod.GET, "/api/inquiries/user/**").authenticated()
+                // Public inquiry submission (guest + authenticated users)
+                .requestMatchers(HttpMethod.POST, "/api/inquiries").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/inquiries").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/inquiries/**").permitAll()
+                // Admin-only endpoints
+                .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                // Allow static files if served by Spring
+                .requestMatchers("/uploads/**").permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .formLogin(form -> form.disable())

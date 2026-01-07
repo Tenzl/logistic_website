@@ -3,6 +3,8 @@ package com.example.seatrans.features.logistics.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.seatrans.features.gallery.model.ImageTypeEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -16,8 +18,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 
 @Entity
 @Table(name = "service_types")

@@ -9,12 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.example.seatrans.features.auth.model.enums.Department;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -40,10 +36,6 @@ public class Employee {
     
     @Column(name = "employee_code", unique = true, nullable = false, length = 20)
     private String employeeCode;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private Department department;
     
     @Column(length = 100)
     private String position;
@@ -90,9 +82,8 @@ public class Employee {
     // Constructors
     public Employee() {}
     
-    public Employee(User user, Department department, LocalDate hireDate) {
+    public Employee(User user, LocalDate hireDate) {
         this.user = user;
-        this.department = department;
         this.hireDate = hireDate;
     }
     
@@ -149,14 +140,6 @@ public class Employee {
 
     public void setEmployeeCode(String employeeCode) {
         this.employeeCode = employeeCode;
-    }
-
-    public Department getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(Department department) {
-        this.department = department;
     }
 
     public String getPosition() {

@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS orders (
     employee_id BIGINT NULL,
     service_type VARCHAR(50) NOT NULL,
     
-    order_status VARCHAR(20) DEFAULT 'PENDING',
+    order_status VARCHAR(20) DEFAULT 'PROCESSING',
     
     base_price DECIMAL(12,2) NOT NULL,
     total_surcharges DECIMAL(12,2) DEFAULT 0,
@@ -151,7 +151,6 @@ CREATE TABLE IF NOT EXISTS orders (
     final_amount DECIMAL(12,2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'USD',
     
-    payment_status VARCHAR(20) DEFAULT 'UNPAID',
     paid_amount DECIMAL(12,2) DEFAULT 0,
     payment_method VARCHAR(50) NULL,
     
@@ -175,7 +174,6 @@ CREATE TABLE IF NOT EXISTS orders (
     INDEX idx_customer (customer_id),
     INDEX idx_employee (employee_id),
     INDEX idx_status (order_status),
-    INDEX idx_payment (payment_status),
     INDEX idx_order_date (order_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

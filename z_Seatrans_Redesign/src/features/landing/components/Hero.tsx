@@ -7,9 +7,21 @@ interface HeroProps {
   title?: string
   subtitle?: string
   image?: string
+  primaryCTA?: {
+    text: string
+    action: () => void
+  }
+  secondaryCTA?: {
+    text: string
+    action: () => void
+  }
+  trustBadges?: {
+    label: string
+    value: string
+  }[]
 }
 
-export function Hero({ title, subtitle, image }: HeroProps = {}) {
+export function Hero({ title, subtitle, image, primaryCTA, secondaryCTA, trustBadges }: HeroProps = {}) {
   const [ref, isInView] = useIntersectionObserver()
   const prefersReducedMotion = useReducedMotion()
 
@@ -17,7 +29,7 @@ export function Hero({ title, subtitle, image }: HeroProps = {}) {
 
   return (
     <div ref={ref}>
-      <section className="relative min-h-[50vh] max-h-[600px] overflow-hidden border-b-4 border-primary">
+      <section className="relative min-h-[66vh] overflow-hidden border-b-4 border-primary">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <ImageWithFallback
@@ -25,6 +37,7 @@ export function Hero({ title, subtitle, image }: HeroProps = {}) {
             alt={title ? `${title} - Seatrans` : "Cargo ship on ocean - Seatrans shipping and logistics operations across Asia-Pacific region"}
             width={1920}
             height={1080}
+            priority
             className="w-full h-full object-cover"
           />
           {/* Overlay when text is present */}
@@ -37,7 +50,7 @@ export function Hero({ title, subtitle, image }: HeroProps = {}) {
         {title && (
           <div className="relative z-10 h-full flex items-center justify-center text-center">
             <div 
-              className="container max-w-4xl px-4"
+              className="container max-w-5xl px-4"
               style={{
                 opacity: prefersReducedMotion ? 1 : (isInView ? 1 : 0),
                 transform: prefersReducedMotion ? 'none' : (isInView ? 'translateY(0)' : 'translateY(20px)'),
@@ -66,6 +79,35 @@ export function Hero({ title, subtitle, image }: HeroProps = {}) {
               >
                 {title}
               </h1>
+
+              {(primaryCTA || secondaryCTA) && (
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
+                  {primaryCTA && (
+                    <Button size="lg" onClick={primaryCTA.action}>
+                      {primaryCTA.text}
+                    </Button>
+                  )}
+                  {secondaryCTA && (
+                    <Button size="lg" variant="outline" onClick={secondaryCTA.action}>
+                      {secondaryCTA.text}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {trustBadges && trustBadges.length > 0 && (
+                <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 text-white/90">
+                  {trustBadges.map((badge, index) => (
+                    <div
+                      key={index}
+                      className="bg-white/10 rounded-lg px-4 py-3 backdrop-blur-md border border-white/20"
+                    >
+                      <div className="text-lg font-semibold">{badge.value}</div>
+                      <div className="text-xs uppercase tracking-wide">{badge.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

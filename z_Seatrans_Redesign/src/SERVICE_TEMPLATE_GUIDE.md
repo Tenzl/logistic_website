@@ -72,7 +72,7 @@ hero: {
 ```tsx
 contacts: {
   showEmergencyBadge: true, // Show red "24/7 Emergency Support" badge
-  sectionTitle: 'Contact Our Team',
+  sectionTitle: 'Contact our Team',
   sectionDescription: 'Description text',
   teams: [
     {

@@ -13,8 +13,11 @@ import {
   Shield,
   LayoutDashboard,
   Cog,
-  ListChecks
+  ListChecks,
+  Calculator,
+  Truck
 } from 'lucide-react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   Sidebar,
   SidebarContent,
@@ -41,17 +44,46 @@ import { ManageInquiriesTab } from './ManageInquiriesTab'
 import { ManagePosts } from './ManagePosts'
 import { ManageCategories } from './ManageCategories'
 import { ManageServices } from './ManageServices'
+import { ManageOffices } from './ManageOffices'
+import { ShippingAgencyInquiriesTab } from './ShippingAgencyInquiriesTab'
+import { FreightForwardingInquiriesTab } from './FreightForwardingInquiriesTab'
+import { LogisticsInquiriesTab } from './LogisticsInquiriesTab'
+import { CharteringInquiriesTab } from './CharteringInquiriesTab'
+import { SpecialRequestInquiriesTab } from './SpecialRequestInquiriesTab'
 
 interface AdminPageProps {
   onNavigateHome: () => void
   initialSection?: AdminSection
 }
 
-type AdminSection = 'profile' | 'inquiry' | 'add-image' | 'manage-images' | 'services' | 'ports' | 'commodities' | 'categories' | 'posts'
+type AdminSection =
+  | 'profile'
+  | 'inquiry'
+  | 'shipping-agency-inquiries'
+  | 'freight-forwarding-inquiries'
+  | 'logistics-inquiries'
+  | 'chartering-inquiries'
+  | 'special-request-inquiries'
+  | 'add-image'
+  | 'manage-images'
+  | 'services'
+  | 'ports'
+  | 'commodities'
+  | 'categories'
+  | 'posts'
+  | 'offices'
 
 export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminPageProps) {
   const [activeSection, setActiveSection] = useState<AdminSection>(initialSection)
   const { user, isLoading } = useAuth()
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }))
 
   const adminUser = user
     ? { name: user.fullName || user.username, email: user.email, avatar: '' }
@@ -60,10 +92,16 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
   const menuItems = [
     { id: 'profile' as AdminSection, label: 'Edit Profile', icon: User, category: 'Profile' },
     { id: 'inquiry' as AdminSection, label: 'Inquiry History', icon: FileText, category: 'Inquiries' },
+    { id: 'shipping-agency-inquiries' as AdminSection, label: 'Shipping Agency', icon: ListChecks, category: 'Inquiries' },
+    { id: 'freight-forwarding-inquiries' as AdminSection, label: 'Freight Forwarding', icon: Package, category: 'Inquiries' },
+    { id: 'logistics-inquiries' as AdminSection, label: 'Logistics', icon: Truck, category: 'Inquiries' },
+    { id: 'chartering-inquiries' as AdminSection, label: 'Chartering', icon: Anchor, category: 'Inquiries' },
+    { id: 'special-request-inquiries' as AdminSection, label: 'Special Request', icon: FileText, category: 'Inquiries' },
     { id: 'add-image' as AdminSection, label: 'Add Image', icon: Upload, category: 'Image Management' },
     { id: 'manage-images' as AdminSection, label: 'Manage Images', icon: ImageIcon, category: 'Image Management' },
     { id: 'services' as AdminSection, label: 'Services', icon: Cog, category: 'Data Management' },
     { id: 'ports' as AdminSection, label: 'Ports', icon: Anchor, category: 'Data Management' },
+    { id: 'offices' as AdminSection, label: 'Offices', icon: LayoutDashboard, category: 'Data Management' },
     { id: 'commodities' as AdminSection, label: 'Commodities', icon: Package, category: 'Data Management' },
     { id: 'categories' as AdminSection, label: 'Categories', icon: Database, category: 'Content Management' },
     { id: 'posts' as AdminSection, label: 'Posts', icon: FileText, category: 'Content Management' },
@@ -81,7 +119,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
     <SidebarProvider>
       <div className="flex h-screen w-full">
         <Sidebar
-          collapsible="icon"
+          collapsible="offcanvas"
           variant="inset"
           className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
         >
@@ -160,11 +198,18 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           {activeSection === 'profile' && <EditProfileTab />}
           {activeSection === 'inquiry' && <ManageInquiriesTab />}
+          {activeSection === 'shipping-agency-inquiries' && <ShippingAgencyInquiriesTab />}
+          {activeSection === 'freight-forwarding-inquiries' && <FreightForwardingInquiriesTab />}
+          {activeSection === 'logistics-inquiries' && <LogisticsInquiriesTab />}
+          {activeSection === 'chartering-inquiries' && <CharteringInquiriesTab />}
+          {activeSection === 'special-request-inquiries' && <SpecialRequestInquiriesTab />}
           {activeSection === 'add-image' && <AddImageTab />}
           {activeSection === 'manage-images' && <ManageImagesTab />}
           {activeSection === 'services' && <ManageServices />}
           {activeSection === 'ports' && <ManagePorts />}
+          {activeSection === 'offices' && <ManageOffices />}
           {activeSection === 'commodities' && <ManageImageTypes />}
+          
           {activeSection === 'categories' && <ManageCategories />}
           {activeSection === 'posts' && <ManagePosts />}
         </div>

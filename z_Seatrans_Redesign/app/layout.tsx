@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { AuthProvider } from '@/features/auth/context/AuthContext'
 import { Toaster } from '@/shared/components/ui/toaster'
+import { NProgressProvider } from '@/components/NProgressProvider'
+import '@/styles/nprogress.css'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -17,6 +19,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <AuthProvider>
+          <NProgressProvider />
           {children}
           <Toaster />
         </AuthProvider>

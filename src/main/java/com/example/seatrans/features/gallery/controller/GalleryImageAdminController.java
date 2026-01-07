@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +18,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.seatrans.shared.dto.ApiResponse;
 import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.dto.UpdateImageRequest;
 import com.example.seatrans.features.gallery.service.GalleryImageService;
+import com.example.seatrans.shared.dto.ApiResponse;
 import com.example.seatrans.shared.util.FileUploadUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
 public class GalleryImageAdminController {
     
     private final GalleryImageService galleryImageService;

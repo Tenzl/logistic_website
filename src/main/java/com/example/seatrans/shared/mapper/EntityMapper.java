@@ -128,11 +128,10 @@ public class EntityMapper {
         Employee manager = employee.getManager();
         
         return EmployeeDTO.builder()
-                .id(employee.getId())
-                .userId(user != null ? user.getId() : null)
-                .employeeCode(employee.getEmployeeCode())
-                .department(employee.getDepartment())
-                .position(employee.getPosition())
+            .id(employee.getId())
+            .userId(user != null ? user.getId() : null)
+            .employeeCode(employee.getEmployeeCode())
+            .position(employee.getPosition())
                 .hireDate(employee.getHireDate())
                 .salary(employee.getSalary())
                 .commissionRate(employee.getCommissionRate())
@@ -165,7 +164,6 @@ public class EntityMapper {
         
         Employee employee = new Employee();
         employee.setId(dto.getId());
-        employee.setDepartment(dto.getDepartment());
         employee.setPosition(dto.getPosition());
         employee.setHireDate(dto.getHireDate());
         employee.setSalary(dto.getSalary());

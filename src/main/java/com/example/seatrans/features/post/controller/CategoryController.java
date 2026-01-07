@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,6 +51,7 @@ public class CategoryController {
      * GET /api/admin/categories
      */
     @GetMapping("/api/admin/categories")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAdminCategories() {
         log.info("Admin: Fetching all categories");
         List<CategoryResponse> categories = categoryService.getAllCategories();
@@ -61,6 +63,7 @@ public class CategoryController {
      * GET /api/admin/categories/{id}
      */
     @GetMapping("/api/admin/categories/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(@PathVariable Long id) {
         log.info("Fetching category with ID: {}", id);
         CategoryResponse category = categoryService.getCategoryById(id);
@@ -72,6 +75,7 @@ public class CategoryController {
      * POST /api/admin/categories
      */
     @PostMapping("/api/admin/categories")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
             @Valid @RequestBody CategoryRequest request) {
         log.info("Creating new category: {}", request.getName());
@@ -85,6 +89,7 @@ public class CategoryController {
      * PUT /api/admin/categories/{id}
      */
     @PutMapping("/api/admin/categories/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
             @PathVariable Long id,
             @Valid @RequestBody CategoryRequest request) {
@@ -98,6 +103,7 @@ public class CategoryController {
      * DELETE /api/admin/categories/{id}
      */
     @DeleteMapping("/api/admin/categories/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         log.info("Deleting category with ID: {}", id);
         categoryService.deleteCategory(id);

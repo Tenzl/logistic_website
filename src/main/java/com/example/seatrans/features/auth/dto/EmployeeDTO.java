@@ -1,15 +1,18 @@
 package com.example.seatrans.features.auth.dto;
 
-import com.example.seatrans.features.auth.model.enums.Department;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import jakarta.validation.constraints.*;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * DTO cho Employee
@@ -23,9 +26,6 @@ public class EmployeeDTO {
     private Long id;
     private Long userId;
     private String employeeCode;
-    
-    @NotNull(message = "Department is required")
-    private Department department;
     
     @Size(max = 100, message = "Position must not exceed 100 characters")
     private String position;

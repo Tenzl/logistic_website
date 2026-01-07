@@ -1,10 +1,17 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { Trash2, Loader2, MapPin, Anchor, Cog, Layers, Pencil, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Trash2, Loader2, MapPin, Anchor, Cog, Layers, Pencil, ArrowDown, ArrowUp } from 'lucide-react'
+import {
+  ColumnDef,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
-import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 import { Checkbox } from '@/shared/components/ui/checkbox'
@@ -89,7 +96,6 @@ export function ManageImagesTab() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
-  const [uploadedSort, setUploadedSort] = useState<'asc' | 'desc'>('desc')
   const [imageToDelete, setImageToDelete] = useState<number | null>(null)
   const [previewImage, setPreviewImage] = useState<GalleryImage | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -132,6 +138,10 @@ export function ManageImagesTab() {
   useEffect(() => {
     fetchImages()
   }, [selectedProvince, selectedPort, selectedServiceType, selectedType, page])
+
+  useEffect(() => {
+    setSelectedIds([])
+  }, [page, selectedProvince, selectedPort, selectedServiceType, selectedType])
 
   useEffect(() => {
     // Drop selections that disappear after filtering/pagination changes
@@ -285,7 +295,7 @@ export function ManageImagesTab() {
   }
 
   const filteredImages = useMemo(() => {
-    const filtered = images.filter(image => {
+    return images.filter(image => {
       const matchesType = selectedType === 'all' ||
         image.imageType?.id?.toString() === selectedType ||
         image.imageTypeId?.toString() === selectedType
@@ -301,38 +311,13 @@ export function ManageImagesTab() {
 
       return matchesType && matchesProvince && matchesPort && matchesServiceType
     })
-
-    return [...filtered].sort((a, b) => {
-      const aTime = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0
-      const bTime = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0
-      return uploadedSort === 'asc' ? aTime - bTime : bTime - aTime
-    })
-  }, [images, selectedType, selectedProvince, selectedPort, selectedServiceType, uploadedSort])
+  }, [images, selectedType, selectedProvince, selectedPort, selectedServiceType])
 
   const availableImageTypes = useMemo(() => {
     if (selectedServiceType === 'all') return []
     const filtered = imageTypes.filter(type => type.serviceTypeId != null && type.serviceTypeId.toString() === selectedServiceType)
     return filtered.length > 0 ? filtered : imageTypes
   }, [imageTypes, selectedServiceType])
-
-  const allVisibleIds = useMemo(() => filteredImages.map((img) => img.id), [filteredImages])
-  const allSelected = allVisibleIds.length > 0 && selectedIds.length === allVisibleIds.length
-  const partiallySelected = selectedIds.length > 0 && !allSelected
-
-  const toggleRow = (id: number, checked: boolean | 'indeterminate') => {
-    setSelectedIds((prev) => {
-      if (checked === true) return Array.from(new Set([...prev, id]))
-      return prev.filter((item) => item !== id)
-    })
-  }
-
-  const toggleAll = (checked: boolean | 'indeterminate') => {
-    if (checked === true) {
-      setSelectedIds(allVisibleIds)
-    } else {
-      setSelectedIds([])
-    }
-  }
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return
@@ -456,9 +441,6 @@ export function ManageImagesTab() {
             </Button>
 
             <div className="flex items-center gap-2 ml-auto">
-              {selectedIds.length > 0 && (
-                <Badge variant="secondary">{selectedIds.length} selected</Badge>
-              )}
               <Button
                 variant="destructive"
                 size="sm"
@@ -471,108 +453,37 @@ export function ManageImagesTab() {
             </div>
           </div>
 
-          {/* Images Table */}
+          {/* Images Data Table (shadcn) */}
           {filteredImages.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No images found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={allSelected ? true : partiallySelected ? 'indeterminate' : false}
-                      onCheckedChange={toggleAll}
-                      aria-label="Select all"
-                    />
-                  </TableHead>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Province</TableHead>
-                  <TableHead>Port</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead className="whitespace-nowrap">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1"
-                      onClick={() => setUploadedSort((prev) => prev === 'asc' ? 'desc' : 'asc')}
-                    >
-                      Uploaded
-                      {uploadedSort === 'asc' && <ArrowUp className="h-4 w-4" />}
-                      {uploadedSort === 'desc' && <ArrowDown className="h-4 w-4" />}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredImages.map((image) => (
-                  <TableRow key={image.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.includes(image.id)}
-                        onCheckedChange={(checked) => toggleRow(image.id, checked)}
-                        aria-label={`Select image ${image.id}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewImage(image)}
-                        className="block w-24 h-16 overflow-hidden rounded-md border hover:shadow-md"
-                      >
-                        <ImageWithFallback
-                          src={formatImageUrl(image.imageUrl)}
-                          alt={image.title || image.port?.name || 'Gallery image'}
-                          width={200}
-                          height={120}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    </TableCell>
-                    <TableCell>{image.province?.name || '—'}</TableCell>
-                    <TableCell>{image.port?.name || '—'}</TableCell>
-                    <TableCell>{image.serviceType?.name || '—'}</TableCell>
-                    <TableCell>{image.imageType?.displayName || image.imageType?.name || '—'}</TableCell>
-                    <TableCell>{formatDateTime(image.uploadedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingImage(image)
-                            setEditForm({
-                              provinceId: (image.province?.id || image.provinceId)?.toString() || 'all',
-                              portId: (image.port?.id || image.portId)?.toString() || 'all',
-                              serviceTypeId: (image.serviceType?.id || image.serviceTypeId)?.toString() || 'all',
-                              imageTypeId: (image.imageType?.id || image.imageTypeId)?.toString() || 'all'
-                            })
-                            if (image.province?.id || image.provinceId) {
-                              fetchPortsByProvince(Number(image.province?.id || image.provinceId))
-                            }
-                            setEditDialogOpen(true)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setImageToDelete(image.id)
-                            setDeleteDialogOpen(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ImagesDataTable
+              data={filteredImages}
+              selectedIds={selectedIds}
+              setSelectedIds={setSelectedIds}
+              onPreview={(img) => setPreviewImage(img)}
+              onEdit={(img) => {
+                setEditingImage(img)
+                setEditForm({
+                  provinceId: (img.province?.id || img.provinceId)?.toString() || 'all',
+                  portId: (img.port?.id || img.portId)?.toString() || 'all',
+                  serviceTypeId: (img.serviceType?.id || img.serviceTypeId)?.toString() || 'all',
+                  imageTypeId: (img.imageType?.id || img.imageTypeId)?.toString() || 'all'
+                })
+                if (img.province?.id || img.provinceId) {
+                  fetchPortsByProvince(Number(img.province?.id || img.provinceId))
+                }
+                setEditDialogOpen(true)
+              }}
+              onDelete={(id) => {
+                setImageToDelete(id)
+                setDeleteDialogOpen(true)
+              }}
+              formatImageUrl={formatImageUrl}
+              formatDateTime={formatDateTime}
+            />
           )}
 
           {/* Pagination */}
@@ -771,5 +682,219 @@ export function ManageImagesTab() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+function ImagesDataTable({
+  data,
+  selectedIds,
+  setSelectedIds,
+  onPreview,
+  onEdit,
+  onDelete,
+  formatImageUrl,
+  formatDateTime,
+}: {
+  data: GalleryImage[]
+  selectedIds: number[]
+  setSelectedIds: React.Dispatch<React.SetStateAction<number[]>>
+  onPreview: (img: GalleryImage) => void
+  onEdit: (img: GalleryImage) => void
+  onDelete: (id: number) => void
+  formatImageUrl: (url?: string) => string
+  formatDateTime: (value?: string) => string
+}) {
+  const columns = React.useMemo<ColumnDef<GalleryImage>[]>(() => {
+    return [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected()
+                ? true
+                : table.getIsSomePageRowsSelected()
+                  ? 'indeterminate'
+                  : false
+            }
+            onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(v) => row.toggleSelected(!!v)}
+            aria-label={`Select image ${row.original.id}`}
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        size: 40,
+      },
+      {
+        accessorKey: 'imageUrl',
+        header: 'Image',
+        cell: ({ row }) => {
+          const image = row.original
+          return (
+            <button
+              type="button"
+              onClick={() => onPreview(image)}
+              className="block w-24 h-16 overflow-hidden rounded-md border hover:shadow-md"
+            >
+              <ImageWithFallback
+                src={formatImageUrl(image.imageUrl)}
+                alt={image.title || image.port?.name || 'Gallery image'}
+                width={200}
+                height={120}
+                className="w-full h-full object-cover"
+              />
+            </button>
+          )
+        },
+        enableSorting: false,
+      },
+      {
+        id: 'province',
+        header: 'Province',
+        cell: ({ row }) => row.original.province?.name || '—',
+      },
+      {
+        id: 'port',
+        header: 'Port',
+        cell: ({ row }) => row.original.port?.name || '—',
+      },
+      {
+        id: 'service',
+        header: 'Service',
+        cell: ({ row }) => row.original.serviceType?.name || '—',
+      },
+      {
+        id: 'commodity',
+        header: 'Commodity',
+        cell: ({ row }) =>
+          row.original.imageType?.displayName || row.original.imageType?.name || '—',
+      },
+      {
+        accessorKey: 'uploadedAt',
+        header: ({ column }) => {
+          const sorted = column.getIsSorted()
+          return (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 whitespace-nowrap"
+              onClick={() => column.toggleSorting(sorted === 'asc')}
+            >
+              Uploaded
+              {sorted === 'asc' && <ArrowUp className="h-4 w-4" />}
+              {sorted === 'desc' && <ArrowDown className="h-4 w-4" />}
+            </button>
+          )
+        },
+        cell: ({ row }) => formatDateTime(row.original.uploadedAt),
+        sortingFn: (a, b) => {
+          const at = a.original.uploadedAt ? new Date(a.original.uploadedAt).getTime() : 0
+          const bt = b.original.uploadedAt ? new Date(b.original.uploadedAt).getTime() : 0
+          return at - bt
+        },
+      },
+      {
+        id: 'actions',
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => {
+          const image = row.original
+          return (
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(image)}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(image.id)}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          )
+        },
+        enableSorting: false,
+      },
+    ]
+  }, [
+    formatDateTime,
+    formatImageUrl,
+    onDelete,
+    onEdit,
+    onPreview,
+  ])
+
+  const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: 'uploadedAt', desc: true },
+  ])
+
+  React.useEffect(() => {
+    const next: Record<string, boolean> = {}
+    for (const id of selectedIds) next[String(id)] = true
+    setRowSelection(next)
+  }, [selectedIds])
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, rowSelection },
+    onSortingChange: setSorting,
+    onRowSelectionChange: (updater) => {
+      const next =
+        typeof updater === 'function' ? updater(rowSelection) : updater
+      setRowSelection(next)
+
+      const ids = Object.entries(next)
+        .filter(([, v]) => v)
+        .map(([k]) => Number(k))
+        .filter((n) => Number.isFinite(n))
+      setSelectedIds(ids)
+    },
+    getRowId: (row) => String(row.id),
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableRowSelection: true,
+  })
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id}>
+              {hg.headers.map((header) => (
+                <TableHead key={header.id} className={header.id === 'actions' ? 'text-right' : ''}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

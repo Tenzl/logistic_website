@@ -1,8 +1,14 @@
 package com.example.seatrans.shared.security;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -15,55 +21,53 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * JWT Authentication Filter
- * Intercepts requests and validates JWT token
+ * Intercepts requests, validates JWT tokens, and sets Spring Security context
  */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
-    private final JwtTokenProvider jwtTokenProvider;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    
+    private final TokenProvider tokenProvider;
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        System.out.println("JwtAuthenticationFilter: Processing request to " + request.getRequestURI());
-        
         try {
-            // Get JWT token from Authorization header
-            String token = getTokenFromRequest(request);
+            String token = extractTokenFromRequest(request);
             
-            System.out.println("JwtAuthenticationFilter: Token extracted = " + (token != null ? "YES" : "NO"));
-            
-            if (token != null) {
-                System.out.println("JwtAuthenticationFilter: Validating token...");
-                if (jwtTokenProvider.validateToken(token)) {
-                    // Token valid - extract user info and store in request
-                    Long userId = jwtTokenProvider.getUserIdFromToken(token);
-                    String username = jwtTokenProvider.getUsernameFromToken(token);
+            if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (tokenProvider.validateToken(token)) {
+                    // Extract user information from token
+                    Long userId = tokenProvider.getUserIdFromToken(token);
+                    String username = tokenProvider.getUsernameFromToken(token);
+                    List<String> roles = tokenProvider.getRolesFromToken(token);
                     
-                    System.out.println("JwtAuthenticationFilter: Token VALID - userId=" + userId + ", username=" + username);
+                    log.debug("JWT token validated for user: {} (ID: {})", username, userId);
                     
-                    // Store in request attributes for later use
+                    // Store in request attributes for downstream use
                     request.setAttribute("userId", userId);
                     request.setAttribute("username", username);
+                    request.setAttribute("roles", roles);
                     
                     // Set Spring Security authentication context
-                    UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(username, null, null);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    List<GrantedAuthority> authorities = roles.stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
                     
-                    System.out.println("JwtAuthenticationFilter: Authentication set in SecurityContext");
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
-                    System.err.println("JwtAuthenticationFilter: Token INVALID");
-                    logger.warn("Invalid JWT token: " + token);
+                    log.warn("Invalid JWT token provided");
                 }
             }
         } catch (Exception e) {
-            System.err.println("JwtAuthenticationFilter: ERROR - " + e.getMessage());
-            e.printStackTrace();
-            // Log error if needed
-            logger.error("Error setting user authentication", e);
+            log.error("Failed to set user authentication: {}", e.getMessage());
         }
         
         filterChain.doFilter(request, response);
@@ -73,11 +77,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * Extract JWT token from Authorization header
      * Expected format: "Bearer <token>"
      */
-    private String getTokenFromRequest(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
+    private String extractTokenFromRequest(HttpServletRequest request) {
+        String header = request.getHeader(AUTHORIZATION_HEADER);
         
-        if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7);
+        if (header != null && header.startsWith(BEARER_PREFIX)) {
+            return header.substring(BEARER_PREFIX.length());
         }
         
         return null;

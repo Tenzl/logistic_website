@@ -20,7 +20,7 @@ import com.example.seatrans.features.auth.service.UserService;
 import com.example.seatrans.shared.dto.ApiResponse;
 import com.example.seatrans.shared.exception.DuplicateUserException;
 import com.example.seatrans.shared.mapper.EntityMapper;
-import com.example.seatrans.shared.security.JwtTokenProvider;
+import com.example.seatrans.shared.security.TokenProvider;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
     private final UserService userService;
     private final EntityMapper entityMapper;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenProvider tokenProvider;
 
     /**
      * POST /api/auth/register/customer
@@ -50,8 +50,8 @@ public class AuthController {
 
             UserDTO userDTO = entityMapper.toUserDTO(createdUser);
 
-            String token = jwtTokenProvider.generateToken(createdUser.getId(), createdUser.getUsername());
-            String refreshToken = jwtTokenProvider.generateRefreshToken(createdUser.getId(), createdUser.getUsername());
+            String token = tokenProvider.generateToken(createdUser);
+            String refreshToken = tokenProvider.generateRefreshToken(createdUser);
 
             AuthResponseDTO authResponse = AuthResponseDTO.builder()
                     .token(token)
@@ -89,8 +89,8 @@ public class AuthController {
 
         UserDTO userDTO = entityMapper.toUserDTO(user);
 
-        String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+        String token = tokenProvider.generateToken(user);
+        String refreshToken = tokenProvider.generateRefreshToken(user);
 
         AuthResponseDTO authResponse = AuthResponseDTO.builder()
                 .token(token)
@@ -112,17 +112,17 @@ public class AuthController {
 
         String refreshToken = request.getRefreshToken();
 
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        if (!tokenProvider.validateToken(refreshToken)) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Invalid or expired refresh token"));
         }
 
-        Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+        Long userId = tokenProvider.getUserIdFromToken(refreshToken);
         User user = userService.getUserById(userId);
 
-        String newToken = jwtTokenProvider.generateToken(user.getId(), user.getUsername());
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+        String newToken = tokenProvider.generateToken(user);
+        String newRefreshToken = tokenProvider.generateRefreshToken(user);
 
         UserDTO userDTO = entityMapper.toUserDTO(user);
 
@@ -158,12 +158,12 @@ public class AuthController {
         }
 
         String token = authHeader.substring(7);
-        if (!jwtTokenProvider.validateToken(token)) {
+        if (!tokenProvider.validateToken(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Invalid or expired token"));
         }
 
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+        Long userId = tokenProvider.getUserIdFromToken(token);
         User user = userService.getUserById(userId);
         UserDTO userDTO = entityMapper.toUserDTO(user);
 

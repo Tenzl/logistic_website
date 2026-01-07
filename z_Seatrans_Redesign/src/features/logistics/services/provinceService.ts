@@ -1,71 +1,30 @@
-interface Province {
+import { authService } from '@/features/auth/services/authService'
+
+export interface Province {
   id: number
   name: string
-  isActive: boolean
-  createdAt?: string
-  updatedAt?: string
 }
 
-interface ApiResponse<T> {
-  success: boolean
-  message: string
-  data: T
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
-const API_BASE_URL = 'http://localhost:8080/api'
-const TOKEN_KEY = 'auth_token'
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem(TOKEN_KEY)
-  return {
+async function request<T>(url: string): Promise<T> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
   }
+
+  const authHeader = authService.getAuthHeader()
+  Object.assign(headers, authHeader)
+
+  const res = await fetch(url, { headers })
+  if (!res.ok) {
+    throw new Error(`Request failed with status ${res.status}`)
+  }
+  const data = await res.json().catch(() => null)
+  return (data?.data as T) ?? (data as T)
 }
 
 export const provinceService = {
-  getAllProvinces: async (): Promise<Province[]> => {
-    const response = await fetch(`${API_BASE_URL}/provinces`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch provinces')
-    }
-    
-    const result: ApiResponse<Province[]> = await response.json()
-    return result.data
-  },
-
-  getActiveProvinces: async (): Promise<Province[]> => {
-    const response = await fetch(`${API_BASE_URL}/provinces/active`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch active provinces')
-    }
-    
-    const result: ApiResponse<Province[]> = await response.json()
-    return result.data
-  },
-
-  getProvincesWithPorts: async (activeOnly: boolean = true): Promise<Province[]> => {
-    const response = await fetch(`${API_BASE_URL}/provinces/with-ports?activeOnly=${activeOnly}`, {
-      headers: getAuthHeaders(),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch provinces with ports')
-    }
-
-    const result: ApiResponse<Province[]> = await response.json()
-    return result.data
+  async getAllProvinces(): Promise<Province[]> {
+    return request<Province[]>(`${API_BASE_URL}/provinces`)
   },
 }
-
-export type { Province }

@@ -9,9 +9,10 @@ import {
   Anchor // Import thêm icon Anchor cho đẹp
 } from 'lucide-react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
-import vnGeo from '@/assets/vn.json'
+import vnGeo from '@/assets/newvn.json'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { calculateCentroid } from '@/utils/geoUtils'
+import { findProvinceFeature } from '@/utils/provinceMapping'
 
 export function Coverage() {
   const [provinces, setProvinces] = useState<any[]>([])
@@ -28,14 +29,22 @@ export function Coverage() {
         
         if (data.success) {
           const mappedProvinces = data.data.map((p: any) => {
-            // Find feature in vnGeo by matching province id
-            const feature = (vnGeo as any).features.find((f: any) => f.id === p.id)
+            // Find feature in vnGeo by matching province name
+            // newvn.geojson structure: features[].properties.ten_tinh
+            const feature = findProvinceFeature(vnGeo, p.name)
+            
             let coordinates: [number, number] = [0, 0]
             
             if (feature) {
                coordinates = calculateCentroid(feature.geometry)
             } else {
                 console.warn(`No geometry found for province: ${p.name} (ID: ${p.id})`)
+                console.warn('Available provinces in geojson:', 
+                  (vnGeo as any).features
+                    .map((f: any) => f.properties?.ten_tinh)
+                    .filter(Boolean)
+                    .join(', ')
+                )
             }
             
             return {
@@ -121,7 +130,7 @@ export function Coverage() {
                   <div ref={ref} className="relative bg-card rounded-lg overflow-hidden border">
                     <ComposableMap
                       projection="geoMercator"
-                      projectionConfig={{ center: [106.5, 16], scale: 3000 }}
+                      projectionConfig={{ center: [107, 16], scale: 3000 }}
                       width={800}
                       height={850}
                       className="w-full h-auto"

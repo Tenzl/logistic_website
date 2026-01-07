@@ -1,17 +1,17 @@
 package com.example.seatrans.features.auth.repository;
 
-import com.example.seatrans.features.auth.model.Employee;
-import com.example.seatrans.features.auth.model.enums.Department;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.example.seatrans.features.auth.model.Employee;
 
 /**
  * Repository interface cho Employee entity
@@ -48,45 +48,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
      */
     boolean existsByEmployeeCode(String employeeCode);
     
-    // ==================== Department Queries ====================
-    
-    /**
-     * Láº¥y táº¥t cáº£ employees theo department
-     */
-    List<Employee> findByDepartment(Department department);
-    
-    /**
-     * Láº¥y active employees theo department
-     */
-    List<Employee> findByDepartmentAndIsActiveTrue(Department department);
-    
-    /**
-     * Äáº¿m employees theo department
-     */
-    Long countByDepartment(Department department);
-    
-    /**
-     * Äáº¿m active employees theo department
-     */
-    Long countByDepartmentAndIsActiveTrue(Department department);
-    
-    /**
-     * Láº¥y department statistics
-     */
-    @Query("SELECT e.department, COUNT(e), AVG(e.salary) FROM Employee e WHERE e.isActive = true GROUP BY e.department")
-    List<Object[]> getDepartmentStatistics();
-    
     // ==================== Position Queries ====================
     
     /**
      * TÃ¬m employees theo position
      */
     List<Employee> findByPositionContainingIgnoreCase(String position);
-    
-    /**
-     * TÃ¬m employees theo department vÃ  position
-     */
-    List<Employee> findByDepartmentAndPositionContainingIgnoreCase(Department department, String position);
     
     // ==================== Manager Queries ====================
     
@@ -141,22 +108,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findTop10ByOrderBySalaryDesc();
     
     /**
-     * TÃ­nh tá»•ng lÆ°Æ¡ng theo department
-     */
-    @Query("SELECT e.department, SUM(e.salary) FROM Employee e WHERE e.isActive = true GROUP BY e.department")
-    List<Object[]> getTotalSalaryByDepartment();
-    
-    /**
      * TÃ­nh trung bÃ¬nh lÆ°Æ¡ng
      */
     @Query("SELECT AVG(e.salary) FROM Employee e WHERE e.isActive = true")
     Double getAverageSalary();
-    
-    /**
-     * TÃ­nh trung bÃ¬nh lÆ°Æ¡ng theo department
-     */
-    @Query("SELECT AVG(e.salary) FROM Employee e WHERE e.department = :department AND e.isActive = true")
-    Double getAverageSalaryByDepartment(@Param("department") Department department);
     
     // ==================== Commission Queries ====================
     
@@ -272,12 +227,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findManagerWithSubordinates(@Param("managerId") Long managerId);
     
     /**
-     * TÃ¬m employees trong cÃ¹ng department vá»›i employee khÃ¡c
-     */
-    @Query("SELECT e FROM Employee e WHERE e.department = (SELECT e2.department FROM Employee e2 WHERE e2.id = :employeeId) AND e.id != :employeeId")
-    List<Employee> findColleagues(@Param("employeeId") Long employeeId);
-    
-    /**
      * Láº¥y top performers (salary + commission cao)
      */
     @Query("SELECT e FROM Employee e WHERE e.isActive = true ORDER BY (e.salary + (e.salary * e.commissionRate / 100)) DESC")
@@ -297,11 +246,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     @Query("SELECT SUM(e.salary) FROM Employee e WHERE e.isActive = true")
     BigDecimal getTotalPayroll();
     
-    /**
-     * Láº¥y headcount theo department
-     */
-    @Query("SELECT e.department, COUNT(e) FROM Employee e WHERE e.isActive = true GROUP BY e.department")
-    List<Object[]> getHeadcountByDepartment();
 }
 
 

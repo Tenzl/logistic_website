@@ -2,25 +2,16 @@ import { ReactNode } from 'react'
 import { LucideIcon } from 'lucide-react'
 import { Hero } from '@/features/landing/components/Hero'
 
-import { BreadcrumbSection } from './sections/sections/BreadcrumbSection'
-import { DescriptionSection } from './sections/sections/DescriptionSection'
-import { ContactSection, ContactTeam, StatItem } from './sections/sections/ContactSection'
-import { ServicesSection, ServiceItem } from './sections/sections/ServicesSection'
-import { FormSection, FormField, InquiryPayload } from './sections/sections/FormSection'
-import { GallerySection } from './sections/sections/GallerySection'
+import { BreadcrumbSection } from './sections/BreadcrumbSection'
+import { DescriptionSection } from './sections/DescriptionSection'
+import { ContactSection, ContactTeam, StatItem } from './sections/ContactSection'
+import { ServicesSection, ServiceItem } from './sections/ServicesSection'
+import { FormSection, FormField, InquiryPayload } from './sections/FormSection'
+import { GallerySection } from './sections/GallerySection'
 
 export interface ContactPerson {
   name: string
   mobile: string
-}
-
-export interface CaseStudy {
-  title: string
-  client: string
-  challenge: string
-  solution: string
-  result: string
-  image: string
 }
 
 export interface ServiceTemplateProps {
@@ -54,8 +45,11 @@ export interface ServiceTemplateProps {
     sectionDescription: string
     badgeText?: string
     fields: FormField[]
+    sections?: { title?: string; description?: string; fields: FormField[] }[]
     submitButtonText: string
     onSubmit: (data: InquiryPayload) => void
+    submitPath?: string
+    serviceTypeSlug?: string
   }
 
   gallery?: {
@@ -63,13 +57,6 @@ export interface ServiceTemplateProps {
     sectionDescription: string
     enabled: boolean
     imageTypes?: { label: string; value: number }[]
-  }
-
-  caseStudies?: {
-    sectionTitle: string
-    sectionDescription: string
-    badgeText?: string
-    items: CaseStudy[]
   }
 
   customSections?: ReactNode[]
@@ -91,7 +78,10 @@ export function ServiceTemplate({
     ? {
         ...form,
         fields: form.fields,
+        sections: form.sections,
         serviceTypeId,
+        submitPath: form.submitPath,
+        serviceTypeSlug: form.serviceTypeSlug,
         loadingFields: false,
         fieldsError: null,
       }
@@ -101,7 +91,7 @@ export function ServiceTemplate({
     <div>
       <Hero title={hero.title} subtitle={serviceName} image={hero.image} />
 
-      <div className="py-16 md:py-24">
+      <div className="container pb-10">
         <BreadcrumbSection
           serviceName={serviceName}
           onNavigateHome={() => onNavigateHome?.()}
