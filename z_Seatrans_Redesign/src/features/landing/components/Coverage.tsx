@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Card } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
-import { 
-  Clock, 
-  Shield, 
-  Headphones, 
+import {
+  Clock,
+  Shield,
+  Headphones,
   X,
   Anchor // Import thêm icon Anchor cho đẹp
 } from 'lucide-react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import vnGeo from '@/assets/newvn.json'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { calculateCentroid } from '@/utils/geoUtils'
-import { findProvinceFeature } from '@/utils/provinceMapping'
+import { getProvinceCoordinates } from '@/utils/provinceCoordinates'
 
 export function Coverage() {
   const [provinces, setProvinces] = useState<any[]>([])
@@ -26,27 +25,16 @@ export function Coverage() {
         // Assuming API is proxied or absolute URL needed. Using relative for now.
         const response = await fetch('/api/provinces/active')
         const data = await response.json()
-        
+
         if (data.success) {
           const mappedProvinces = data.data.map((p: any) => {
-            // Find feature in vnGeo by matching province name
-            // newvn.geojson structure: features[].properties.ten_tinh
-            const feature = findProvinceFeature(vnGeo, p.name)
-            
-            let coordinates: [number, number] = [0, 0]
-            
-            if (feature) {
-               coordinates = calculateCentroid(feature.geometry)
-            } else {
-                console.warn(`No geometry found for province: ${p.name} (ID: ${p.id})`)
-                console.warn('Available provinces in geojson:', 
-                  (vnGeo as any).features
-                    .map((f: any) => f.properties?.ten_tinh)
-                    .filter(Boolean)
-                    .join(', ')
-                )
+            // Get pre-calculated coordinates
+            const coordinates = getProvinceCoordinates(p.name)
+
+            if (coordinates[0] === 0 && coordinates[1] === 0) {
+              console.warn(`No coordinates found for province: ${p.name} (ID: ${p.id})`)
             }
-            
+
             return {
               id: p.id,
               name: p.name,
@@ -54,14 +42,14 @@ export function Coverage() {
               ports: p.ports || []
             }
           }).filter((p: any) => p.coordinates[0] !== 0) // Filter out unmapped
-          
+
           setProvinces(mappedProvinces)
         }
       } catch (error) {
         console.error("Failed to fetch provinces", error)
       }
     }
-    
+
     fetchProvinces()
   }, [])
 
@@ -74,7 +62,7 @@ export function Coverage() {
             <div className={`space-y-8 ${isInView ? 'fade-rise' : 'opacity-0'}`}>
               <div className="space-y-4">
                 <h2 className="text-4xl font-bold">
-                  Full Coverage Across 
+                  Full Coverage Across
                   <br />
                   <span className="text-primary">Trans-Asia Routes</span>
                 </h2>
@@ -125,7 +113,7 @@ export function Coverage() {
                     <h3 className="text-xl font-semibold">Vietnam Network</h3>
                     <Badge variant="secondary">Live Coverage</Badge>
                   </div>
-                  
+
                   {/* Map Container */}
                   <div ref={ref} className="relative bg-card rounded-lg overflow-hidden border">
                     <ComposableMap
@@ -157,7 +145,7 @@ export function Coverage() {
                       {/* Province Markers */}
                       {provinces.map((province, index) => (
                         <Marker key={province.id} coordinates={province.coordinates}>
-                          <g 
+                          <g
                             onMouseEnter={() => setHoveredProvince(province.id)}
                             onMouseLeave={() => setHoveredProvince(null)}
                             onClick={() => setSelectedProvince(province.id)}
@@ -173,7 +161,7 @@ export function Coverage() {
                               className="animate-ping"
                               style={{ animationDuration: '2s' }}
                             />
-                            
+
                             {/* Main Marker Circle */}
                             <circle
                               r={8}
@@ -185,10 +173,10 @@ export function Coverage() {
 
                             {/* HOVER MESSAGE BUBBLE */}
                             {hoveredProvince === province.id && (
-                              <foreignObject 
+                              <foreignObject
                                 x={-215}
                                 y={-60}
-                                width={200} 
+                                width={200}
                                 height={120}
                                 style={{ overflow: 'visible', zIndex: 50 }}
                               >
@@ -199,7 +187,7 @@ export function Coverage() {
                                     <div className="text-xs font-bold text-foreground uppercase tracking-wide border-b pb-1 mb-1.5">
                                       {province.name}
                                     </div>
-                                    
+
                                     {/* List of Ports */}
                                     <div className="space-y-1.5">
                                       {province.ports.map((port: string, idx: number) => (
