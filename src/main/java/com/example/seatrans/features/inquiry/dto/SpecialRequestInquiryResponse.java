@@ -38,10 +38,6 @@ public class SpecialRequestInquiryResponse {
     public static SpecialRequestInquiryResponse from(SpecialRequestInquiry inquiry) {
         return SpecialRequestInquiryResponse.builder()
             .id(inquiry.getId())
-            .fullName(inquiry.getFullName())
-            .contactInfo(inquiry.getContactInfo())
-            .phone(inquiry.getPhone())
-            .company(inquiry.getCompany())
             .userId(inquiry.getUserId())
             .status(inquiry.getStatus())
             .submittedAt(inquiry.getSubmittedAt())

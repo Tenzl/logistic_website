@@ -107,11 +107,41 @@ module.exports = {
   				to: {
   					height: '0'
   				}
+  			},
+  			'marquee-left': {
+  				'0%': { transform: 'translateX(0%)' },
+  				'100%': { transform: 'translateX(calc(-100% - var(--marquee-gap)))' }
+  			},
+  			'marquee-right': {
+  				'0%': { transform: 'translateX(calc(-100% - var(--marquee-gap)))' },
+  				'100%': { transform: 'translateX(0%)' }
+  			},
+  			'marquee-up': {
+  				'0%': { transform: 'translateY(0%)' },
+  				'100%': { transform: 'translateY(calc(-100% - var(--marquee-gap)))' }
+  			},
+  			'marquee-down': {
+  				'0%': { transform: 'translateY(calc(-100% - var(--marquee-gap)))' },
+  				'100%': { transform: 'translateY(0%)' }
+  			},
+  			'marquee-left-rtl': {
+  				'0%': { transform: 'translateX(0%)' },
+  				'100%': { transform: 'translateX(calc(100% + var(--marquee-gap)))' }
+  			},
+  			'marquee-right-rtl': {
+  				'0%': { transform: 'translateX(calc(100% + var(--marquee-gap)))' },
+  				'100%': { transform: 'translateX(0%)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'marquee-left': 'marquee-left var(--marquee-duration) linear var(--marquee-loop-count)',
+  			'marquee-right': 'marquee-right var(--marquee-duration) linear var(--marquee-loop-count)',
+  			'marquee-up': 'marquee-up var(--marquee-duration) linear var(--marquee-loop-count)',
+  			'marquee-down': 'marquee-down var(--marquee-duration) linear var(--marquee-loop-count)',
+  			'marquee-left-rtl': 'marquee-left-rtl var(--marquee-duration) linear var(--marquee-loop-count)',
+  			'marquee-right-rtl': 'marquee-right-rtl var(--marquee-duration) linear var(--marquee-loop-count)'
   		}
   	}
   },

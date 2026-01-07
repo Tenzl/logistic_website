@@ -92,6 +92,7 @@ public class SecurityConfig {
                 // Allow CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/oauth2/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Public content endpoints
                 .requestMatchers("/api/provinces/**").permitAll()
@@ -104,8 +105,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/service-types/**").permitAll()
                 // User inquiry history (authenticated users only)
                 .requestMatchers(HttpMethod.GET, "/api/inquiries/user/**").authenticated()
-                // Public inquiry submission (guest + authenticated users)
-                .requestMatchers(HttpMethod.POST, "/api/inquiries").permitAll()
+                // Inquiry submission requires authentication
+                .requestMatchers(HttpMethod.POST, "/api/inquiries").authenticated()
+                // Public inquiry listing
                 .requestMatchers(HttpMethod.GET, "/api/inquiries").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/inquiries/**").permitAll()
                 // Admin-only endpoints

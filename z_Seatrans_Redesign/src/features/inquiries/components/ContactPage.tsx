@@ -282,6 +282,13 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       files.forEach((file) => {
         submitData.append('files', file)
       })
+
+      // Debug: Log data before sending
+      console.log('--- Submitting Special Request ---')
+      console.log('Inquiry Data:', inquiryData)
+      console.log('Files:', files)
+      console.log('FormData Inquiry:', submitData.get('inquiry'))
+      console.log('FormData Files Count:', submitData.getAll('files').length)
       
       // Submit to backend
       const response = await fetch(`${API_URL}/api/inquiries`, {
@@ -666,6 +673,26 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       <p className="text-xs text-muted-foreground mb-1">{dept.role}</p>
                       <p className="text-sm font-medium">{dept.manager}</p>
                     </div>
+                    
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Mobile</span>
+                      </div>
+                      <p className="text-sm font-medium select-all hover:text-primary transition-colors cursor-text">
+                        {dept.phone}
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Email</span>
+                      </div>
+                      <p className="text-sm font-medium select-all break-all hover:text-primary transition-colors cursor-text">
+                        {dept.email}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex gap-2">
@@ -848,27 +875,13 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                       onValueChange={setFiles}
                       onUpload={onUpload}
                       onFileReject={onFileReject}
+                      accept="application/pdf"
                       maxFiles={10}
                       maxSize={5 * 1024 * 1024}
                       className="relative mt-2"
                       multiple
                       disabled={isUploading}
                     >
-                      <FileUploadDropzone
-                        tabIndex={-1}
-                        onClick={(event) => event.preventDefault()}
-                        className="absolute top-0 left-0 z-0 flex size-full items-center justify-center rounded-lg border-2 border-dashed bg-background/50 p-0 opacity-0 backdrop-blur transition-opacity duration-200 ease-out data-[dragging]:z-10 data-[dragging]:opacity-100"
-                      >
-                        <div className="flex flex-col items-center gap-1 text-center">
-                          <div className="flex items-center justify-center rounded-full border p-2.5">
-                            <Upload className="size-6 text-muted-foreground" />
-                          </div>
-                          <p className="font-medium text-sm">Drag & drop files here</p>
-                          <p className="text-muted-foreground text-xs">
-                            Upload max 10 files each up to 5MB
-                          </p>
-                        </div>
-                      </FileUploadDropzone>
                       <div className="relative flex w-full flex-col gap-2.5 rounded-lg border border-input px-3 py-2 outline-none focus-within:ring-1 focus-within:ring-ring/50">
                         <FileUploadList
                           orientation="horizontal"
@@ -902,13 +915,17 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                           disabled={isUploading}
                           className="field-sizing-content min-h-[120px] w-full resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
                         />
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-between gap-1.5 px-1 pb-1">
+                          <span className="text-xs text-muted-foreground">
+                            * Supports PDF only (max 5MB)
+                          </span>
                           <FileUploadTrigger asChild>
                             <Button
                               type="button"
                               size="icon"
                               variant="ghost"
                               className="size-7 rounded-sm"
+                              title="Attach PDF file"
                             >
                               <Paperclip className="size-3.5" />
                               <span className="sr-only">Attach file</span>

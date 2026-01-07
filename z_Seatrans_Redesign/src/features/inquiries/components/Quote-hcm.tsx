@@ -316,6 +316,7 @@ const buildAARows = (
         item: "Boat-hire for entry quarantine",
         details: '',
         amount: boatHireAmount,
+        mergeItemDetails: true,
       })
     }
 
@@ -382,7 +383,7 @@ const buildBBRows = (
     return `
       <tr>
         <td class="col-no">${index + 1}</td>
-        <td class="col-details"><span class="bold">${detailText}</span></td>
+        <td class="col-details" colspan="4"><span class="bold">${detailText}</span></td>
         <td class="col-amount">${formatAmount(row.amount)}</td>
       </tr>`
   }

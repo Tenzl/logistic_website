@@ -34,6 +34,7 @@ import com.example.seatrans.features.inquiry.repository.FreightForwardingInquiry
 import com.example.seatrans.features.inquiry.repository.ShippingAgencyInquiryRepository;
 import com.example.seatrans.features.inquiry.repository.SpecialRequestInquiryRepository;
 import com.example.seatrans.features.inquiry.repository.TotalLogisticInquiryRepository;
+import com.example.seatrans.features.inquiry.service.InquiryResponseEnricher;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -45,17 +46,20 @@ public class AdminInquiryController {
     private final FreightForwardingInquiryRepository freightForwardingInquiryRepository;
     private final SpecialRequestInquiryRepository specialRequestInquiryRepository;
     private final TotalLogisticInquiryRepository totalLogisticInquiryRepository;
+    private final InquiryResponseEnricher enricher;
 
     public AdminInquiryController(ShippingAgencyInquiryRepository shippingAgencyInquiryRepository,
                                   CharteringBrokingInquiryRepository charteringBrokingInquiryRepository,
                                   FreightForwardingInquiryRepository freightForwardingInquiryRepository,
                                   SpecialRequestInquiryRepository specialRequestInquiryRepository,
-                                  TotalLogisticInquiryRepository totalLogisticInquiryRepository) {
+                                  TotalLogisticInquiryRepository totalLogisticInquiryRepository,
+                                  InquiryResponseEnricher enricher) {
         this.shippingAgencyInquiryRepository = shippingAgencyInquiryRepository;
         this.charteringBrokingInquiryRepository = charteringBrokingInquiryRepository;
         this.freightForwardingInquiryRepository = freightForwardingInquiryRepository;
         this.specialRequestInquiryRepository = specialRequestInquiryRepository;
         this.totalLogisticInquiryRepository = totalLogisticInquiryRepository;
+        this.enricher = enricher;
     }
 
     // Quick filters per service for admin UI compatibility
@@ -67,7 +71,7 @@ public class AdminInquiryController {
         Page<ShippingAgencyInquiry> result = (status != null)
             ? shippingAgencyInquiryRepository.findByStatus(status, pageable)
             : shippingAgencyInquiryRepository.findAll(pageable);
-        return ResponseEntity.ok(result.map(ShippingAgencyInquiryResponse::from));
+        return ResponseEntity.ok(result.map(ShippingAgencyInquiryResponse::from).map(enricher::enrichShippingAgency));
     }
 
     @GetMapping("/chartering/inquiries")
@@ -78,7 +82,7 @@ public class AdminInquiryController {
         Page<CharteringBrokingInquiry> result = (status != null)
             ? charteringBrokingInquiryRepository.findByStatus(status, pageable)
             : charteringBrokingInquiryRepository.findAll(pageable);
-        return ResponseEntity.ok(result.map(CharteringBrokingInquiryResponse::from));
+        return ResponseEntity.ok(result.map(CharteringBrokingInquiryResponse::from).map(enricher::enrichChartering));
     }
 
     @GetMapping("/freight-forwarding/inquiries")
@@ -89,7 +93,7 @@ public class AdminInquiryController {
         Page<FreightForwardingInquiry> result = (status != null)
             ? freightForwardingInquiryRepository.findByStatus(status, pageable)
             : freightForwardingInquiryRepository.findAll(pageable);
-        return ResponseEntity.ok(result.map(FreightForwardingInquiryResponse::from));
+        return ResponseEntity.ok(result.map(FreightForwardingInquiryResponse::from).map(enricher::enrichFreightForwarding));
     }
 
     @GetMapping("/logistics/inquiries")
@@ -100,7 +104,7 @@ public class AdminInquiryController {
         Page<TotalLogisticInquiry> result = (status != null)
             ? totalLogisticInquiryRepository.findByStatus(status, pageable)
             : totalLogisticInquiryRepository.findAll(pageable);
-        return ResponseEntity.ok(result.map(TotalLogisticInquiryResponse::from));
+        return ResponseEntity.ok(result.map(TotalLogisticInquiryResponse::from).map(enricher::enrichLogistics));
     }
 
     @GetMapping("/special-request/inquiries")
@@ -111,7 +115,7 @@ public class AdminInquiryController {
         Page<SpecialRequestInquiry> result = (status != null)
             ? specialRequestInquiryRepository.findByStatus(status, pageable)
             : specialRequestInquiryRepository.findAll(pageable);
-        return ResponseEntity.ok(result.map(SpecialRequestInquiryResponse::from));
+        return ResponseEntity.ok(result.map(SpecialRequestInquiryResponse::from).map(enricher::enrichSpecialRequest));
     }
 
     @GetMapping("/inquiries")
@@ -210,31 +214,31 @@ public class AdminInquiryController {
                 Page<ShippingAgencyInquiry> result = status != null
                     ? shippingAgencyInquiryRepository.findByStatus(status, pageable)
                     : shippingAgencyInquiryRepository.findAll(pageable);
-                yield ResponseEntity.ok(result.map(ShippingAgencyInquiryResponse::from));
+                yield ResponseEntity.ok(result.map(ShippingAgencyInquiryResponse::from).map(enricher::enrichShippingAgency));
             }
             case "chartering-ship-broking" -> {
                 Page<CharteringBrokingInquiry> result = status != null
                     ? charteringBrokingInquiryRepository.findByStatus(status, pageable)
                     : charteringBrokingInquiryRepository.findAll(pageable);
-                yield ResponseEntity.ok(result.map(CharteringBrokingInquiryResponse::from));
+                yield ResponseEntity.ok(result.map(CharteringBrokingInquiryResponse::from).map(enricher::enrichChartering));
             }
             case "freight-forwarding" -> {
                 Page<FreightForwardingInquiry> result = status != null
                     ? freightForwardingInquiryRepository.findByStatus(status, pageable)
                     : freightForwardingInquiryRepository.findAll(pageable);
-                yield ResponseEntity.ok(result.map(FreightForwardingInquiryResponse::from));
+                yield ResponseEntity.ok(result.map(FreightForwardingInquiryResponse::from).map(enricher::enrichFreightForwarding));
             }
             case "total-logistics" -> {
                 Page<TotalLogisticInquiry> result = status != null
                     ? totalLogisticInquiryRepository.findByStatus(status, pageable)
                     : totalLogisticInquiryRepository.findAll(pageable);
-                yield ResponseEntity.ok(result.map(TotalLogisticInquiryResponse::from));
+                yield ResponseEntity.ok(result.map(TotalLogisticInquiryResponse::from).map(enricher::enrichLogistics));
             }
             case "special-request" -> {
                 Page<SpecialRequestInquiry> result = status != null
                     ? specialRequestInquiryRepository.findByStatus(status, pageable)
                     : specialRequestInquiryRepository.findAll(pageable);
-                yield ResponseEntity.ok(result.map(SpecialRequestInquiryResponse::from));
+                yield ResponseEntity.ok(result.map(SpecialRequestInquiryResponse::from).map(enricher::enrichSpecialRequest));
             }
             default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
         };
@@ -245,22 +249,27 @@ public class AdminInquiryController {
         return switch (normalized) {
             case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
                 .map(ShippingAgencyInquiryResponse::from)
+                .map(enricher::enrichShippingAgency)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
             case "chartering-ship-broking" -> charteringBrokingInquiryRepository.findById(id)
                 .map(CharteringBrokingInquiryResponse::from)
+                .map(enricher::enrichChartering)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
             case "freight-forwarding" -> freightForwardingInquiryRepository.findById(id)
                 .map(FreightForwardingInquiryResponse::from)
+                .map(enricher::enrichFreightForwarding)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
             case "total-logistics" -> totalLogisticInquiryRepository.findById(id)
                 .map(TotalLogisticInquiryResponse::from)
+                .map(enricher::enrichLogistics)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
             case "special-request" -> specialRequestInquiryRepository.findById(id)
                 .map(SpecialRequestInquiryResponse::from)
+                .map(enricher::enrichSpecialRequest)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
             default -> ResponseEntity.notFound().build();

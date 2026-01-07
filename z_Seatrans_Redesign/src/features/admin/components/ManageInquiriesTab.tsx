@@ -6,7 +6,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Badge } from '@/shared/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { Loader2, Mail, FileText, CheckCircle2, Download, Trash2 } from 'lucide-react'
+import { Loader2, Mail, FileText, CheckCircle2, Download, Trash2, RefreshCw } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { useToast } from '@/shared/hooks/use-toast'
 import axios from 'axios'
@@ -46,8 +46,33 @@ export function ManageInquiriesTab() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [templateHtml, setTemplateHtml] = useState<string | null>(null)
 
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const token = authService.getToken()
+      const response = await axios.get<PageResponse<Inquiry>>(`${API_BASE}/api/admin/inquiries`, {
+        params: { page: 0, size: 10 },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+      const data = response.data
+      setInquiries(data.content)
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error('Failed to fetch inquiries:', err.response?.status, err.response?.data || err.message)
+        const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        toast({ title: 'Error', description: detail || 'Failed to load inquiries', variant: 'destructive' })
+      } else {
+        console.error('Failed to fetch inquiries:', err)
+        toast({ title: 'Error', description: 'Failed to load inquiries', variant: 'destructive' })
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   useEffect(() => {
-    fetchInquiries()
+    // Initial fetch
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -220,6 +245,9 @@ export function ManageInquiriesTab() {
             <CardTitle className="text-xl">Customer Inquiries</CardTitle>
             <CardDescription>Manage incoming inquiries and documents</CardDescription>
           </div>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (

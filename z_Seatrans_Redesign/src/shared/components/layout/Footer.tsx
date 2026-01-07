@@ -24,7 +24,7 @@ export function Footer() {
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <ImageWithFallback
-                  src="/image/footer_Logo.png"
+                  src="/landing-image/footer_Logo.png"
                   alt="SEATRANS Logo"
                   width={240}
                   height={120}

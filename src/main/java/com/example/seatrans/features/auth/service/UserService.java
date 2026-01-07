@@ -511,6 +511,47 @@ public class UserService {
         return userOpt.orElseThrow(() -> new UserNotFoundException("username or email", usernameOrEmail));
     }
     
+    /**
+     * Find or create user from OAuth2 provider (Google)
+     * Returns existing user if email matches, or creates new OAuth user
+     */
+    public User findOrCreateOAuthUser(String email, String fullName, String provider, String providerId) {
+        // Try to find by OAuth provider ID first (most accurate)
+        Optional<User> existingByProvider = userRepository.findByOauthProviderAndOauthProviderId(provider, providerId);
+        if (existingByProvider.isPresent()) {
+            return existingByProvider.get();
+        }
+        
+        // Try to find by email (for linking existing accounts)
+        Optional<User> existingByEmail = userRepository.findByEmail(email);
+        if (existingByEmail.isPresent()) {
+            User user = existingByEmail.get();
+            // Link OAuth provider to existing account
+            user.setOauthProvider(provider);
+            user.setOauthProviderId(providerId);
+            user.setEmailVerified(true); // OAuth emails are verified
+            return userRepository.save(user);
+        }
+        
+        // Create new user from OAuth
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setFullName(fullName);
+        newUser.setUsername(email); // Use email as username for OAuth users
+        newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Random secure password
+        newUser.setIsActive(true);
+        newUser.setEmailVerified(true); // OAuth emails are verified by provider
+        newUser.setOauthProvider(provider); // "google"
+        newUser.setOauthProviderId(providerId); // Google user ID (sub)
+        
+        // Assign ROLE_CUSTOMER
+        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseThrow(() -> new RoleNotFoundException("name", "ROLE_CUSTOMER"));
+        newUser.setRoles(new HashSet<>(Collections.singletonList(customerRole)));
+        
+        return userRepository.save(newUser);
+    }
+    
     // ==================== Statistics ====================
     
     /**

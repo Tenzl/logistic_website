@@ -68,11 +68,6 @@ export function UserNav({ user, onLogout }: UserNavProps) {
                 {user.fullName || user.username}
               </p>
               <p className="text-muted-foreground text-xs">@{user.username}</p>
-              {user.roles && user.roles.length > 0 && (
-                <p className="text-muted-foreground text-xs mt-1">
-                  {user.roles.join(', ')}
-                </p>
-              )}
             </div>
 
             {isExternal && (

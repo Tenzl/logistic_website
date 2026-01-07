@@ -15,17 +15,6 @@ public class PublicInquiryRequest {
     private Long serviceTypeId;
     private String serviceTypeSlug;
 
-    @NotBlank
-    private String fullName;
-
-    private String company;
-
-    @NotBlank
-    @Email
-    private String email;
-
-    private String phone;
-
     private String notes;
 
     private Map<String, Object> details;

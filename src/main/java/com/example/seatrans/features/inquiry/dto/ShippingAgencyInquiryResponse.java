@@ -55,10 +55,6 @@ public class ShippingAgencyInquiryResponse {
     public static ShippingAgencyInquiryResponse from(ShippingAgencyInquiry inquiry) {
         return ShippingAgencyInquiryResponse.builder()
             .id(inquiry.getId())
-            .fullName(inquiry.getFullName())
-            .contactInfo(inquiry.getContactInfo())
-            .phone(inquiry.getPhone())
-            .company(inquiry.getCompany())
             .userId(inquiry.getUserId())
             .status(inquiry.getStatus())
             .submittedAt(inquiry.getSubmittedAt())

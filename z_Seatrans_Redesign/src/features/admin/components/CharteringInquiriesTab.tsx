@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
-import { Loader2, Anchor, Mail, MapPin, CalendarClock, CheckCircle2, Trash2 } from 'lucide-react'
+import { Loader2, Anchor, Mail, MapPin, CalendarClock, CheckCircle2, Trash2, RefreshCw } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
 
 interface CharteringInquiry {
@@ -49,6 +49,7 @@ interface CharteringInquiry {
   dischargingPort?: string
   laycanFrom?: string
   laycanTo?: string
+  notes?: string
   otherInfo?: string
 }
 
@@ -67,30 +68,31 @@ export function CharteringInquiriesTab() {
   const [selected, setSelected] = useState<CharteringInquiry | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const token = authService.getToken()
-        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-        const res = await axios.get<PageResponse<CharteringInquiry>>(
-          `${API_BASE}/api/admin/inquiries/chartering-ship-broking`,
-          {
-            params: { page: 0, size: 20 },
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          },
-        )
-        setInquiries(res.data.content)
-      } catch (err) {
-        const detail = axios.isAxiosError(err)
-          ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-          : 'Failed to load inquiries'
-        toast({ title: 'Error', description: detail, variant: 'destructive' })
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const token = authService.getToken()
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+      const res = await axios.get<PageResponse<CharteringInquiry>>(
+        `${API_BASE}/api/admin/inquiries/chartering-ship-broking`,
+        {
+          params: { page: 0, size: 20 },
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      )
+      setInquiries(res.data.content)
+    } catch (err) {
+      const detail = axios.isAxiosError(err)
+        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        : 'Failed to load inquiries'
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
+    // Initial fetch
     fetchData()
   }, [])
 
@@ -158,6 +160,9 @@ export function CharteringInquiriesTab() {
             <CardTitle className="text-xl">Chartering Inquiries</CardTitle>
             <CardDescription>Cargo quantities, laycans, and ports</CardDescription>
           </div>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -279,10 +284,19 @@ export function CharteringInquiriesTab() {
                     <div>Cargo/Quantity: {selected.cargoQuantity ?? '—'}</div>
                     <div>Route: {selected.loadingPort || '—'} → {selected.dischargingPort || '—'}</div>
                     <div>Laycan: {formatDate(selected.laycanFrom)} - {formatDate(selected.laycanTo)}</div>
-                    <div>Other info: {selected.otherInfo || '—'}</div>
+                    {selected.otherInfo && <div>Other info: {selected.otherInfo}</div>}
                   </div>
                 </div>
               </div>
+
+              {selected.notes && (
+                <div className="rounded-md border p-3 bg-muted/40">
+                  <div className="text-sm font-semibold mb-2">Notes</div>
+                  <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {selected.notes}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-sm">
                 <div>Submitted: {formatDate(selected.submittedAt)}</div>

@@ -18,7 +18,9 @@ import lombok.NoArgsConstructor;
 public class CharteringBrokingInquiryResponse {
     private Long id;
     private String fullName;
-    private String contactInfo;
+    private String email;
+    private String phone;
+    private String company;
     private Long userId;
     private InquiryStatus status;
     private LocalDateTime submittedAt;
@@ -36,8 +38,6 @@ public class CharteringBrokingInquiryResponse {
     public static CharteringBrokingInquiryResponse from(CharteringBrokingInquiry inquiry) {
         return CharteringBrokingInquiryResponse.builder()
             .id(inquiry.getId())
-            .fullName(inquiry.getFullName())
-            .contactInfo(inquiry.getContactInfo())
             .userId(inquiry.getUserId())
             .status(inquiry.getStatus())
             .submittedAt(inquiry.getSubmittedAt())

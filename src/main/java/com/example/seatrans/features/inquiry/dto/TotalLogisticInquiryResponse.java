@@ -18,7 +18,9 @@ import lombok.NoArgsConstructor;
 public class TotalLogisticInquiryResponse {
     private Long id;
     private String fullName;
-    private String contactInfo;
+    private String email;
+    private String phone;
+    private String company;
     private Long userId;
     private InquiryStatus status;
     private LocalDateTime submittedAt;
@@ -29,8 +31,8 @@ public class TotalLogisticInquiryResponse {
     // Total Logistics specific fields (same as Freight Forwarding)
     private String cargoName;
     private String deliveryTerm;
-    private Integer container20ft;
-    private Integer container40ft;
+    private Integer container20;
+    private Integer container40;
     private String loadingPort;
     private String dischargingPort;
     private LocalDate shipmentFrom;
@@ -39,8 +41,6 @@ public class TotalLogisticInquiryResponse {
     public static TotalLogisticInquiryResponse from(TotalLogisticInquiry inquiry) {
         return TotalLogisticInquiryResponse.builder()
             .id(inquiry.getId())
-            .fullName(inquiry.getFullName())
-            .contactInfo(inquiry.getContactInfo())
             .userId(inquiry.getUserId())
             .status(inquiry.getStatus())
             .submittedAt(inquiry.getSubmittedAt())
@@ -48,8 +48,8 @@ public class TotalLogisticInquiryResponse {
             .notes(inquiry.getNotes())
             .cargoName(inquiry.getCargoName())
             .deliveryTerm(inquiry.getDeliveryTerm())
-            .container20ft(inquiry.getContainer20ft())
-            .container40ft(inquiry.getContainer40ft())
+            .container20(inquiry.getContainer20ft())
+            .container40(inquiry.getContainer40ft())
             .loadingPort(inquiry.getLoadingPort())
             .dischargingPort(inquiry.getDischargingPort())
             .shipmentFrom(inquiry.getShipmentFrom())

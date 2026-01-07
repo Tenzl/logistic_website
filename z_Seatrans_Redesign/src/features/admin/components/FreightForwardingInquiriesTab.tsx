@@ -28,10 +28,10 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
-import { Loader2, Package, Mail, Truck, MapPin, CalendarClock, CheckCircle2, Trash2 } from 'lucide-react'
+import { Loader2, Package, Mail, Truck, MapPin, CalendarClock, CheckCircle2, Trash2, RefreshCw } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
 
-interface FreightInquiry {
+interface FreightForwardingInquiry {
   id: number
   serviceTypeId: number
   status: string
@@ -44,6 +44,7 @@ interface FreightInquiry {
   email?: string
   phone?: string
   company?: string
+  notes?: string
   cargoName?: string
   deliveryTerm?: string
   container20?: number
@@ -70,30 +71,31 @@ export function FreightForwardingInquiriesTab() {
   const [selected, setSelected] = useState<FreightForwardingInquiry | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const token = authService.getToken()
-        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-        const res = await axios.get<PageResponse<FreightInquiry>>(
-          `${API_BASE}/api/admin/inquiries/freight-forwarding`,
-          {
-            params: { page: 0, size: 20 },
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          },
-        )
-        setInquiries(res.data.content)
-      } catch (err) {
-        const detail = axios.isAxiosError(err)
-          ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-          : 'Failed to load inquiries'
-        toast({ title: 'Error', description: detail, variant: 'destructive' })
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const token = authService.getToken()
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+      const res = await axios.get<PageResponse<FreightForwardingInquiry>>(
+        `${API_BASE}/api/admin/inquiries/freight-forwarding`,
+        {
+          params: { page: 0, size: 20 },
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      )
+      setInquiries(res.data.content)
+    } catch (err) {
+      const detail = axios.isAxiosError(err)
+        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        : 'Failed to load inquiries'
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
+    // Initial fetch
     fetchData()
   }, [])
 
@@ -161,6 +163,9 @@ export function FreightForwardingInquiriesTab() {
             <CardTitle className="text-xl">Freight Forwarding Inquiries</CardTitle>
             <CardDescription>Container counts, ports, and shipment windows</CardDescription>
           </div>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -286,10 +291,18 @@ export function FreightForwardingInquiriesTab() {
                     <div>20': {selected.container20 ?? '—'} • 40': {selected.container40 ?? '—'}</div>
                     <div>Route: {selected.loadingPort || '—'} → {selected.dischargingPort || '—'}</div>
                     <div>Shipment: {formatDate(selected.shipmentFrom)} - {formatDate(selected.shipmentTo)}</div>
-                    <div>Notes: {selected.additionalInfo || '—'}</div>
                   </div>
                 </div>
               </div>
+
+              {selected.notes && (
+                <div className="rounded-md border p-3 bg-muted/40">
+                  <div className="text-sm font-semibold mb-2">Notes</div>
+                  <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {selected.notes}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-sm">
                 <div>Submitted: {formatDate(selected.submittedAt)}</div>

@@ -62,6 +62,16 @@ public class User {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
     
+    // OAuth2 fields
+    @Column(name = "oauth_provider", length = 50)
+    private String oauthProvider; // "google", "facebook", etc.
+    
+    @Column(name = "oauth_provider_id", length = 255)
+    private String oauthProviderId; // Google sub, Facebook id, etc.
+    
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+    
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
@@ -228,6 +238,30 @@ public class User {
 
     public void setLastLogin(LocalDateTime lastLogin) {
         this.lastLogin = lastLogin;
+    }
+
+    public String getOauthProvider() {
+        return oauthProvider;
+    }
+
+    public void setOauthProvider(String oauthProvider) {
+        this.oauthProvider = oauthProvider;
+    }
+
+    public String getOauthProviderId() {
+        return oauthProviderId;
+    }
+
+    public void setOauthProviderId(String oauthProviderId) {
+        this.oauthProviderId = oauthProviderId;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public Set<Role> getRoles() {

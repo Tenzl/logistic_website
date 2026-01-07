@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
-import { Loader2, Ship, User, CalendarClock, MapPin, Mail, CheckCircle2, Trash2, FileText, Upload } from 'lucide-react'
+import { Loader2, Ship, User, CalendarClock, MapPin, Mail, CheckCircle2, Trash2, FileText, Upload, RefreshCw } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
 import { InvoiceUploadDialog } from '@/features/inquiries/components/InvoiceUploadDialog'
 import { InquiryDocument } from '@/features/inquiries/services/documentService'
@@ -86,30 +86,30 @@ export function ShippingAgencyInquiriesTab() {
   const [selected, setSelected] = useState<ShippingAgencyInquiry | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const token = authService.getToken()
-        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-        const res = await axios.get<PageResponse<ShippingAgencyInquiry>>(
-          `${API_BASE}/api/admin/inquiries/shipping-agency`,
-          {
-            params: { page: 0, size: 20 },
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          },
-        )
-        setInquiries(res.data.content)
-      } catch (err) {
-        const detail = axios.isAxiosError(err)
-          ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-          : 'Failed to load inquiries'
-        toast({ title: 'Error', description: detail, variant: 'destructive' })
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const token = authService.getToken()
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+      const res = await axios.get<PageResponse<ShippingAgencyInquiry>>(
+        `${API_BASE}/api/admin/inquiries/shipping-agency`,
+        {
+          params: { page: 0, size: 20 },
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      )
+      setInquiries(res.data.content)
+    } catch (err) {
+      const detail = axios.isAxiosError(err)
+        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        : 'Failed to load inquiries'
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchData()
   }, [])
 
@@ -217,6 +217,9 @@ export function ShippingAgencyInquiriesTab() {
             <CardTitle className="text-xl">Shipping Agency Inquiries</CardTitle>
             <CardDescription>Latest submissions with vessel and port details</CardDescription>
           </div>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (

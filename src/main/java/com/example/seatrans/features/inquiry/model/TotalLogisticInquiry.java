@@ -43,20 +43,7 @@ public class TotalLogisticInquiry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    // Common fields (duplicated from service_inquiries for transition)
-    @Column(name = "full_name", length = 255)
-    private String fullName;
-
-    @Column(name = "contact_info", length = 255)
-    private String contactInfo;
-
-    @Column(name = "phone", length = 50)
-    private String phone;
-
-    @Column(name = "company", length = 255)
-    private String company;
-
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
     @Enumerated(EnumType.STRING)

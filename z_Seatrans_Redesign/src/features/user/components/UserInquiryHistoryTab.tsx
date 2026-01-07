@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Badge } from '@/shared/components/ui/badge'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { Loader2, AlertCircle, Clock, Eye, Download, FileText } from 'lucide-react'
+import { Loader2, AlertCircle, Clock, Eye, Download, FileText, RefreshCw } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
 import { documentService } from '@/features/inquiries/services/documentService'
 import { Button } from '@/shared/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { QuoteData, QuoteRow, QuotePreview, renderQuoteHtml } from '@/features/inquiries/components/QuotePreview'
+import { QuoteData, QuoteRow, QuotePreview, renderQuoteHtml as renderQuoteHtmlHcm } from '@/features/inquiries/components/Quote-hcm'
+import { renderQuoteHtml as renderQuoteHtmlQn } from '@/features/inquiries/components/Quote-qn'
+import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 
 interface Inquiry {
   id: number
@@ -97,54 +99,55 @@ export function UserInquiryHistoryTab() {
     return 'shipping-agency' // default fallback
   }
 
-  useEffect(() => {
-    const fetchInquiries = async () => {
-      setIsLoading(true)
-      try {
-        const headers = {
-          ...authService.getAuthHeader(),
-        }
-
-        // If the user is not authenticated, short-circuit with a friendly message
-        if (!headers.Authorization) {
-          setMessage('Please log in to view your inquiries.')
-          setInquiries([])
-          return
-        }
-
-        // Get current user to fetch their inquiries
-        const user = authService.getUser()
-        if (!user?.id) {
-          setMessage('Please log in to view your inquiries.')
-          setInquiries([])
-          return
-        }
-
-        const response = await fetch(`${API_BASE_URL}/inquiries/user/${user.id}?page=0&size=20`, {
-          headers,
-          credentials: 'include',
-        })
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Unauthorized')
-          }
-          throw new Error('Failed to fetch inquiries')
-        }
-        const data: PageResponse<Inquiry> = await response.json()
-        setInquiries(data.content || [])
-      } catch (error) {
-        console.error('Error fetching inquiries:', error)
-        if ((error as Error).message === 'Unauthorized') {
-          setMessage('Please log in again to view your inquiries.')
-          authService.logout()
-        } else {
-          setMessage('Could not load inquiries. Please try again later.')
-        }
-      } finally {
-        setIsLoading(false)
+  const fetchInquiries = async () => {
+    setIsLoading(true)
+    try {
+      const headers = {
+        ...authService.getAuthHeader(),
       }
-    }
 
+      // If the user is not authenticated, short-circuit with a friendly message
+      if (!headers.Authorization) {
+        setMessage('Please log in to view your inquiries.')
+        setInquiries([])
+        return
+      }
+
+      // Get current user to fetch their inquiries
+      const user = authService.getUser()
+      if (!user?.id) {
+        setMessage('Please log in to view your inquiries.')
+        setInquiries([])
+        return
+      }
+
+      const response = await fetch(`${API_BASE_URL}/inquiries/user/${user.id}?page=0&size=20`, {
+        headers,
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Unauthorized')
+        }
+        throw new Error('Failed to fetch inquiries')
+      }
+      const data: PageResponse<Inquiry> = await response.json()
+      setInquiries(data.content || [])
+      setMessage(null) // Clear any previous error messages on success
+    } catch (error) {
+      console.error('Error fetching inquiries:', error)
+      if ((error as Error).message === 'Unauthorized') {
+        setMessage('Please log in again to view your inquiries.')
+        authService.logout()
+      } else {
+        setMessage('Could not load inquiries. Please try again later.')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchInquiries()
   }, [])
 
@@ -195,21 +198,21 @@ export function UserInquiryHistoryTab() {
 
     const data: QuoteData = {
       to_shipowner: inquiry.toName || inquiry.fullName,
-      date: pickValue(map, ['quote_date', 'date'], new Date(inquiry.submittedAt).toLocaleDateString()),
+      date: pickValue(map, ['quote_date', 'date'], formatInvoiceDate(inquiry.submittedAt)),
       ref: pickValue(map, ['ref', 'reference', 'quotation_ref'], `INQ-${inquiry.id}`),
       mv: inquiry.mv,
       dwt: inquiry.dwt?.toString(),
       grt: inquiry.grt?.toString(),
       loa: inquiry.loa?.toString(),
-      eta: inquiry.eta || 'TBN',
+      eta: inquiry.eta ? formatInvoiceDate(inquiry.eta) : 'TBN',
       cargo_qty_mt: inquiry.cargoQuantity?.toString(),
-      cargo_name_upper: inquiry.cargoName?.toUpperCase(),
+      cargo_name_upper: formatCargoDescription(inquiry.cargoName, inquiry.cargoType),
       cargo_type: inquiry.cargoType?.toUpperCase(),
       port_upper: (inquiry.portOfCall || inquiry.loadingPort || inquiry.dischargingPort)?.toUpperCase(),
       loading_term: inquiry.dischargeLoadingLocation || inquiry.deliveryTerm,
       transport_ls: inquiry.transportLs,
-      at_anchorage: inquiry.dischargeLoadingLocation?.toLowerCase().includes('anchorage') ? 'Yes' : pickValue(map, ['at_anchorage', 'anchorage']),
-      at_berth: inquiry.dischargeLoadingLocation?.toLowerCase().includes('berth') ? 'Yes' : pickValue(map, ['at_berth', 'berth']),
+      at_anchorage: inquiry.dischargeLoadingLocation?.toLowerCase().includes('anchorage') ? 'x' : formatCheckMark(pickValue(map, ['at_anchorage', 'anchorage'])),
+      at_berth: inquiry.dischargeLoadingLocation?.toLowerCase().includes('berth') ? 'x' : formatCheckMark(pickValue(map, ['at_berth', 'berth'])),
       total_a: pickValue(map, ['total_a', 'aa_total']),
       total_b: pickValue(map, ['total_b', 'bb_total']),
       grand_total: pickValue(map, ['grand_total', 'total']),
@@ -231,6 +234,7 @@ export function UserInquiryHistoryTab() {
 
   const ensureQuoteTemplate = async () => {
     if (quoteTemplate) return quoteTemplate
+    // Fetch the main template (single template for both QN and HCM)
     const res = await fetch('/templates/quote.html')
     if (!res.ok) throw new Error('Template not found')
     const text = await res.text()
@@ -243,7 +247,9 @@ export function UserInquiryHistoryTab() {
     setLoadingQuote(true)
     try {
       const template = await ensureQuoteTemplate()
-      const html = renderQuoteHtml(template, buildQuoteData(inquiry))
+      // Choose the correct renderer based on quoteForm
+      const renderer = (inquiry.quoteForm || '').toUpperCase() === 'QN' ? renderQuoteHtmlQn : renderQuoteHtmlHcm
+      const html = renderer(template, buildQuoteData(inquiry))
       setQuoteHtml(html)
     } catch (err) {
       console.error('Failed to load quote preview:', err)
@@ -357,8 +363,22 @@ export function UserInquiryHistoryTab() {
     <>
     <Card>
       <CardHeader>
-        <CardTitle>Your Inquiry History</CardTitle>
-        <CardDescription>View submissions you have sent to Seatrans.</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Your Inquiry History</CardTitle>
+            <CardDescription>View submissions you have sent to Seatrans.</CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchInquiries}
+            disabled={isLoading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Reload
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (

@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.seatrans.features.auth.service.UserService;
 import com.example.seatrans.features.inquiry.dto.CharteringBrokingInquiryResponse;
 import com.example.seatrans.features.inquiry.dto.FreightForwardingInquiryResponse;
+import com.example.seatrans.features.inquiry.dto.InquiryDocumentDTO;
 import com.example.seatrans.features.inquiry.dto.PublicInquiryRequest;
 import com.example.seatrans.features.inquiry.dto.ShippingAgencyInquiryResponse;
 import com.example.seatrans.features.inquiry.dto.SpecialRequestInquiryResponse;
@@ -47,9 +48,11 @@ import com.example.seatrans.features.inquiry.service.InquiryDocumentService;
 import com.example.seatrans.features.logistics.repository.PortRepository;
 import com.example.seatrans.features.logistics.repository.ProvinceRepository;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
-import com.example.seatrans.shared.exception.DuplicateUserException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/inquiries")
 @Validated
@@ -203,18 +206,18 @@ public class PublicInquiryController {
         return fetchPage(serviceSlug, pageable);
     }
 
-        @PostMapping(consumes = "multipart/form-data")
+    @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<?> submitPublicInquiry(
             @RequestPart("inquiry") @Validated PublicInquiryRequest request,
             @RequestPart(value = "files", required = false) MultipartFile[] files,
-            @AuthenticationPrincipal java.security.Principal principal) {
+            java.security.Principal principal) {
         return handleSubmit(request, files, principal, null);
     }
 
     @PostMapping(consumes = "application/json")
     public ResponseEntity<?> submitPublicInquiryJson(
             @RequestBody @Validated PublicInquiryRequest request,
-            @AuthenticationPrincipal java.security.Principal principal) {
+            java.security.Principal principal) {
         return handleSubmit(request, null, principal, null);
     }
 
@@ -223,6 +226,14 @@ public class PublicInquiryController {
             MultipartFile[] files,
             java.security.Principal principal,
             String serviceSlugOverride) {
+
+        // Require authentication
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                "message", "Please log in to submit an inquiry.",
+                "code", "AUTHENTICATION_REQUIRED"
+            ));
+        }
 
         // Resolve service type by ID or name/slug
         if (serviceSlugOverride != null) {
@@ -235,71 +246,24 @@ public class PublicInquiryController {
             : serviceTypeRepository.findByName(request.getServiceTypeSlug())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid service type: " + request.getServiceTypeSlug()));
 
-        java.security.Principal authPrincipal = principal;
-        com.example.seatrans.features.auth.model.User currentUser = null;
-        boolean isGuestFlow = (authPrincipal == null);
-
-        if (!isGuestFlow) {
-            try {
-                currentUser = userService.getUserByUsernameOrEmail(authPrincipal.getName());
-            } catch (Exception ignored) {
-                currentUser = null; // treat as unauthenticated if lookup fails
-                isGuestFlow = true;
-            }
-        }
-
+        // Get authenticated user
+        com.example.seatrans.features.auth.model.User currentUser;
         try {
-            if (!isGuestFlow && currentUser != null) {
-                if (!userService.isProfileComplete(currentUser)) {
-                    return ResponseEntity.status(422).body(Map.of(
-                        "message", "Please update your information before submitting the quote.",
-                        "code", "PROFILE_INCOMPLETE"
-                    ));
-                }
-            } else {
-                // Guest submission flow
-                com.example.seatrans.features.auth.model.User existing = null;
-                try {
-                    existing = userService.getUserByUsernameOrEmail(request.getEmail());
-                } catch (Exception ignored) {
-                    existing = null;
-                }
-
-                if (existing != null) {
-                    boolean isGuest = existing.hasRole("ROLE_GUEST");
-
-                    if (!isGuest) {
-                        // If the email belongs to a registered user but no auth header was sent,
-                        // reuse that account instead of failing with 409.
-                        // Optional: enforce profile completeness here if needed.
-                        currentUser = existing;
-                        isGuestFlow = false;
-                    } else {
-                        // Reuse/refresh guest profile
-                        currentUser = userService.createOrReuseGuest(
-                            request.getFullName(),
-                            request.getEmail(),
-                            request.getPhone(),
-                            request.getCompany());
-                    }
-                } else {
-                    currentUser = userService.createOrReuseGuest(
-                        request.getFullName(),
-                        request.getEmail(),
-                        request.getPhone(),
-                        request.getCompany());
-                }
-            }
-        } catch (DuplicateUserException ex) {
-            return ResponseEntity.status(409).body(Map.of(
-                "message", "Email already registered. Please log in or use another email."));
+            currentUser = userService.getUserByUsernameOrEmail(principal.getName());
+        } catch (Exception ex) {
+            return ResponseEntity.status(401).body(Map.of(
+                "message", "User not found. Please log in again.",
+                "code", "USER_NOT_FOUND"
+            ));
         }
 
-        // Use authenticated profile data if available to ensure consistent identity
-        String fullName = currentUser != null ? currentUser.getFullName() : request.getFullName();
-        String email = currentUser != null ? currentUser.getEmail() : request.getEmail();
-        String phone = currentUser != null ? currentUser.getPhone() : request.getPhone();
-        String company = currentUser != null ? currentUser.getCompany() : request.getCompany();
+        // Check if profile is complete
+        if (!userService.isProfileComplete(currentUser)) {
+            return ResponseEntity.status(422).body(Map.of(
+                "message", "Please complete your profile before submitting an inquiry.",
+                "code", "PROFILE_INCOMPLETE"
+            ));
+        }
 
         // Prefer serviceTypeSlug from request, fallback to serviceType.getName()
         String serviceSlug = request.getServiceTypeSlug() != null ? request.getServiceTypeSlug() : serviceType.getName();
@@ -309,28 +273,23 @@ public class PublicInquiryController {
 
         switch (normalizedSlug) {
             case "shipping-agency" -> {
-                Long userId = currentUser != null ? currentUser.getId() : null;
-                ShippingAgencyInquiry inquiry = buildShippingAgency(fullName, email, phone, company, userId, request);
+                ShippingAgencyInquiry inquiry = buildShippingAgency(currentUser.getId(), request);
                 targetId = shippingAgencyInquiryRepository.save(inquiry).getId();
             }
             case "chartering-ship-broking" -> {
-                Long userId = currentUser != null ? currentUser.getId() : null;
-                CharteringBrokingInquiry inquiry = buildChartering(fullName, email, phone, company, userId, request);
+                CharteringBrokingInquiry inquiry = buildChartering(currentUser.getId(), request);
                 targetId = charteringBrokingInquiryRepository.save(inquiry).getId();
             }
             case "freight-forwarding" -> {
-                Long userId = currentUser != null ? currentUser.getId() : null;
-                FreightForwardingInquiry inquiry = buildFreight(fullName, email, phone, company, userId, request);
+                FreightForwardingInquiry inquiry = buildFreight(currentUser.getId(), request);
                 targetId = freightForwardingInquiryRepository.save(inquiry).getId();
             }
             case "total-logistics" -> {
-                Long userId = currentUser != null ? currentUser.getId() : null;
-                TotalLogisticInquiry inquiry = buildLogistics(fullName, email, phone, company, userId, request);
+                TotalLogisticInquiry inquiry = buildLogistics(currentUser.getId(), request);
                 targetId = totalLogisticInquiryRepository.save(inquiry).getId();
             }
             case "special-request" -> {
-                Long userId = currentUser != null ? currentUser.getId() : null;
-                SpecialRequestInquiry inquiry = buildSpecialRequest(fullName, email, phone, company, userId, request);
+                SpecialRequestInquiry inquiry = buildSpecialRequest(currentUser.getId(), request);
                 targetId = specialRequestInquiryRepository.save(inquiry).getId();
             }
             default -> {
@@ -342,21 +301,20 @@ public class PublicInquiryController {
 
         if (files != null && files.length > 0) {
             try {
-                String uploaderUsername = currentUser != null ? currentUser.getUsername() : email;
+                String uploaderUsername = currentUser.getUsername();
+                log.info("Saving {} attachments for serviceSlug={}, targetId={}, uploader={}", 
+                        files.length, serviceSlug, targetId, uploaderUsername);
                 saveAttachments(serviceSlug, targetId, files, uploaderUsername);
+                log.info("Successfully saved {} attachments", files.length);
             } catch (IOException | IllegalArgumentException e) {
                 // Log error but don't fail the inquiry submission
-                System.err.println("Failed to save attachments: " + e.getMessage());
+                log.error("Failed to save attachments for serviceSlug={}, targetId={}: {}", 
+                        serviceSlug, targetId, e.getMessage(), e);
             }
         }
 
-        String successMessage = isGuestFlow
-            ? "Please register an account to view the quote process."
-            : "Inquiry submitted successfully.";
-
         return ResponseEntity.ok(Map.of(
-            "message", successMessage,
-            "guest", isGuestFlow,
+            "message", "Inquiry submitted successfully.",
             "serviceSlug", serviceType.getName(),
             "targetId", targetId
         ));
@@ -368,14 +326,26 @@ public class PublicInquiryController {
         }
 
         for (MultipartFile file : files) {
-            if (file.isEmpty()) continue;
+            if (file.isEmpty()) {
+                log.warn("Skipping empty file");
+                continue;
+            }
 
-            documentService.uploadDocument(serviceSlug, targetId, DocumentType.OTHER, file, "User attachment", uploaderUsername);
+            log.info("Uploading file: name={}, size={}, type={}", 
+                    file.getOriginalFilename(), file.getSize(), file.getContentType());
+            
+            try {
+                InquiryDocumentDTO doc = documentService.uploadDocument(
+                    serviceSlug, targetId, DocumentType.OTHER, file, "User attachment", uploaderUsername);
+                log.info("Successfully uploaded document: id={}", doc.getId());
+            } catch (Exception e) {
+                log.error("Failed to upload file {}: {}", file.getOriginalFilename(), e.getMessage(), e);
+                throw e;
+            }
         }
     }
 
-    private ShippingAgencyInquiry buildShippingAgency(String fullName, String email, String phone, String company,
-                                                      Long userId, PublicInquiryRequest request) {
+    private ShippingAgencyInquiry buildShippingAgency(Long userId, PublicInquiryRequest request) {
         String detailsJson = null;
         try {
             if (request.getDetails() != null) {
@@ -385,10 +355,6 @@ public class PublicInquiryController {
         }
 
         return ShippingAgencyInquiry.builder()
-            .fullName(fullName)
-            .contactInfo(email)
-            .phone(phone)
-            .company(company)
             .userId(userId)
             .status(InquiryStatus.PROCESSING)
             .notes(request.getNotes())
@@ -423,13 +389,8 @@ public class PublicInquiryController {
         return str.equals("yes") || str.equals("true");
     }
 
-    private CharteringBrokingInquiry buildChartering(String fullName, String email, String phone, String company,
-                                                     Long userId, PublicInquiryRequest request) {
+    private CharteringBrokingInquiry buildChartering(Long userId, PublicInquiryRequest request) {
         return CharteringBrokingInquiry.builder()
-            .fullName(fullName)
-            .contactInfo(email)
-            .phone(phone)
-            .company(company)
             .userId(userId)
             .status(InquiryStatus.PROCESSING)
             .notes(request.getNotes())
@@ -444,13 +405,8 @@ public class PublicInquiryController {
             .build();
     }
 
-    private FreightForwardingInquiry buildFreight(String fullName, String email, String phone, String company,
-                                                  Long userId, PublicInquiryRequest request) {
+    private FreightForwardingInquiry buildFreight(Long userId, PublicInquiryRequest request) {
         return FreightForwardingInquiry.builder()
-            .fullName(fullName)
-            .contactInfo(email)
-            .phone(phone)
-            .company(company)
             .userId(userId)
             .status(InquiryStatus.PROCESSING)
             .notes(request.getNotes())
@@ -467,13 +423,8 @@ public class PublicInquiryController {
             .build();
     }
 
-    private TotalLogisticInquiry buildLogistics(String fullName, String email, String phone, String company,
-                                                Long userId, PublicInquiryRequest request) {
+    private TotalLogisticInquiry buildLogistics(Long userId, PublicInquiryRequest request) {
         return TotalLogisticInquiry.builder()
-            .fullName(fullName)
-            .contactInfo(email)
-            .phone(phone)
-            .company(company)
             .userId(userId)
             .status(InquiryStatus.PROCESSING)
             .notes(request.getNotes())
@@ -490,13 +441,8 @@ public class PublicInquiryController {
             .build();
     }
     
-    private SpecialRequestInquiry buildSpecialRequest(String fullName, String email, String phone, String company,
-                                                      Long userId, PublicInquiryRequest request) {
+    private SpecialRequestInquiry buildSpecialRequest(Long userId, PublicInquiryRequest request) {
         return SpecialRequestInquiry.builder()
-            .fullName(fullName)
-            .contactInfo(email)
-            .phone(phone)
-            .company(company)
             .userId(userId)
             .status(InquiryStatus.PROCESSING)
             .notes(request.getNotes())

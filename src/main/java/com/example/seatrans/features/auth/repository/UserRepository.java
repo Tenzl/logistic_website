@@ -41,8 +41,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Kiá»ƒm tra email Ä‘Ã£ tá»“n táº¡i chÆ°a
      */
     boolean existsByEmail(String email);
-    
-    // ==================== Status Queries ====================
+        /**
+     * Tìm user theo OAuth provider và provider ID
+     */
+    Optional<User> findByOauthProviderAndOauthProviderId(String oauthProvider, String oauthProviderId);
+        // ==================== Status Queries ====================
     
     /**
      * Láº¥y táº¥t cáº£ users Ä‘ang active

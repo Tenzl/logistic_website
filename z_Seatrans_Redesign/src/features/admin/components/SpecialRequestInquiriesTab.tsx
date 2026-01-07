@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
-import { Loader2, Mail, FileText, CheckCircle2, Trash2, Download, Paperclip } from 'lucide-react'
+import { Loader2, Mail, FileText, CheckCircle2, Trash2, Download, Paperclip, RefreshCw } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
 import { documentService, type InquiryDocument } from '@/features/inquiries/services/documentService'
 
@@ -70,30 +70,30 @@ export function SpecialRequestInquiriesTab() {
   const [documents, setDocuments] = useState<InquiryDocument[]>([])
   const [loadingDocuments, setLoadingDocuments] = useState(false)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const token = authService.getToken()
-        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-        const res = await axios.get<PageResponse<SpecialRequestInquiry>>(
-          `${API_BASE}/api/admin/inquiries/special-request`,
-          {
-            params: { page: 0, size: 20 },
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          },
-        )
-        setInquiries(res.data.content)
-      } catch (err) {
-        const detail = axios.isAxiosError(err)
-          ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-          : 'Failed to load inquiries'
-        toast({ title: 'Error', description: detail, variant: 'destructive' })
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const token = authService.getToken()
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+      const res = await axios.get<PageResponse<SpecialRequestInquiry>>(
+        `${API_BASE}/api/admin/inquiries/special-request`,
+        {
+          params: { page: 0, size: 20 },
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      )
+      setInquiries(res.data.content)
+    } catch (err) {
+      const detail = axios.isAxiosError(err)
+        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+        : 'Failed to load inquiries'
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchData()
   }, [])
 
@@ -190,6 +190,9 @@ export function SpecialRequestInquiriesTab() {
             <CardTitle className="text-xl">Special Request Inquiries</CardTitle>
             <CardDescription>Subject, preferred province, and notes</CardDescription>
           </div>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (

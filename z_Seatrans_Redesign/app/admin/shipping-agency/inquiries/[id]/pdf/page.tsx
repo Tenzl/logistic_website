@@ -8,12 +8,22 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Badge } from '@/shared/components/ui/badge'
-import { QuotePreview } from '@/features/inquiries/components/QuotePreview'
 import { QuoteData, renderQuoteHtml as renderQuoteHtmlHcm } from '@/features/inquiries/components/Quote-hcm'
 import { renderQuoteHtml as renderQuoteHtmlQn } from '@/features/inquiries/components/Quote-qn'
+import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 import { authService } from '@/features/auth/services/authService'
 import { AlertCircle, ArrowLeft, Download, FileText, Loader2, RefreshCw } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog'
 import { useToast } from '@/shared/hooks/use-toast'
 
 interface ShippingAgencyInquiry {
@@ -73,20 +83,20 @@ const mapToQuoteData = (inquiry: ShippingAgencyInquiry): QuoteData => {
   const cargoName = inquiry.cargoNameOther || inquiry.cargoName || inquiry.cargoType
   const port = inquiry.portOfCall || inquiry.dischargeLoadingLocation
   const dlLocation = (inquiry.dischargeLoadingLocation || '').trim().toLowerCase()
-  const atAnchorage = dlLocation.includes('anchorage') ? 'X' : ''
-  const atBerth = dlLocation.includes('berth') ? 'X' : ''
+  const atAnchorage = dlLocation.includes('anchorage') ? 'x' : ''
+  const atBerth = dlLocation.includes('berth') ? 'x' : ''
 
   return {
     to_shipowner: inquiry.toName || inquiry.company || inquiry.fullName,
-    date: formatDate(inquiry.submittedAt),
+    date: formatInvoiceDate(inquiry.submittedAt),
     ref: `CHHH_QN`,
     mv: inquiry.mv,
     dwt: inquiry.dwt !== undefined && inquiry.dwt !== null ? String(inquiry.dwt) : undefined,
     grt: inquiry.grt !== undefined && inquiry.grt !== null ? String(inquiry.grt) : undefined,
     loa: inquiry.loa !== undefined && inquiry.loa !== null ? String(inquiry.loa) : undefined,
-    eta: formatDate(inquiry.eta, 'TBN'),
+    eta: inquiry.eta ? formatInvoiceDate(inquiry.eta) : 'TBN',
     cargo_qty_mt: inquiry.cargoQuantity !== undefined && inquiry.cargoQuantity !== null ? String(inquiry.cargoQuantity) : undefined,
-    cargo_name_upper: cargoName ? cargoName.toUpperCase() : undefined,
+    cargo_name_upper: formatCargoDescription(cargoName, inquiry.cargoType),
     cargo_type: inquiry.cargoType ? inquiry.cargoType.toUpperCase() : undefined,
     port_upper: port ? port.toUpperCase() : undefined,
     loading_term: inquiry.frtTaxType,
@@ -130,6 +140,7 @@ export default function ShippingAgencyPdfPage() {
   const [pilotageThirdMiles, setPilotageThirdMiles] = useState<number>(17)
   const [pilotageThirdMilesInput, setPilotageThirdMilesInput] = useState('17')
   const [isEditing, setIsEditing] = useState(false)
+  const [showBackAlert, setShowBackAlert] = useState(false)
 
   const fetchInquiry = useCallback(async (id: string) => {
     setIsLoading(true)
@@ -353,7 +364,23 @@ export default function ShippingAgencyPdfPage() {
     setIsEditing(false)
   }
 
-  const startEdit = () => {
+  const startEdit = async () => {
+    // If status is not PROCESSING, update it
+    if (inquiry && inquiry.status !== 'PROCESSING') {
+      try {
+        const token = authService.getToken()
+        await axios.patch(
+          `${API_BASE}/api/admin/inquiries/shipping-agency/${inquiryId}/status`,
+          { status: 'PROCESSING' },
+          { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+        )
+        setInquiry((prev) => (prev ? { ...prev, status: 'PROCESSING' } : prev))
+      } catch (err) {
+        console.error('Failed to update status to PROCESSING', err)
+        // Non-blocking error, user can still edit
+      }
+    }
+
     setPendingForm(quoteForm)
     setBerthHoursInput(String(berthHours))
     setAnchorageHoursInput(String(anchorageHours))
@@ -369,6 +396,41 @@ export default function ShippingAgencyPdfPage() {
     setIsEditing(false)
   }
 
+  const handleBack = () => {
+    if (inquiry?.status === 'PROCESSING') {
+      setShowBackAlert(true)
+    } else {
+      navigateBack()
+    }
+  }
+
+  const navigateBack = () => {
+    if (typeof window !== 'undefined' && window.opener) {
+      window.close()
+    } else {
+      router.push('/admin')
+    }
+  }
+
+  const confirmBackTransfer = async () => {
+    // Perform transfer then navigate back
+    if (!inquiryId) return
+    try {
+      const token = authService.getToken()
+      await axios.patch(
+        `${API_BASE}/api/admin/inquiries/shipping-agency/${inquiryId}/status`,
+        { status: 'QUOTED' },
+        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+      )
+      toast({ title: 'Success', description: 'Transferred to User (QUOTED)' })
+      navigateBack()
+    } catch (error) {
+      console.error('Failed to transfer on back:', error)
+      toast({ title: 'Error', description: 'Failed to transfer', variant: 'destructive' })
+      navigateBack() // Still go back even if transfer fails? Or stay? Probably safer to go back or let user retry manually. User asked to "switch to quoted... in case admin forgot".
+    }
+  }
+
   return (
     <div className="min-h-screen bg-muted/20">
       <div className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
@@ -376,13 +438,7 @@ export default function ShippingAgencyPdfPage() {
           <Button
             variant="ghost"
             className="gap-2"
-            onClick={() => {
-              if (typeof window !== 'undefined' && window.opener) {
-                window.close()
-              } else {
-                router.push('/admin')
-              }
-            }}
+            onClick={handleBack}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Admin
@@ -552,7 +608,12 @@ export default function ShippingAgencyPdfPage() {
                         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                       </div>
                     ) : quoteHtml ? (
-                      <QuotePreview html={quoteHtml} />
+                      <iframe
+                        srcDoc={quoteHtml}
+                        className="w-full h-full border-0"
+                        title="Quote Preview"
+                        style={{ minHeight: '800px' }}
+                      />
                     ) : (
                       <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
                         <FileText className="h-6 w-6 mr-2" />
@@ -566,6 +627,23 @@ export default function ShippingAgencyPdfPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={showBackAlert} onOpenChange={setShowBackAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inquiry Status is PROCESSING</AlertDialogTitle>
+            <AlertDialogDescription>
+              Would you like to transfer this inquiry to the user (Status: QUOTED) before leaving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={navigateBack}>No, just leave</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBackTransfer} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+              Yes, Transfer to User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

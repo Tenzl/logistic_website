@@ -85,8 +85,7 @@
     .charges .col-amount { width: 90px; text-align: right; white-space: nowrap; }
 
     /* BB table (no item column) */
-    .bb-table .col-details { width: 420px; }
-    .bb-table .col-amount { width: 110px; }
+    /* .bb-table styles removed to align with AA table */
 
     .total-row td {
       font-weight: 800;
@@ -139,7 +138,7 @@
   <div class="page">
 
     <div class="author-header">
-      <img src="/image/author-header.png" alt="Author header" />
+      <img src="/landing-image/authorHeader.png" alt="Author header" />
     </div>
 
     <!-- ===== TOP HEADER (TO/FM on left; DATE/REF on right) ===== -->
@@ -215,26 +214,26 @@
 
     <!-- ===== BB TABLE ===== -->
     <div class="section-title mt-10">BB. Agency fees and expenses :</div>
-    <table class="charges bb-table">
+    <table class="charges">
       <tr>
         <th class="col-no">No.</th>
-        <th class="col-details">Details</th>
+        <th colspan="4" style="text-align: left; padding-left: 5px;">Details</th>
         <th class="col-amount">Amount (USD)</th>
       </tr>
 
       {{BB_ROWS}}
 
       <tr class="total-row">
-        <td colspan="2" class="right">TOTAL B : (II)</td>
+        <td colspan="5" class="right">TOTAL B : (II)</td>
         <td>{{total_b}}</td>
       </tr>
       <tr class="total-row">
-        <td colspan="2" class="right">G. TOTAL : (I)+(II)</td>
+        <td colspan="5" class="right">G. TOTAL : (I)+(II)</td>
         <td class="red">{{grand_total}}</td>
       </tr>
       <tr class="remark-row">
         <td class="col-no"></td>
-        <td class="col-details" colspan="2">
+        <td class="col-details" colspan="5">
           <span class="bold u">Remark</span> :
           All the port charges/dues are subject to the Govmn't tariff and will be settled basing on the original
           invoices & vouchers issued by parties concerned
@@ -255,7 +254,7 @@
 
     <div class="signature-block">
       <div>Authorized signature</div>
-      <img src="/image/author-signature.jpg" alt="Authorized signature" />
+      <img src="/landing-image/authorSignature.jpg" alt="Authorized signature" />
     </div>
 
   </div>
