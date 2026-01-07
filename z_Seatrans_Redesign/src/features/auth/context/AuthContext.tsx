@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authService } from '../services/authService'
+import { toast } from 'sonner'
 
 interface User {
   id: number
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     authService.logout()
     setUser(null)
+    toast.success('Logged out successfully')
   }
 
   const profileComplete = !!(

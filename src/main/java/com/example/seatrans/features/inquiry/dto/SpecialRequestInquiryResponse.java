@@ -18,6 +18,8 @@ public class SpecialRequestInquiryResponse {
     private Long id;
     private String fullName;
     private String contactInfo;
+    private String phone;
+    private String company;
     private Long userId;
     private InquiryStatus status;
     private LocalDateTime submittedAt;
@@ -38,6 +40,8 @@ public class SpecialRequestInquiryResponse {
             .id(inquiry.getId())
             .fullName(inquiry.getFullName())
             .contactInfo(inquiry.getContactInfo())
+            .phone(inquiry.getPhone())
+            .company(inquiry.getCompany())
             .userId(inquiry.getUserId())
             .status(inquiry.getStatus())
             .submittedAt(inquiry.getSubmittedAt())

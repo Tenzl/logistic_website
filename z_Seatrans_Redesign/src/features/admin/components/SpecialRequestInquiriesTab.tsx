@@ -9,9 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
+import { useToast } from '@/shared/hooks/use-toast'
 import {
   Table,
   TableBody,
@@ -28,27 +28,29 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
-import { Loader2, Mail, FileText, CheckCircle2, Trash2 } from 'lucide-react'
+import { Loader2, Mail, FileText, CheckCircle2, Trash2, Download, Paperclip } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
+import { documentService, type InquiryDocument } from '@/features/inquiries/services/documentService'
 
 interface SpecialRequestInquiry {
   id: number
-  serviceTypeId: number
+  fullName?: string
+  contactInfo?: string
+  phone?: string
+  company?: string
+  userId?: number
   status: string
   submittedAt: string
   updatedAt: string
-  orderId?: number
-  processedBy?: string
-  userId?: number
-  fullName?: string
-  email?: string
-  phone?: string
-  company?: string
+  notes?: string
+  // Special Request specific fields from backend DTO
   subject?: string
   preferredProvinceId?: number
+  preferredProvinceName?: string
   relatedDepartmentId?: number
+  relatedDepartmentName?: string
   message?: string
-  attachments?: string
+  otherInfo?: string
 }
 
 interface PageResponse<T> {
@@ -60,17 +62,17 @@ interface PageResponse<T> {
 }
 
 export function SpecialRequestInquiriesTab() {
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [inquiries, setInquiries] = useState<SpecialRequestInquiry[]>([])
   const [selected, setSelected] = useState<SpecialRequestInquiry | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [documents, setDocuments] = useState<InquiryDocument[]>([])
+  const [loadingDocuments, setLoadingDocuments] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true)
-      setError(null)
       try {
         const token = authService.getToken()
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
@@ -83,12 +85,10 @@ export function SpecialRequestInquiriesTab() {
         )
         setInquiries(res.data.content)
       } catch (err) {
-        if (axios.isAxiosError(err)) {
-          const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-          setError(detail || 'Failed to load inquiries')
-        } else {
-          setError('Failed to load inquiries')
-        }
+        const detail = axios.isAxiosError(err)
+          ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+          : 'Failed to load inquiries'
+        toast({ title: 'Error', description: detail, variant: 'destructive' })
       } finally {
         setIsLoading(false)
       }
@@ -121,14 +121,41 @@ export function SpecialRequestInquiriesTab() {
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )
       setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, status } : inq)))
-      setMessage({ type: 'success', text: 'Status updated' })
-      setTimeout(() => setMessage(null), 2500)
+      toast({ title: 'Success', description: 'Status updated' })
     } catch (err) {
       const detail = axios.isAxiosError(err)
         ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
         : 'Failed to update status'
-      setMessage({ type: 'error', text: detail })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
+    }
+  }
+
+  const loadDocuments = async (inquiryId: number) => {
+    setLoadingDocuments(true)
+    try {
+      const docs = await documentService.getDocuments(inquiryId, 'special-request')
+      setDocuments(docs)
+    } catch (err) {
+      console.error('Failed to load documents:', err)
+      setDocuments([])
+    } finally {
+      setLoadingDocuments(false)
+    }
+  }
+
+  const handleDownloadDocument = async (inquiryId: number, documentId: number, fileName: string) => {
+    try {
+      const blob = await documentService.downloadDocument(inquiryId, 'special-request', documentId)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to download document', variant: 'destructive' })
     }
   }
 
@@ -144,14 +171,12 @@ export function SpecialRequestInquiriesTab() {
       })
       setInquiries(prev => prev.filter(inq => inq.id !== id))
       setSelected(current => (current?.id === id ? null : current))
-      setMessage({ type: 'success', text: 'Inquiry deleted' })
-      setTimeout(() => setMessage(null), 2500)
+      toast({ title: 'Success', description: 'Inquiry deleted' })
     } catch (err) {
       const detail = axios.isAxiosError(err)
         ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
         : 'Failed to delete inquiry'
-      setMessage({ type: 'error', text: detail })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
     } finally {
       setDeletingId(null)
     }
@@ -167,17 +192,6 @@ export function SpecialRequestInquiriesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {message && (
-            <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className="mb-4">
-              <AlertDescription>{message.text}</AlertDescription>
-            </Alert>
-          )}
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -206,16 +220,21 @@ export function SpecialRequestInquiriesTab() {
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <div className="font-medium">{inq.subject || '—'}</div>
                         </div>
-                        <div className="text-xs text-muted-foreground">Dept: {inq.relatedDepartmentId ?? '—'} • Province: {inq.preferredProvinceId ?? '—'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {inq.relatedDepartmentName || `Dept: ${inq.relatedDepartmentId || '—'}`} • {inq.preferredProvinceName || `Province: ${inq.preferredProvinceId || '—'}`}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{inq.fullName || '—'}</div>
-                        <div className="text-xs text-muted-foreground">{inq.email || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{inq.contactInfo || inq.phone || '—'}</div>
                       </TableCell>
                       <TableCell>{renderStatus(inq.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setSelected(inq)}>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setSelected(inq)
+                            loadDocuments(inq.id)
+                          }}>
                             View
                           </Button>
                           <DropdownMenu>
@@ -260,11 +279,16 @@ export function SpecialRequestInquiriesTab() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={!!selected} onOpenChange={(open) => {
+        if (!open) {
+          setSelected(null)
+          setDocuments([])
+        }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Inquiry Details</DialogTitle>
-            <DialogDescription>Special request information</DialogDescription>
+            <DialogDescription>Special request information and attachments</DialogDescription>
           </DialogHeader>
           {selected && (
             <div className="space-y-4 text-sm text-muted-foreground">
@@ -273,7 +297,7 @@ export function SpecialRequestInquiriesTab() {
                   <div className="font-semibold flex items-center gap-2"><Mail className="h-4 w-4" /> Customer</div>
                   <div className="mt-2 space-y-1">
                     <div>Name: {selected.fullName || '—'}</div>
-                    <div>Email: {selected.email || '—'}</div>
+                    <div>Contact: {selected.contactInfo || '—'}</div>
                     <div>Phone: {selected.phone || '—'}</div>
                     <div>Company: {selected.company || '—'}</div>
                   </div>
@@ -282,15 +306,70 @@ export function SpecialRequestInquiriesTab() {
                   <div className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> Request</div>
                   <div className="mt-2 space-y-1">
                     <div>Subject: {selected.subject || '—'}</div>
-                    <div>Preferred Province: {selected.preferredProvinceId ?? '—'}</div>
-                    <div>Related Department: {selected.relatedDepartmentId ?? '—'}</div>
-                    <div>Message: {selected.message || '—'}</div>
-                    <div>Attachments: {selected.attachments || '—'}</div>
+                    <div>Province: {selected.preferredProvinceName || (selected.preferredProvinceId ? `ID: ${selected.preferredProvinceId}` : '—')}</div>
+                    <div>Department: {selected.relatedDepartmentName || (selected.relatedDepartmentId ? `ID: ${selected.relatedDepartmentId}` : '—')}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
+              <div className="rounded-md border p-3">
+                <div className="font-semibold mb-2">Message</div>
+                <div className="whitespace-pre-wrap">{selected.message || '—'}</div>
+              </div>
+
+              {selected.otherInfo && (
+                <div className="rounded-md border p-3">
+                  <div className="font-semibold mb-2">Other Info</div>
+                  <div className="whitespace-pre-wrap">{selected.otherInfo}</div>
+                </div>
+              )}
+
+              <div className="rounded-md border p-3">
+                <div className="font-semibold flex items-center gap-2 mb-3">
+                  <Paperclip className="h-4 w-4" /> 
+                  Attachments ({documents.length})
+                </div>
+                {loadingDocuments ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                ) : documents.length > 0 ? (
+                  <div className="space-y-2">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FileText className="h-4 w-4 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{doc.originalFileName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {documentService.formatFileSize(doc.fileSize)} • {documentService.getDocumentTypeLabel(doc.documentType)}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDownloadDocument(selected.id, doc.id, doc.originalFileName)}
+                          title="Download"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">No attachments</div>
+                )}
+              </div>
+
+              {selected.notes && (
+                <div className="rounded-md border p-3">
+                  <div className="font-semibold mb-2">Admin Notes</div>
+                  <div className="whitespace-pre-wrap">{selected.notes}</div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-sm border-t pt-3">
                 <div>Submitted: {formatDate(selected.submittedAt)}</div>
                 <div className="flex items-center gap-2">
                   <span>Status:</span>

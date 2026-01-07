@@ -9,9 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
+import { useToast } from '@/shared/hooks/use-toast'
 import {
   Table,
   TableBody,
@@ -80,17 +80,15 @@ interface PageResponse<T> {
 }
 
 export function ShippingAgencyInquiriesTab() {
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [inquiries, setInquiries] = useState<ShippingAgencyInquiry[]>([])
   const [selected, setSelected] = useState<ShippingAgencyInquiry | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true)
-      setError(null)
       try {
         const token = authService.getToken()
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
@@ -103,12 +101,10 @@ export function ShippingAgencyInquiriesTab() {
         )
         setInquiries(res.data.content)
       } catch (err) {
-        if (axios.isAxiosError(err)) {
-          const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-          setError(detail || 'Failed to load inquiries')
-        } else {
-          setError('Failed to load inquiries')
-        }
+        const detail = axios.isAxiosError(err)
+          ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
+          : 'Failed to load inquiries'
+        toast({ title: 'Error', description: detail, variant: 'destructive' })
       } finally {
         setIsLoading(false)
       }
@@ -150,14 +146,12 @@ export function ShippingAgencyInquiriesTab() {
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )
       setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, status } : inq)))
-      setMessage({ type: 'success', text: 'Status updated' })
-      setTimeout(() => setMessage(null), 2500)
+      toast({ title: 'Success', description: 'Status updated' })
     } catch (err) {
       const detail = axios.isAxiosError(err)
         ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
         : 'Failed to update status'
-      setMessage({ type: 'error', text: detail })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
     }
   }
 
@@ -171,14 +165,12 @@ export function ShippingAgencyInquiriesTab() {
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )
       setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, quoteForm: form } : inq)))
-      setMessage({ type: 'success', text: 'Form updated' })
-      setTimeout(() => setMessage(null), 2000)
+      toast({ title: 'Success', description: 'Form updated' })
     } catch (err) {
       const detail = axios.isAxiosError(err)
         ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
         : 'Failed to update form'
-      setMessage({ type: 'error', text: detail })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
     }
   }
 
@@ -204,14 +196,12 @@ export function ShippingAgencyInquiriesTab() {
       })
       setInquiries(prev => prev.filter(inq => inq.id !== id))
       setSelected(current => (current?.id === id ? null : current))
-      setMessage({ type: 'success', text: 'Inquiry deleted' })
-      setTimeout(() => setMessage(null), 2500)
+      toast({ title: 'Success', description: 'Inquiry deleted' })
     } catch (err) {
       const detail = axios.isAxiosError(err)
         ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
         : 'Failed to delete inquiry'
-      setMessage({ type: 'error', text: detail })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Error', description: detail, variant: 'destructive' })
     } finally {
       setDeletingId(null)
     }
@@ -229,17 +219,6 @@ export function ShippingAgencyInquiriesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {message && (
-            <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className="mb-4">
-              <AlertDescription>{message.text}</AlertDescription>
-            </Alert>
-          )}
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

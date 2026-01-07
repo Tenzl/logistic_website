@@ -6,9 +6,9 @@ import { Button } from '@/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Badge } from '@/shared/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { Loader2, Mail, AlertCircle, FileText, CheckCircle2, Download, Trash2 } from 'lucide-react'
+import { Loader2, Mail, FileText, CheckCircle2, Download, Trash2 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
+import { useToast } from '@/shared/hooks/use-toast'
 import axios from 'axios'
 import { authService } from '@/features/auth/services/authService'
 import { documentService, InquiryDocument } from '@/features/inquiries/services/documentService'
@@ -36,10 +36,10 @@ interface PageResponse<T> {
 }
 
 export function ManageInquiriesTab() {
+  const { toast } = useToast()
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [detailInquiry, setDetailInquiry] = useState<Inquiry | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [previewDocument, setPreviewDocument] = useState<InquiryDocument | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
@@ -64,13 +64,11 @@ export function ManageInquiriesTab() {
         ? { ...inquiry, status: 'QUOTED' }
         : inquiry
     ))
-    setMessage({ type: 'success', text: 'Document uploaded successfully' })
-    setTimeout(() => setMessage(null), 3000)
+    toast({ title: 'Success', description: 'Document uploaded successfully' })
   }
 
   const handleDocumentDelete = (documentId: number) => {
-    setMessage({ type: 'success', text: 'Document deleted successfully' })
-    setTimeout(() => setMessage(null), 3000)
+    toast({ title: 'Success', description: 'Document deleted successfully' })
   }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
@@ -90,10 +88,10 @@ export function ManageInquiriesTab() {
       if (axios.isAxiosError(err)) {
         console.error('Failed to fetch inquiries:', err.response?.status, err.response?.data || err.message)
         const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        setMessage({ type: 'error', text: detail || 'Failed to load inquiries' })
+        toast({ title: 'Error', description: detail || 'Failed to load inquiries', variant: 'destructive' })
       } else {
         console.error('Failed to fetch inquiries:', err)
-        setMessage({ type: 'error', text: 'Failed to load inquiries' })
+        toast({ title: 'Error', description: 'Failed to load inquiries', variant: 'destructive' })
       }
     } finally {
       setIsLoading(false)
@@ -107,15 +105,14 @@ export function ManageInquiriesTab() {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       setInquiries(prev => prev.map(inquiry => inquiry.id === id ? { ...inquiry, status } : inquiry))
-      setMessage({ type: 'success', text: 'Status updated successfully' })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Success', description: 'Status updated successfully' })
     } catch (err) {
       if (axios.isAxiosError(err)) {
         console.error('Failed to update status:', err.response?.status, err.response?.data || err.message)
         const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        setMessage({ type: 'error', text: detail || 'Failed to update status' })
+        toast({ title: 'Error', description: detail || 'Failed to update status', variant: 'destructive' })
       } else {
-        setMessage({ type: 'error', text: 'Failed to update status' })
+        toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
       }
     }
   }
@@ -130,19 +127,18 @@ export function ManageInquiriesTab() {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       setInquiries(prev => prev.filter(inq => inq.id !== id))
-      setMessage({ type: 'success', text: 'Inquiry deleted' })
+      toast({ title: 'Success', description: 'Inquiry deleted' })
     } catch (err) {
       if (axios.isAxiosError(err)) {
         console.error('Failed to delete inquiry:', err.response?.status, err.response?.data || err.message)
         const detail = (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        setMessage({ type: 'error', text: detail || 'Failed to delete inquiry' })
+        toast({ title: 'Error', description: detail || 'Failed to delete inquiry', variant: 'destructive' })
       } else {
         console.error('Failed to delete inquiry:', err)
-        setMessage({ type: 'error', text: 'Failed to delete inquiry' })
+        toast({ title: 'Error', description: 'Failed to delete inquiry', variant: 'destructive' })
       }
     } finally {
       setDeletingId(null)
-      setTimeout(() => setMessage(null), 3000)
     }
   }
 
@@ -165,8 +161,7 @@ export function ManageInquiriesTab() {
       }
     } catch (err) {
       console.error('Failed to preview quote template', err)
-      setMessage({ type: 'error', text: 'Could not load quote template' })
-      setTimeout(() => setMessage(null), 3000)
+      toast({ title: 'Error', description: 'Could not load quote template', variant: 'destructive' })
     }
   }
 
@@ -227,13 +222,6 @@ export function ManageInquiriesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {message && (
-            <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{message.text}</AlertDescription>
-            </Alert>
-          )}
-
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -425,7 +413,7 @@ export function ManageInquiriesTab() {
                     URL.revokeObjectURL(url)
                   }
                 } catch (err) {
-                  setMessage({ type: 'error', text: 'Failed to download document' })
+                  toast({ title: 'Error', description: 'Failed to download document', variant: 'destructive' })
                 }
               }} className="gap-2">
                 <Download className="h-4 w-4" />

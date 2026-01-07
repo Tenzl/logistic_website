@@ -14,6 +14,7 @@ import { renderQuoteHtml as renderQuoteHtmlQn } from '@/features/inquiries/compo
 import { authService } from '@/features/auth/services/authService'
 import { AlertCircle, ArrowLeft, Download, FileText, Loader2, RefreshCw } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
+import { useToast } from '@/shared/hooks/use-toast'
 
 interface ShippingAgencyInquiry {
   id: number
@@ -109,6 +110,7 @@ const mapToQuoteData = (inquiry: ShippingAgencyInquiry): QuoteData => {
 }
 
 export default function ShippingAgencyPdfPage() {
+  const { toast } = useToast()
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const inquiryId = params?.id
@@ -234,40 +236,62 @@ export default function ShippingAgencyPdfPage() {
     )
   }
 
-  const savePdf = async () => {
-    if (!quoteHtml) return
+  const transferToUser = async () => {
+    if (!quoteHtml || !inquiryId) return
     
-    // Create hidden iframe for printing
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '0'
-    iframe.style.height = '0'
-    iframe.style.border = 'none'
-    document.body.appendChild(iframe)
-    
-    const iframeDoc = iframe.contentWindow?.document
-    if (!iframeDoc) {
-      document.body.removeChild(iframe)
-      return
+    try {
+      // Update status to QUOTED
+      const token = authService.getToken()
+      await axios.patch(
+        `${API_BASE}/api/admin/inquiries/shipping-agency/${inquiryId}/status`,
+        { status: 'QUOTED' },
+        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+      )
+      
+      // Update local state
+      setInquiry(prev => (prev ? { ...prev, status: 'QUOTED' } : prev))
+      
+      // Show success notification
+      toast({ title: 'Success', description: 'Status updated to QUOTED' })
+      
+      // TODO: PDF Export (temporarily disabled)
+      /*
+      // Create hidden iframe for printing
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'fixed'
+      iframe.style.right = '0'
+      iframe.style.bottom = '0'
+      iframe.style.width = '0'
+      iframe.style.height = '0'
+      iframe.style.border = 'none'
+      document.body.appendChild(iframe)
+      
+      const iframeDoc = iframe.contentWindow?.document
+      if (!iframeDoc) {
+        document.body.removeChild(iframe)
+        return
+      }
+      
+      iframeDoc.open()
+      iframeDoc.write(quoteHtml)
+      iframeDoc.close()
+      
+      // Wait for content to load
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Print from iframe
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+      
+      // Clean up after print dialog closes
+      setTimeout(() => {
+        document.body.removeChild(iframe)
+      }, 1000)
+      */
+    } catch (error) {
+      console.error('Failed to export quote:', error)
+      toast({ title: 'Error', description: 'Failed to export quote', variant: 'destructive' })
     }
-    
-    iframeDoc.open()
-    iframeDoc.write(quoteHtml)
-    iframeDoc.close()
-    
-    // Wait for content to load
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Print from iframe
-    iframe.contentWindow?.focus()
-    iframe.contentWindow?.print()
-    
-    // Clean up after print dialog closes
-    setTimeout(() => {
-      document.body.removeChild(iframe)
-    }, 1000)
   }
 
   const applyHours = async () => {
@@ -461,23 +485,6 @@ export default function ShippingAgencyPdfPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span className="text-sm text-foreground">A4 quote preview</span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="outline" className="h-8 px-3 gap-2" disabled={!isEditing}>
-                            Form: {pendingForm}
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="min-w-[140px]">
-                          {(['HCM', 'QN'] as const).map(option => (
-                            <DropdownMenuItem key={option} onClick={() => setPendingForm(option)} className="gap-2">
-                              <span className="text-xs text-muted-foreground min-w-[36px]">
-                                {pendingForm === option ? 'selected' : ''}
-                              </span>
-                              <span>{option}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                       <div className="flex items-center gap-2">
                         <span className="text-xs uppercase tracking-wide">Berth hrs</span>
                         <Input
@@ -530,11 +537,11 @@ export default function ShippingAgencyPdfPage() {
                         variant="default"
                         size="sm"
                         className="gap-2"
-                        onClick={savePdf}
+                        onClick={transferToUser}
                         disabled={!quoteHtml || loadingQuote}
                       >
                         {loadingQuote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        Save PDF
+                        Transfer to User
                       </Button>
                     </div>
                   </div>
