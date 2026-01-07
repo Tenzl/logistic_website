@@ -50,6 +50,7 @@ import { FreightForwardingInquiriesTab } from './FreightForwardingInquiriesTab'
 import { LogisticsInquiriesTab } from './LogisticsInquiriesTab'
 import { CharteringInquiriesTab } from './CharteringInquiriesTab'
 import { SpecialRequestInquiriesTab } from './SpecialRequestInquiriesTab'
+import { CreateInvoiceTab } from './CreateInvoiceTab'
 
 interface AdminPageProps {
   onNavigateHome: () => void
@@ -59,6 +60,7 @@ interface AdminPageProps {
 type AdminSection =
   | 'profile'
   | 'inquiry'
+  | 'create-invoice'
   | 'shipping-agency-inquiries'
   | 'freight-forwarding-inquiries'
   | 'logistics-inquiries'
@@ -91,6 +93,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
   const menuItems = [
     { id: 'profile' as AdminSection, label: 'Edit Profile', icon: User, category: 'Profile' },
+    { id: 'create-invoice' as AdminSection, label: 'Create Invoice', icon: Calculator, category: 'Invoices' },
     { id: 'shipping-agency-inquiries' as AdminSection, label: 'Shipping Agency', icon: ListChecks, category: 'Inquiries' },
     { id: 'freight-forwarding-inquiries' as AdminSection, label: 'Freight Forwarding', icon: Package, category: 'Inquiries' },
     { id: 'logistics-inquiries' as AdminSection, label: 'Logistics', icon: Truck, category: 'Inquiries' },
@@ -108,6 +111,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
   const categories = [
     { name: 'Profile', items: menuItems.filter(item => item.category === 'Profile') },
+    { name: 'Invoices', items: menuItems.filter(item => item.category === 'Invoices') },
     { name: 'Inquiries', items: menuItems.filter(item => item.category === 'Inquiries') },
     { name: 'Image Management', items: menuItems.filter(item => item.category === 'Image Management') },
     { name: 'Data Management', items: menuItems.filter(item => item.category === 'Data Management') },
@@ -196,6 +200,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           {activeSection === 'profile' && <EditProfileTab />}
+          {activeSection === 'create-invoice' && <CreateInvoiceTab />}
           {activeSection === 'inquiry' && <ManageInquiriesTab />}
           {activeSection === 'shipping-agency-inquiries' && <ShippingAgencyInquiriesTab />}
           {activeSection === 'freight-forwarding-inquiries' && <FreightForwardingInquiriesTab />}

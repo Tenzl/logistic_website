@@ -590,6 +590,50 @@ export default function ShippingAgencyPdfPage() {
                         Apply
                       </Button>
                       <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          if (!quoteHtml) return
+                          
+                          // Create hidden iframe for printing
+                          const iframe = document.createElement('iframe')
+                          iframe.style.position = 'fixed'
+                          iframe.style.right = '0'
+                          iframe.style.bottom = '0'
+                          iframe.style.width = '0'
+                          iframe.style.height = '0'
+                          iframe.style.border = 'none'
+                          document.body.appendChild(iframe)
+                          
+                          const iframeDoc = iframe.contentWindow?.document
+                          if (!iframeDoc) {
+                            document.body.removeChild(iframe)
+                            return
+                          }
+                          
+                          iframeDoc.open()
+                          iframeDoc.write(quoteHtml)
+                          iframeDoc.close()
+                          
+                          // Wait for content to load
+                          await new Promise(resolve => setTimeout(resolve, 1000))
+                          
+                          // Print from iframe
+                          iframe.contentWindow?.focus()
+                          iframe.contentWindow?.print()
+                          
+                          // Clean up after print dialog closes
+                          setTimeout(() => {
+                            document.body.removeChild(iframe)
+                          }, 1000)
+                        }}
+                        disabled={!quoteHtml || loadingQuote}
+                      >
+                        <FileText className="h-4 w-4" />
+                        Save PDF
+                      </Button>
+                      <Button
                         variant="default"
                         size="sm"
                         className="gap-2"
