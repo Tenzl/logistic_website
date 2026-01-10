@@ -1,15 +1,19 @@
 package com.example.seatrans.features.customer.dto;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import com.example.seatrans.features.customer.model.enums.CustomerType;
 import com.example.seatrans.features.customer.model.enums.MembershipLevel;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import jakarta.validation.constraints.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * DTO cho Customer
@@ -57,7 +61,6 @@ public class CustomerDTO {
     private LocalDateTime updatedAt;
     
     // User basic info (nested)
-    private String username;
     private String email;
     private String fullName;
     private String phone;

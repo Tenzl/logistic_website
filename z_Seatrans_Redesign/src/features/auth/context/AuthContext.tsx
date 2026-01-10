@@ -6,12 +6,11 @@ import { toast } from 'sonner'
 
 interface User {
   id: number
-  username: string
   email: string
   fullName: string
   phone?: string
-  nation?: string
   company?: string
+  nation?: string
   roles: string[]
   roleGroup: string
 }
@@ -20,8 +19,8 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (credential: string, password: string) => Promise<{ success: boolean; message?: string }>
-  register: (username: string, email: string, fullName: string, password: string) => Promise<{ success: boolean; message?: string }>
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>
+  register: (email: string, fullName: string, password: string, phone?: string, company?: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   refreshUser: () => Promise<void>
   profileComplete: boolean
@@ -55,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = async (credential: string, password: string) => {
-    const response = await authService.login(credential, password)
+  const login = async (email: string, password: string) => {
+    const response = await authService.login(email, password)
     if (response.success && response.data) {
       setUser(response.data.user)
       return { success: true }
@@ -64,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, message: response.message }
   }
 
-  const register = async (username: string, email: string, fullName: string, password: string) => {
-    const response = await authService.register(username, email, fullName, password)
+  const register = async (email: string, fullName: string, password: string, phone?: string, company?: string) => {
+    const response = await authService.register(email, fullName, password, phone, company)
     if (response.success && response.data) {
       setUser(response.data.user)
       return { success: true }

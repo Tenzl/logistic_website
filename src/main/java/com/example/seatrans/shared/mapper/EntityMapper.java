@@ -37,7 +37,6 @@ public class EntityMapper {
         
         return UserDTO.builder()
                 .id(user.getId())
-                .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
@@ -82,7 +81,6 @@ public class EntityMapper {
                 .createdAt(customer.getCreatedAt())
                 .updatedAt(customer.getUpdatedAt())
                 // User basic info
-                .username(user != null ? user.getUsername() : null)
                 .email(user != null ? user.getEmail() : null)
                 .fullName(user != null ? user.getFullName() : null)
                 .phone(user != null ? user.getPhone() : null)
@@ -142,7 +140,6 @@ public class EntityMapper {
                 .createdAt(employee.getCreatedAt())
                 .updatedAt(employee.getUpdatedAt())
                 // User basic info
-                .username(user != null ? user.getUsername() : null)
                 .email(user != null ? user.getEmail() : null)
                 .fullName(user != null ? user.getFullName() : null)
                 .phone(user != null ? user.getPhone() : null)

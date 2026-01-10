@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import NProgress from 'nprogress'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -94,6 +96,7 @@ const solutionsData = {
 }
 
 export function Solutions({ onNavigate }: SolutionsProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('shipping-agency')
   const [expandedDetails, setExpandedDetails] = useState(false)
   const [animatedMetrics, setAnimatedMetrics] = useState<Record<string, boolean>>({})
@@ -105,6 +108,50 @@ export function Solutions({ onNavigate }: SolutionsProps) {
       setAnimatedMetrics(prev => ({ ...prev, [activeTab]: true }))
     }
   }, [isInView, activeTab, animatedMetrics])
+
+  const handleExploreService = () => {
+    let path = ''
+    switch (activeTab) {
+      case 'shipping-agency':
+        path = '/shipping-agency'
+        break
+      case 'chartering':
+        path = '/chartering-broking'
+        break
+      case 'freight-forwarding':
+        path = '/freight-forwarding'
+        break
+      case 'total-logistics':
+        path = '/total-logistics'
+        break
+      default:
+        return
+    }
+    NProgress.start()
+    router.push(path)
+  }
+
+  const handleRequestQuote = () => {
+    let path = ''
+    switch (activeTab) {
+      case 'shipping-agency':
+        path = '/shipping-agency'
+        break
+      case 'chartering':
+        path = '/chartering-broking'
+        break
+      case 'freight-forwarding':
+        path = '/freight-forwarding'
+        break
+      case 'total-logistics':
+        path = '/total-logistics'
+        break
+      default:
+        return
+    }
+    NProgress.start()
+    router.push(`${path}#quote`)
+  }
 
   const activeSolution = solutionsData[activeTab as keyof typeof solutionsData]
 
@@ -180,24 +227,13 @@ export function Solutions({ onNavigate }: SolutionsProps) {
                     <div className="flex gap-4 pt-4">
                       <Button
                         size="lg"
-                        onClick={() => {
-                          if (activeTab === 'shipping-agency' && onNavigate) {
-                            onNavigate('shipping-agency')
-                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                          }
-                          if (activeTab === 'chartering' && onNavigate) {
-                            onNavigate('chartering-broking')
-                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                          }
-                          if (activeTab === 'freight-forwarding' && onNavigate) {
-                            onNavigate('freight-forwarding')
-                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                          }
-                        }}
+                        onClick={handleExploreService}
                       >
                         Explore Service
                       </Button>
-                      <Button variant="outline" size="lg">Request a Quote</Button>
+                      <Button variant="outline" size="lg" onClick={handleRequestQuote}>
+                        Request a Quote
+                      </Button>
                     </div>
                   </CardContent>
 

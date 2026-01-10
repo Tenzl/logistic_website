@@ -16,7 +16,7 @@ interface LoginProps {
 }
 
 export function Login({ onNavigateHome, onNavigateSignup, onLoginSuccess }: LoginProps) {
-  const [credential, setCredential] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
@@ -31,12 +31,12 @@ export function Login({ onNavigateHome, onNavigateSignup, onLoginSuccess }: Logi
     setIsLoading(true)
 
     try {
-      const success = await login(credential, password)
+      const success = await login(email, password)
       
       if (success) {
         // Save remember me preference
         if (rememberMe) {
-          localStorage.setItem('rememberMe', credential)
+          localStorage.setItem('rememberMe', email)
         } else {
           localStorage.removeItem('rememberMe')
         }
@@ -44,7 +44,7 @@ export function Login({ onNavigateHome, onNavigateSignup, onLoginSuccess }: Logi
         // Redirect to dashboard or home
         onLoginSuccess?.()
       } else {
-        setError('Invalid username/email or password')
+        setError('Invalid email or password')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -75,15 +75,15 @@ export function Login({ onNavigateHome, onNavigateSignup, onLoginSuccess }: Logi
                 </Alert>
               )}
 
-              {/* Username or Email Field */}
+              {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="credential">Username or Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="credential"
-                  type="text"
-                  placeholder="username or email"
-                  value={credential}
-                  onChange={(e) => setCredential(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="your.email@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 />

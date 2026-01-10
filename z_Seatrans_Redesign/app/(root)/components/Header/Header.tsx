@@ -188,7 +188,7 @@ export default function Header() {
                             {user.fullName || 'User'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            @{user.username}
+                            {user.email}
                           </span>
                         </div>
                       </div>

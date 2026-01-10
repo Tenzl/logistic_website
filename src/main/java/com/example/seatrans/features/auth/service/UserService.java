@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,59 +26,46 @@ import com.example.seatrans.shared.exception.UserNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Service xá»­ lÃ½ business logic cho User
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class UserService {
-    
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final RoleValidationService roleValidationService;
     private final PasswordEncoder passwordEncoder;
+    private final RoleValidationService roleValidationService;
 
-    private static final Pattern EMAIL_PATTERN = Pattern
-            .compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
-    
-    // ==================== Create Operations ====================
-    
     /**
-     * Táº¡o user má»›i
-     * 
-     * @param user User entity (chÆ°a hash password)
-     * @return User Ä‘Ã£ lÆ°u
+     * Create a user with default validation.
      */
     public User createUser(User user) {
-        // Kiá»ƒm tra duplicate username
-        if (user.getUsername() != null && userRepository.existsByUsername(user.getUsername())) {
-            throw new DuplicateUserException("Username", user.getUsername());
-        }
-        
-        // Kiá»ƒm tra duplicate email
+        validateEmail(user.getEmail());
+
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new DuplicateUserException("Email", user.getEmail());
         }
-        
-        // Hash password
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
-        // Validate roles náº¿u cÃ³
+
+        // Validate roles nếu có
         if (!user.getRoles().isEmpty()) {
             roleValidationService.validateUserRoles(user);
         }
-        
+
         return userRepository.save(user);
     }
 
     /**
      * Register external user or upgrade guest account to customer.
-     * - If email matches a guest, upgrade username/fullname/password/roles.
+     * - If email matches a guest, upgrade profile/password/roles.
      * - If email already used by a non-guest, raise duplicate error.
      * - New users get ROLE_CUSTOMER.
      */
     public User registerOrUpgradeCustomer(RegisterDTO dto) {
+        validateEmail(dto.getEmail());
         Optional<User> existingByEmail = userRepository.findByEmail(dto.getEmail());
 
         Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
@@ -92,22 +80,10 @@ public class UserService {
                 throw new DuplicateUserException("Email", dto.getEmail());
             }
 
-            // When upgrading guest, always check if new username is available
-            // Guest's username may be email or null, so check new username isn't taken by someone else
-            String existingUsername = existing.getUsername();
-            boolean usernameChanging = (existingUsername == null || !existingUsername.equals(dto.getUsername()));
-            if (usernameChanging) {
-                // Exclude current user from duplicate check
-                var userWithUsername = userRepository.findByUsername(dto.getUsername());
-                if (userWithUsername.isPresent() && !userWithUsername.get().getId().equals(existing.getId())) {
-                    throw new DuplicateUserException("Username", dto.getUsername());
-                }
-            }
-
-            existing.setUsername(dto.getUsername());
             existing.setFullName(dto.getFullName());
             existing.setEmail(dto.getEmail());
             existing.setPhone(dto.getPhone());
+            existing.setCompany(dto.getCompany());
             existing.setPassword(passwordEncoder.encode(dto.getPassword()));
             // Use mutable set so Hibernate can manage the collection
             existing.setRoles(new HashSet<>(Collections.singleton(customerRole)));
@@ -115,13 +91,10 @@ public class UserService {
         }
 
         // Fresh customer registration
-        if (userRepository.existsByUsername(dto.getUsername())) {
-            throw new DuplicateUserException("Username", dto.getUsername());
-        }
-
-        User user = new User(dto.getUsername(), dto.getEmail(), passwordEncoder.encode(dto.getPassword()));
+        User user = new User(dto.getEmail(), passwordEncoder.encode(dto.getPassword()));
         user.setFullName(dto.getFullName());
         user.setPhone(dto.getPhone());
+        user.setCompany(dto.getCompany());
         user.setRoles(new HashSet<>(Collections.singleton(customerRole)));
         return userRepository.save(user);
     }
@@ -130,7 +103,7 @@ public class UserService {
      * Create a guest user for public inquiry submission or reuse an existing guest.
      * - If email belongs to a registered (non-guest) user: throw DuplicateUserException.
      * - If email belongs to a guest: reuse and lightly refresh profile data.
-     * - If email is new: create a guest with null username and a generated password.
+     * - If email is new: create a guest with a generated password.
      */
     public User createOrReuseGuest(String fullName, String email, String phone, String company) {
         validateEmail(email);
@@ -147,9 +120,6 @@ public class UserService {
             }
 
             // Refresh lightweight profile fields so the inquiry reflects latest info
-            if ((user.getUsername() == null || user.getUsername().isBlank())) {
-                user.setUsername(email); // ensure NOT NULL constraint is satisfied
-            }
             if (fullName != null && !fullName.isBlank()) {
                 user.setFullName(fullName);
             }
@@ -163,7 +133,6 @@ public class UserService {
         }
 
         User guest = new User();
-        guest.setUsername(email); // ensure NOT NULL; use email as username for guest
         guest.setEmail(email);
         guest.setFullName(fullName);
         guest.setPhone(phone);
@@ -181,16 +150,16 @@ public class UserService {
      * @return User Ä‘Ã£ lÆ°u
      */
     public User createUserWithRoles(User user, Set<String> roleNames) {
-        // TÃ¬m cÃ¡c roles
+        // Tìm các roles
         Set<Role> roles = roleNames.stream()
             .map(name -> roleRepository.findByName(name)
                 .orElseThrow(() -> new RoleNotFoundException("name", name)))
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
         
         // Validate roles compatible
         roleValidationService.validateRoleAssignments(user, roles);
         
-        // GÃ¡n roles
+        // Gán roles
         user.setRoles(roles);
         
         return createUser(user);
@@ -199,25 +168,16 @@ public class UserService {
     // ==================== Read Operations ====================
     
     /**
-     * Láº¥y user theo ID
+     * Lấy user theo ID
      */
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userRepository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
     }
-    
+
     /**
-     * Láº¥y user theo username
-     */
-    @Transactional(readOnly = true)
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
-            .orElseThrow(() -> new UserNotFoundException("username", username));
-    }
-    
-    /**
-     * Láº¥y user theo email
+     * Lấy user theo email
      */
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
@@ -262,7 +222,7 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public List<User> searchUsers(String keyword) {
-        return userRepository.searchByUsernameOrEmail(keyword);
+        return userRepository.searchByEmailOrFullName(keyword);
     }
     
     // ==================== Update Operations ====================
@@ -432,14 +392,6 @@ public class UserService {
     // ==================== Validation & Check ====================
     
     /**
-     * Kiá»ƒm tra username Ä‘Ã£ tá»“n táº¡i chÆ°a
-     */
-    @Transactional(readOnly = true)
-    public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
-    
-    /**
      * Kiá»ƒm tra email Ä‘Ã£ tá»“n táº¡i chÆ°a
      */
     @Transactional(readOnly = true)
@@ -480,37 +432,20 @@ public class UserService {
     }
     
     /**
-     * Verify credentials (login)
-     * Supports both username and email
+     * Verify credentials (login) using email.
      */
     @Transactional(readOnly = true)
-    public boolean verifyCredentials(String usernameOrEmail, String password) {
-        Optional<User> userOpt = userRepository.findByUsername(usernameOrEmail);
-        if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByEmail(usernameOrEmail);
-        }
-        
+    public boolean verifyCredentials(String email, String password) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
         if (userOpt.isEmpty()) {
             return false;
         }
-        
+
         User user = userOpt.get();
         return user.getIsActive() && passwordEncoder.matches(password, user.getPassword());
     }
 
-    /**
-     * Get user by username or email
-     */
-    @Transactional(readOnly = true)
-    public User getUserByUsernameOrEmail(String usernameOrEmail) {
-        Optional<User> userOpt = userRepository.findByUsername(usernameOrEmail);
-        if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByEmail(usernameOrEmail);
-        }
-        
-        return userOpt.orElseThrow(() -> new UserNotFoundException("username or email", usernameOrEmail));
-    }
-    
     /**
      * Find or create user from OAuth2 provider (Google)
      * Returns existing user if email matches, or creates new OAuth user
@@ -537,7 +472,6 @@ public class UserService {
         User newUser = new User();
         newUser.setEmail(email);
         newUser.setFullName(fullName);
-        newUser.setUsername(email); // Use email as username for OAuth users
         newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Random secure password
         newUser.setIsActive(true);
         newUser.setEmailVerified(true); // OAuth emails are verified by provider

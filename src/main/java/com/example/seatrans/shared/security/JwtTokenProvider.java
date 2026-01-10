@@ -58,15 +58,15 @@ public class JwtTokenProvider implements TokenProvider {
     /**
      * Generate JWT token
      */
-    public String generateToken(Long userId, String username) {
-        return generateToken(userId, username, jwtExpirationMs, null);
+    public String generateToken(Long userId, String email) {
+        return generateToken(userId, email, jwtExpirationMs, null);
     }
 
     /**
      * Generate Refresh Token
      */
-    public String generateRefreshToken(Long userId, String username) {
-        return generateToken(userId, username, refreshExpirationMs, null);
+    public String generateRefreshToken(Long userId, String email) {
+        return generateToken(userId, email, refreshExpirationMs, null);
     }
 
     /**
@@ -77,7 +77,7 @@ public class JwtTokenProvider implements TokenProvider {
         Set<String> roleNames = user.getRoles().stream()
                 .map(role -> role.getName())
                 .collect(Collectors.toSet());
-        return generateToken(user.getId(), user.getUsername(), jwtExpirationMs, roleNames);
+        return generateToken(user.getId(), user.getEmail(), jwtExpirationMs, roleNames);
     }
 
     @Override
@@ -85,15 +85,15 @@ public class JwtTokenProvider implements TokenProvider {
         Set<String> roleNames = user.getRoles().stream()
                 .map(role -> role.getName())
                 .collect(Collectors.toSet());
-        return generateToken(user.getId(), user.getUsername(), refreshExpirationMs, roleNames);
+        return generateToken(user.getId(), user.getEmail(), refreshExpirationMs, roleNames);
     }
 
-    private String generateToken(Long userId, String username, long expirationMs, Set<String> roleNames) {
+    private String generateToken(Long userId, String email, long expirationMs, Set<String> roleNames) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
         
         return Jwts.builder()
-                .subject(username)
+                .subject(email)
                 .claim("userId", userId)
             .claim(CLAIM_ROLES, roleNames)
                 .issuedAt(now)
@@ -103,10 +103,10 @@ public class JwtTokenProvider implements TokenProvider {
     }
     
     /**
-     * Get username from JWT token
+     * Get email from JWT token
      */
     @Override
-    public String getUsernameFromToken(String token) {
+    public String getEmailFromToken(String token) {
         Claims claims = getAllClaimsFromToken(token);
         return claims.getSubject();
     }

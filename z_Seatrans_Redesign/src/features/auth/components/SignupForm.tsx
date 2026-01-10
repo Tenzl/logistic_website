@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { PhoneInput } from '@/shared/components/ui/phone-input'
 import { Label } from '@/shared/components/ui/label'
 import { Pending } from '@/shared/components/pending'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -18,8 +19,9 @@ interface SignupProps {
 export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: SignupProps) {
   const [formData, setFormData] = useState({
     fullName: '',
-    username: '',
     email: '',
+    phone: '',
+    company: '',
     password: '',
     confirmPassword: ''
   })
@@ -49,12 +51,6 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
       return
     }
 
-    // Frontend validation to match backend constraints
-    const usernameValid = /^[A-Za-z0-9_]{6,50}$/.test(formData.username)
-    if (!usernameValid) {
-      setError('Username must be 6-50 characters and only letters, numbers, underscore.')
-      return
-    }
     const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(formData.password)
     if (!passwordValid) {
       setError('Password must be 8+ chars with uppercase, lowercase, and a number.')
@@ -63,12 +59,12 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
 
     setIsLoading(true)
     try {
-      // Use the username from the form
       const result = await register(
-        formData.username, 
-        formData.email, 
-        formData.fullName, 
-        formData.password
+        formData.email,
+        formData.fullName,
+        formData.password,
+        formData.phone,
+        formData.company
       )
 
       if (result.success) {
@@ -142,20 +138,6 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
                 />
               </div>
 
-              {/* Username Field */}
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="johndoe"
-                  value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
@@ -166,6 +148,31 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   required
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Phone Field */}
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <PhoneInput
+                  id="phone"
+                  defaultCountry="VN"
+                  value={formData.phone || undefined}
+                  onChange={(val) => handleInputChange('phone', val || '')}
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Company Field */}
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  type="text"
+                  placeholder="Your company name"
+                  value={formData.company}
+                  onChange={(e) => handleInputChange('company', e.target.value)}
                   className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 />
               </div>

@@ -1,50 +1,43 @@
 package com.example.seatrans.features.customer.repository;
 
-import com.example.seatrans.features.customer.model.Customer;
-import com.example.seatrans.features.customer.model.enums.CustomerType;
-import com.example.seatrans.features.customer.model.enums.MembershipLevel;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.example.seatrans.features.customer.model.Customer;
+import com.example.seatrans.features.customer.model.enums.CustomerType;
+import com.example.seatrans.features.customer.model.enums.MembershipLevel;
 
 /**
  * Repository interface cho Customer entity
  */
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
-    
-    // ==================== Basic Queries ====================
-    
+
     /**
-     * TÃƒÂ¬m customer theo user ID
+     * Tìm customer theo user ID
      */
     Optional<Customer> findByUserId(Long userId);
     
     /**
-     * TÃƒÂ¬m customer theo customer code
+     * Tìm customer theo customer code
      */
     Optional<Customer> findByCustomerCode(String customerCode);
     
     /**
-     * TÃƒÂ¬m customer theo email cÃ¡Â»Â§a user
+     * Tìm customer theo email của user
      */
     @Query("SELECT c FROM Customer c WHERE c.user.email = :email")
     Optional<Customer> findByUserEmail(@Param("email") String email);
-    
+
     /**
-     * TÃƒÂ¬m customer theo username cÃ¡Â»Â§a user
-     */
-    @Query("SELECT c FROM Customer c WHERE c.user.username = :username")
-    Optional<Customer> findByUserUsername(@Param("username") String username);
-    
-    /**
-     * KiÃ¡Â»Æ’m tra customer code Ã„â€˜ÃƒÂ£ tÃ¡Â»â€œn tÃ¡ÂºÂ¡i chÃ†Â°a
+     * Kiểm tra customer code đã tồn tại chưa
      */
     boolean existsByCustomerCode(String customerCode);
     

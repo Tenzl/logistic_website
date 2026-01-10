@@ -76,15 +76,15 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
             @Valid @RequestBody LoginDTO loginDTO) {
-        boolean isValid = userService.verifyCredentials(loginDTO.getUsername(), loginDTO.getPassword());
+        boolean isValid = userService.verifyCredentials(loginDTO.getEmail(), loginDTO.getPassword());
 
         if (!isValid) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid username or password"));
+                .body(ApiResponse.error("Invalid email or password"));
         }
 
-        User user = userService.getUserByUsernameOrEmail(loginDTO.getUsername());
+        User user = userService.getUserByEmail(loginDTO.getEmail());
         userService.updateLastLogin(user.getId());
 
         UserDTO userDTO = entityMapper.toUserDTO(user);

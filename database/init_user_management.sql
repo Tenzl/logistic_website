@@ -16,7 +16,6 @@ DROP TABLE IF EXISTS users;
 -- ============================================
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100),
@@ -26,7 +25,6 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL,
     
-    INDEX idx_username (username),
     INDEX idx_email (email),
     INDEX idx_is_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -137,8 +135,8 @@ INSERT INTO roles (name, description, role_group) VALUES
 
 -- Insert sample admin user (password: Admin123)
 -- Note: Password cần được hash bằng BCrypt trong application
-INSERT INTO users (username, email, password, full_name, phone, is_active) VALUES
-('admin', 'admin@seatrans.com', '$2a$10$N.zmjlPxI7eQPVzPe4GKqefP6P.JhRQKnIJ2qX1WjQvQr/PiKGKKq', 'System Administrator', '+84123456789', TRUE);
+INSERT INTO users (email, password, full_name, phone, is_active) VALUES
+('admin@seatrans.com', '$2a$10$N.zmjlPxI7eQPVzPe4GKqefP6P.JhRQKnIJ2qX1WjQvQr/PiKGKKq', 'System Administrator', '+84123456789', TRUE);
 
 -- Assign ADMIN role to admin user
 INSERT INTO user_roles (user_id, role_id) VALUES
@@ -162,7 +160,7 @@ SHOW TABLES;
 SELECT * FROM roles;
 
 -- Verify admin user
-SELECT u.id, u.username, u.email, u.full_name, r.name as role_name, r.role_group
+SELECT u.id, u.email, u.full_name, r.name as role_name, r.role_group
 FROM users u
 JOIN user_roles ur ON u.id = ur.user_id
 JOIN roles r ON ur.role_id = r.id;
@@ -187,8 +185,8 @@ SELECT 'employees', COUNT(*) FROM employees;
 
 
 -- Insert sample employee user (password: Employee123)
-INSERT INTO users (username, email, password, full_name, phone, is_active) VALUES
-('john.doe', 'john.doe@seatrans.com', '$2a$10$N.zmjlPxI7eQPVzPe4GKqefP6P.JhRQKnIJ2qX1WjQvQr/PiKGKKq', 'John Doe', '+84987654321', TRUE);
+INSERT INTO users (email, password, full_name, phone, is_active) VALUES
+('john.doe@seatrans.com', '$2a$10$N.zmjlPxI7eQPVzPe4GKqefP6P.JhRQKnIJ2qX1WjQvQr/PiKGKKq', 'John Doe', '+84987654321', TRUE);
 
 -- Assign EMPLOYEE role
 INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES
@@ -199,8 +197,8 @@ INSERT INTO employees (user_id, employee_code, department, position, hire_date, 
 (2, 'EMP-20251202-0002', 'SALES', 'Sales Manager', '2025-01-15', 25000000, 5.00, 1, TRUE);
 
 -- Insert sample customer user (password: Customer123)
-INSERT INTO users (username, email, password, full_name, phone, is_active) VALUES
-('customer1', 'customer1@example.com', '$2a$10$N.zmjlPxI7eQPVzPe4GKqefP6P.JhRQKnIJ2qX1WjQvQr/PiKGKKq', 'Nguyen Van A', '+84912345678', TRUE);
+INSERT INTO users (email, password, full_name, phone, is_active) VALUES
+('customer1@example.com', '$2a$10$N.zmjlPxI7eQPVzPe4GKqefP6P.JhRQKnIJ2qX1WjQvQr/PiKGKKq', 'Nguyen Van A', '+84912345678', TRUE);
 
 -- Assign CUSTOMER role
 INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES
@@ -212,7 +210,6 @@ INSERT INTO customers (user_id, customer_code, company_name, tax_code, customer_
 
 -- Verify sample data
 SELECT 
-    u.username,
     u.full_name,
     u.email,
     GROUP_CONCAT(r.name) AS roles,

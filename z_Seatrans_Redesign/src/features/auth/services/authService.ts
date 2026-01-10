@@ -1,15 +1,14 @@
 interface LoginRequest {
-  username: string
+  email: string
   password: string
-  email?: string
 }
 
 export interface User {
   id: number
-  username: string
   email: string
   fullName: string
   phone?: string
+  company?: string
   nation?: string
   company?: string
   roles: string[]
@@ -29,10 +28,11 @@ interface LoginResponse {
 }
 
 interface SignupRequest {
-  username: string
   password: string
   email: string
   fullName: string
+  phone?: string
+  company?: string
 }
 
 interface SignupResponse {
@@ -51,7 +51,7 @@ const persistAuth = (auth: AuthResponse) => {
 }
 
 export const authService = {
-  login: async (credential: string, password: string): Promise<LoginResponse> => {
+  login: async (email: string, password: string): Promise<LoginResponse> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -59,8 +59,7 @@ export const authService = {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        // Backend accepts username; send both username and email with same credential to allow either
-        body: JSON.stringify({ username: credential, email: credential, password } satisfies LoginRequest),
+        body: JSON.stringify({ email, password } satisfies LoginRequest),
       })
 
       const data = await response.json()
@@ -110,7 +109,7 @@ export const authService = {
     return !!localStorage.getItem(TOKEN_KEY)
   },
 
-  register: async (username: string, email: string, fullName: string, password: string): Promise<SignupResponse> => {
+  register: async (email: string, fullName: string, password: string, phone?: string, company?: string): Promise<SignupResponse> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register/customer`, {
         method: 'POST',
@@ -118,7 +117,7 @@ export const authService = {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ username, email, fullName, password } as SignupRequest),
+        body: JSON.stringify({ email, fullName, password, phone, company } as SignupRequest),
       })
 
       const data = await response.json()

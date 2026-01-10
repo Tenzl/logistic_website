@@ -74,8 +74,8 @@ public class PostController {
             @Valid @RequestBody PostRequest request,
             Principal principal) {
         log.info("Creating new post: {}", request.getTitle());
-        String username = principal.getName();
-        PostResponse post = postService.createPost(request, username);
+        String email = principal.getName();
+        PostResponse post = postService.createPost(request, email);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Post created successfully", post));
     }

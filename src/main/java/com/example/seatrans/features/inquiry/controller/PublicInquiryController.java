@@ -249,7 +249,7 @@ public class PublicInquiryController {
         // Get authenticated user
         com.example.seatrans.features.auth.model.User currentUser;
         try {
-            currentUser = userService.getUserByUsernameOrEmail(principal.getName());
+            currentUser = userService.getUserByEmail(principal.getName());
         } catch (Exception ex) {
             return ResponseEntity.status(401).body(Map.of(
                 "message", "User not found. Please log in again.",
@@ -301,10 +301,10 @@ public class PublicInquiryController {
 
         if (files != null && files.length > 0) {
             try {
-                String uploaderUsername = currentUser.getUsername();
-                log.info("Saving {} attachments for serviceSlug={}, targetId={}, uploader={}", 
-                        files.length, serviceSlug, targetId, uploaderUsername);
-                saveAttachments(serviceSlug, targetId, files, uploaderUsername);
+                Long uploaderId = currentUser.getId();
+                log.info("Saving {} attachments for serviceSlug={}, targetId={}, uploaderId={}", 
+                    files.length, serviceSlug, targetId, uploaderId);
+                saveAttachments(serviceSlug, targetId, files, uploaderId);
                 log.info("Successfully saved {} attachments", files.length);
             } catch (IOException | IllegalArgumentException e) {
                 // Log error but don't fail the inquiry submission
@@ -320,7 +320,7 @@ public class PublicInquiryController {
         ));
     }
 
-    private void saveAttachments(String serviceSlug, Long targetId, MultipartFile[] files, String uploaderUsername) throws IOException {
+    private void saveAttachments(String serviceSlug, Long targetId, MultipartFile[] files, Long uploaderId) throws IOException {
         if (files == null || files.length == 0) {
             return;
         }
@@ -336,7 +336,7 @@ public class PublicInquiryController {
             
             try {
                 InquiryDocumentDTO doc = documentService.uploadDocument(
-                    serviceSlug, targetId, DocumentType.OTHER, file, "User attachment", uploaderUsername);
+                    serviceSlug, targetId, DocumentType.OTHER, file, "User attachment", uploaderId);
                 log.info("Successfully uploaded document: id={}", doc.getId());
             } catch (Exception e) {
                 log.error("Failed to upload file {}: {}", file.getOriginalFilename(), e.getMessage(), e);

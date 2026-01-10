@@ -57,7 +57,7 @@ public class InquiryDocumentService {
      * - Tạo audit log
      */
     public InquiryDocumentDTO uploadDocument(String serviceSlug, Long targetId, DocumentType documentType, 
-                                            MultipartFile file, String description, String username) throws IOException {
+                                            MultipartFile file, String description, Long userId) throws IOException {
         
         // 1. Validation
         validateFile(file);
@@ -77,7 +77,7 @@ public class InquiryDocumentService {
         Files.write(targetPath, file.getBytes());
         
         // 3. Create document entity
-        User uploadedBy = userService.getUserByUsername(username);
+        User uploadedBy = userService.getUserById(userId);
         InquiryDocument document = InquiryDocument.builder()
             .serviceSlug(serviceSlug)
             .targetId(targetId)

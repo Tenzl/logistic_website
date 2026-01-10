@@ -66,18 +66,6 @@ public class UserController {
     }
     
     /**
-     * GET /api/users/username/{username}
-     * Láº¥y user theo username
-     */
-    @GetMapping("/username/{username}")
-    public ResponseEntity<ApiResponse<UserDTO>> getUserByUsername(@PathVariable String username) {
-        User user = userService.getUserByUsername(username);
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-        
-        return ResponseEntity.ok(ApiResponse.success(userDTO));
-    }
-    
-    /**
      * GET /api/users/email/{email}
      * Láº¥y user theo email
      */

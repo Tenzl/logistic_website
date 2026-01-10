@@ -33,11 +33,11 @@ public interface TokenProvider {
     boolean validateToken(String token);
     
     /**
-     * Extract username from token
+     * Extract email from token
      * @param token Token string
-     * @return Username
+     * @return Email subject
      */
-    String getUsernameFromToken(String token);
+    String getEmailFromToken(String token);
     
     /**
      * Extract user ID from token

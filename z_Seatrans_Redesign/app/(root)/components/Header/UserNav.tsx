@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 interface UserNavProps {
   user: {
     id: number
-    username: string
     email: string
     fullName: string
     phone?: string
@@ -55,7 +54,7 @@ export function UserNav({ user, onLogout }: UserNavProps) {
           <User className="w-4 h-4 text-primary" />
         </div>
         <span className="hidden sm:inline text-sm font-medium">
-          {user.fullName || user.username}
+          {user.fullName || user.email}
         </span>
         <ChevronDown className="w-4 h-4 text-muted-foreground" />
       </button>
@@ -65,9 +64,9 @@ export function UserNav({ user, onLogout }: UserNavProps) {
           <div className="bg-card border shadow-lg rounded-lg overflow-hidden min-w-[240px]">
             <div className="px-4 py-3 border-b bg-muted text-sm">
               <p className="font-medium text-foreground">
-                {user.fullName || user.username}
+                {user.fullName || user.email}
               </p>
-              <p className="text-muted-foreground text-xs">@{user.username}</p>
+              <p className="text-muted-foreground text-xs">{user.email}</p>
             </div>
 
             {isExternal && (

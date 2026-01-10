@@ -11,9 +11,11 @@ export default function TotalLogisticsPage() {
   const router = useRouter()
   
   useEffect(() => {
-    if (window.location.hash === '#gallery') {
+    const hash = window.location.hash
+    const scrollTarget = hash === '#gallery' ? 'service-gallery' : hash === '#quote' ? 'quote-form' : null
+    if (scrollTarget) {
       setTimeout(() => {
-        document.getElementById('service-gallery')?.scrollIntoView({ behavior: 'smooth' })
+        document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth' })
       }, 100)
     }
   }, [])

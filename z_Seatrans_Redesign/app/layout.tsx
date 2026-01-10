@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { AuthProvider } from '@/features/auth/context/AuthContext'
 import { Toaster } from '@/shared/components/ui/toaster'
 import { NProgressProvider } from '@/components/NProgressProvider'
@@ -19,7 +20,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <AuthProvider>
-          <NProgressProvider />
+          <Suspense fallback={null}>
+            <NProgressProvider />
+          </Suspense>
           {children}
           <Toaster />
         </AuthProvider>

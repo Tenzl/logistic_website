@@ -44,14 +44,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (tokenProvider.validateToken(token)) {
                     // Extract user information from token
                     Long userId = tokenProvider.getUserIdFromToken(token);
-                    String username = tokenProvider.getUsernameFromToken(token);
+                    String email = tokenProvider.getEmailFromToken(token);
                     List<String> roles = tokenProvider.getRolesFromToken(token);
                     
-                    log.debug("JWT token validated for user: {} (ID: {})", username, userId);
+                    log.debug("JWT token validated for user: {} (ID: {})", email, userId);
                     
                     // Store in request attributes for downstream use
                     request.setAttribute("userId", userId);
-                    request.setAttribute("username", username);
+                    request.setAttribute("email", email);
                     request.setAttribute("roles", roles);
                     
                     // Set Spring Security authentication context
@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .collect(Collectors.toList());
                     
                     UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
                     log.warn("Invalid JWT token provided");

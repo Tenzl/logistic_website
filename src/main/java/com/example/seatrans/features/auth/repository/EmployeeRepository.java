@@ -18,33 +18,25 @@ import com.example.seatrans.features.auth.model.Employee;
  */
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-    
-    // ==================== Basic Queries ====================
-    
+
     /**
-     * TÃ¬m employee theo user ID
+     * Tìm employee theo user ID
      */
     Optional<Employee> findByUserId(Long userId);
     
     /**
-     * TÃ¬m employee theo employee code
+     * Tìm employee theo employee code
      */
     Optional<Employee> findByEmployeeCode(String employeeCode);
     
     /**
-     * TÃ¬m employee theo email cá»§a user
+     * Tìm employee theo email của user
      */
     @Query("SELECT e FROM Employee e WHERE e.user.email = :email")
     Optional<Employee> findByUserEmail(@Param("email") String email);
-    
+
     /**
-     * TÃ¬m employee theo username cá»§a user
-     */
-    @Query("SELECT e FROM Employee e WHERE e.user.username = :username")
-    Optional<Employee> findByUserUsername(@Param("username") String username);
-    
-    /**
-     * Kiá»ƒm tra employee code Ä‘Ã£ tá»“n táº¡i chÆ°a
+     * Kiểm tra employee code đã tồn tại chưa
      */
     boolean existsByEmployeeCode(String employeeCode);
     

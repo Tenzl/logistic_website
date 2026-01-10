@@ -88,7 +88,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
   }))
 
   const adminUser = user
-    ? { name: user.fullName || user.username, email: user.email, avatar: '' }
+    ? { name: user.fullName || user.email, email: user.email, avatar: '' }
     : { name: 'Admin User', email: 'admin@seatrans.com', avatar: '' }
 
   const menuItems = [

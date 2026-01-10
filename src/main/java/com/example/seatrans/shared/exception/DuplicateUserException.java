@@ -1,7 +1,7 @@
 package com.example.seatrans.shared.exception;
 
 /**
- * Exception ném ra khi username hoặc email đã tồn tại
+ * Exception ném ra khi email đã tồn tại
  */
 public class DuplicateUserException extends RuntimeException {
     

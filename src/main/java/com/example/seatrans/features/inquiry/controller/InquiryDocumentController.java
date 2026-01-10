@@ -69,14 +69,14 @@ public class InquiryDocumentController {
             jakarta.servlet.http.HttpServletRequest request) {
         
         try {
-            String username = (String) request.getAttribute("username");
-            if (username == null) {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
                 return ResponseEntity.badRequest()
                     .body(ApiResponse.error("User not authenticated"));
             }
 
             InquiryDocumentDTO document = documentService.uploadDocument(
-                serviceSlug, targetId, documentType, file, description, username);
+                serviceSlug, targetId, documentType, file, description, userId);
             
             return ResponseEntity.ok(ApiResponse.success("Document uploaded successfully", document));
         } catch (IOException e) {

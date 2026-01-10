@@ -44,10 +44,10 @@ public class PostService {
     /**
      * Create a new post
      */
-    public PostResponse createPost(PostRequest request, String username) {
+    public PostResponse createPost(PostRequest request, String email) {
         log.info("Creating post with title: {}", request.getTitle());
         
-        User author = userRepository.findByUsername(username)
+        User author = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Author not found"));
         
         Post post = Post.builder()
@@ -294,7 +294,7 @@ public class PostService {
             .title(post.getTitle())
             .content(post.getContent())
             .authorId(post.getAuthor().getId())
-            .authorName(post.getAuthor().getUsername())
+            .authorName(post.getAuthor().getFullName() != null ? post.getAuthor().getFullName() : post.getAuthor().getEmail())
             .categories(categories)
             .thumbnailUrl(post.getThumbnailUrl())
             .publishedAt(post.getPublishedAt())
