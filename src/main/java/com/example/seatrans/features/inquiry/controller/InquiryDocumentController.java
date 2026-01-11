@@ -140,7 +140,51 @@ public class InquiryDocumentController {
             @PathVariable String serviceSlug,
             @PathVariable Long targetId,
             @PathVariable Long documentId) {
+        return serveFile(serviceSlug, targetId, documentId);
+    }
+
+    /**
+     * Preview document file (Bypass IDM interception by not using 'download' keyword)
+     * GET /api/inquiries/{serviceSlug}/{targetId}/documents/view/{documentId}
+     */
+    @GetMapping("/{serviceSlug}/{targetId}/documents/view/{documentId}")
+    public ResponseEntity<?> previewDocument(
+            @PathVariable String serviceSlug,
+            @PathVariable Long targetId,
+            @PathVariable Long documentId) {
         
+         try {
+            InquiryDocument document = documentService.getDocumentById(documentId);
+            
+            if (!document.getServiceSlug().equals(serviceSlug) || !document.getTargetId().equals(targetId)) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Document does not belong to the specified inquiry"));
+            }
+            
+            Path filePath = Paths.get(document.getFilePath());
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            byte[] fileContent = Files.readAllBytes(filePath);
+
+            return ResponseEntity.ok()
+                // Use generic type to avoid IDM detection (react-pdf can still parse it)
+                .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileContent.length))
+                .body(fileContent);
+            
+        } catch (IOException e) {
+            log.error("Failed to download document {}", documentId, e);
+            return ResponseEntity.status(500)
+                .body(ApiResponse.error("Failed to download document"));
+        } catch (IllegalArgumentException e) {
+            log.warn("Document not found: {}", documentId);
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private ResponseEntity<?> serveFile(String serviceSlug, Long targetId, Long documentId) {
         try {
             InquiryDocument document = documentService.getDocumentById(documentId);
             

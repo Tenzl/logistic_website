@@ -28,7 +28,8 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
-import { Loader2, Mail, FileText, CheckCircle2, Trash2, Download, Paperclip, RefreshCw } from 'lucide-react'
+import { PdfPreviewDialog } from '@/shared/components/PdfPreviewDialog'
+import { Loader2, Mail, FileText, CheckCircle2, Trash2, Download, Paperclip, RefreshCw, Eye } from 'lucide-react'
 import { authService } from '@/features/auth/services/authService'
 import { documentService, type InquiryDocument } from '@/features/inquiries/services/documentService'
 
@@ -143,20 +144,35 @@ export function SpecialRequestInquiriesTab() {
     }
   }
 
-  const handleDownloadDocument = async (inquiryId: number, documentId: number, fileName: string) => {
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewFileName, setPreviewFileName] = useState('')
+
+  const handleDownloadDocument = (inquiryId: number, documentId: number, fileName: string) => {
     try {
-      const blob = await documentService.downloadDocument(inquiryId, 'special-request', documentId)
-      const url = window.URL.createObjectURL(blob)
+      // Use direct URL navigation to support IDM and other download managers
+      // This avoids the XHR interception issue that causes CORS errors
+      const url = documentService.getDownloadUrl(inquiryId, 'special-request', documentId)
+      
       const link = document.createElement('a')
       link.href = url
-      link.download = fileName
+      link.setAttribute('download', fileName) // Hint to browser/IDM
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to download document', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Failed to initiate download', variant: 'destructive' })
     }
+  }
+
+  const handlePreviewDocument = (inquiryId: number, documentId: number, fileName: string) => {
+      // For preview, we still use the direct URL since the backend is public
+      // react-pdf can load from a URL
+      // Use getPreviewUrl to bypass IDM interception
+      const url = documentService.getPreviewUrl(inquiryId, 'special-request', documentId)
+      setPreviewUrl(url)
+      setPreviewFileName(fileName)
+      setPreviewOpen(true)
   }
 
   const deleteInquiry = async (id: number) => {
@@ -349,14 +365,26 @@ export function SpecialRequestInquiriesTab() {
                             </div>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDownloadDocument(selected.id, doc.id, doc.originalFileName)}
-                          title="Download"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {(doc.mimeType === 'application/pdf' || doc.originalFileName.toLowerCase().endsWith('.pdf')) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handlePreviewDocument(selected.id, doc.id, doc.originalFileName)}
+                              title="View PDF"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownloadDocument(selected.id, doc.id, doc.originalFileName)}
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -395,6 +423,13 @@ export function SpecialRequestInquiriesTab() {
           )}
         </DialogContent>
       </Dialog>
+      
+      <PdfPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        url={previewUrl}
+        fileName={previewFileName}
+      />
     </div>
   )
 }

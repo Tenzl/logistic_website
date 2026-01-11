@@ -145,6 +145,20 @@ export const documentService = {
   },
 
   /**
+   * Get direct download URL
+   */
+  getDownloadUrl: (inquiryId: number, serviceSlug: string, documentId: number): string => {
+    return `${API_URL}/api/inquiries/${serviceSlug}/${inquiryId}/documents/download/${documentId}`
+  },
+
+  /**
+   * Get direct preview URL (bypasses IDM)
+   */
+  getPreviewUrl: (inquiryId: number, serviceSlug: string, documentId: number): string => {
+    return `${API_URL}/api/inquiries/${serviceSlug}/${inquiryId}/documents/view/${documentId}`
+  },
+
+  /**
    * Download tài liệu
    */
   downloadDocument: async (inquiryId: number, serviceSlug: string, documentId: number): Promise<Blob> => {
@@ -152,7 +166,6 @@ export const documentService = {
       const response = await axios.get(
         `${API_URL}/api/inquiries/${serviceSlug}/${inquiryId}/documents/download/${documentId}`,
         {
-          headers: getAuthHeaders(),
           responseType: 'blob',
         }
       )
