@@ -1,33 +1,34 @@
 package com.example.seatrans.features.auth.service;
 
-import com.example.seatrans.features.auth.model.Role;
-import com.example.seatrans.features.auth.model.User;
-import com.example.seatrans.features.auth.model.enums.RoleGroup;
-import com.example.seatrans.shared.exception.RoleGroupConflictException;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+
+import com.example.seatrans.features.auth.model.Role;
+import com.example.seatrans.features.auth.model.User;
+import com.example.seatrans.features.auth.model.enums.RoleGroup;
+import com.example.seatrans.shared.exception.RoleGroupConflictException;
+
 /**
- * Service xá»­ lÃ½ validation cho Role Groups
- * Äáº£m báº£o user khÃ´ng thá»ƒ cÃ³ roles tá»« 2 groups khÃ¡c nhau
+ * Service xử lý validation cho Role Groups
+ * Đảm bảo user không thể có roles từ 2 groups khác nhau
  */
 @Service
 public class RoleValidationService {
     
     /**
-     * Kiá»ƒm tra xem cÃ³ thá»ƒ gÃ¡n role cho user khÃ´ng
-     * KhÃ´ng cho phÃ©p mix INTERNAL vÃ  EXTERNAL roles
+     * Kiểm tra xem có thể gán role cho user không
+     * Không cho phép mix INTERNAL và EXTERNAL roles
      * 
-     * @param user User cáº§n kiá»ƒm tra
-     * @param newRole Role má»›i muá»‘n gÃ¡n
-     * @throws RoleGroupConflictException náº¿u role groups conflict
+     * @param user User cần kiểm tra
+     * @param newRole Role mới muốn gán
+     * @throws RoleGroupConflictException nếu role groups conflict
      */
     public void validateRoleAssignment(User user, Role newRole) {
         if (user.getRoles().isEmpty()) {
-            // User chÆ°a cÃ³ role nÃ o, cho phÃ©p gÃ¡n
+            // User chưa có role nào, cho phép gán
             return;
         }
         
@@ -48,19 +49,19 @@ public class RoleValidationService {
     }
     
     /**
-     * Kiá»ƒm tra xem cÃ³ thá»ƒ gÃ¡n nhiá»u roles cho user khÃ´ng
-     * Táº¥t cáº£ roles pháº£i cÃ¹ng group
+     * Kiểm tra xem có thể gán nhiều roles cho user không
+     * Tất cả roles phải cùng group
      * 
-     * @param user User cáº§n kiá»ƒm tra
-     * @param newRoles Danh sÃ¡ch roles má»›i
-     * @throws RoleGroupConflictException náº¿u cÃ³ conflict
+     * @param user User cần kiểm tra
+     * @param newRoles Danh sách roles mới
+     * @throws RoleGroupConflictException nếu có conflict
      */
     public void validateRoleAssignments(User user, Set<Role> newRoles) {
         if (newRoles.isEmpty()) {
             return;
         }
         
-        // Kiá»ƒm tra cÃ¡c roles má»›i cÃ³ cÃ¹ng group khÃ´ng
+        // Kiểm tra các roles mới có cùng group không
         Set<RoleGroup> newGroups = newRoles.stream()
             .map(Role::getRoleGroup)
             .collect(Collectors.toSet());
@@ -72,7 +73,7 @@ public class RoleValidationService {
             );
         }
         
-        // Kiá»ƒm tra vá»›i roles hiá»‡n táº¡i cá»§a user
+        // Kiểm tra với roles hiện tại của user
         if (!user.getRoles().isEmpty()) {
             RoleGroup currentGroup = user.getRoleGroup();
             RoleGroup newGroup = newGroups.iterator().next();
@@ -91,12 +92,12 @@ public class RoleValidationService {
     }
     
     /**
-     * Kiá»ƒm tra xem user cÃ³ thá»ƒ chuyá»ƒn sang role group má»›i khÃ´ng
-     * YÃªu cáº§u xÃ³a háº¿t roles hiá»‡n táº¡i trÆ°á»›c
+     * Kiểm tra xem user có thể chuyển sang role group mới không
+     * Yêu cầu xóa hết roles hiện tại trước
      * 
-     * @param user User cáº§n kiá»ƒm tra
-     * @param newRole Role thuá»™c group má»›i
-     * @throws RoleGroupConflictException náº¿u user cÃ²n roles cÅ©
+     * @param user User cần kiểm tra
+     * @param newRole Role thuộc group mới
+     * @throws RoleGroupConflictException nếu user còn roles cũ
      */
     public void validateRoleSwitch(User user, Role newRole) {
         RoleGroup currentGroup = user.getRoleGroup();
@@ -114,17 +115,17 @@ public class RoleValidationService {
     }
     
     /**
-     * Láº¥y danh sÃ¡ch roles Ä‘Æ°á»£c phÃ©p gÃ¡n cho user
-     * Náº¿u user chÆ°a cÃ³ role, tráº£ vá» táº¥t cáº£
-     * Náº¿u user Ä‘Ã£ cÃ³ role, chá»‰ tráº£ vá» roles cÃ¹ng group
+     * Lấy danh sách roles được phép gán cho user
+     * Nếu user chưa có role, trả về tất cả
+     * Nếu user đã có role, chỉ trả về roles cùng group
      * 
-     * @param user User cáº§n kiá»ƒm tra
-     * @param allRoles Danh sÃ¡ch táº¥t cáº£ roles
-     * @return Danh sÃ¡ch roles Ä‘Æ°á»£c phÃ©p gÃ¡n
+     * @param user User cần kiểm tra
+     * @param allRoles Danh sách tất cả roles
+     * @return Danh sách roles được phép gán
      */
     public List<Role> getAllowedRoles(User user, List<Role> allRoles) {
         if (user.getRoles().isEmpty()) {
-            // User chÆ°a cÃ³ role, cho phÃ©p táº¥t cáº£
+            // User chưa có role, cho phép tất cả
             return allRoles;
         }
         
@@ -135,36 +136,11 @@ public class RoleValidationService {
     }
     
     /**
-     * Kiá»ƒm tra xem role group cÃ³ há»£p lá»‡ cho user type khÃ´ng
-     * VD: Customer chá»‰ cÃ³ thá»ƒ cÃ³ EXTERNAL roles
+     * Kiểm tra xem roles có compatible với nhau không
+     * Tất cả phải cùng group
      * 
-     * @param hasCustomerInfo User cÃ³ customer information
-     * @param hasEmployeeInfo User cÃ³ employee information
-     * @param role Role cáº§n kiá»ƒm tra
-     * @throws RoleGroupConflictException náº¿u khÃ´ng há»£p lá»‡
-     */
-    public void validateRoleForUserType(boolean hasCustomerInfo, boolean hasEmployeeInfo, Role role) {
-        if (hasCustomerInfo && role.getRoleGroup() != RoleGroup.EXTERNAL) {
-            throw new RoleGroupConflictException(
-                "Customer users can only have EXTERNAL roles (ROLE_CUSTOMER). " +
-                "Cannot assign INTERNAL role: " + role.getName()
-            );
-        }
-        
-        if (hasEmployeeInfo && role.getRoleGroup() != RoleGroup.INTERNAL) {
-            throw new RoleGroupConflictException(
-                "Employee users can only have INTERNAL roles (ROLE_ADMIN, ROLE_EMPLOYEE). " +
-                "Cannot assign EXTERNAL role: " + role.getName()
-            );
-        }
-    }
-    
-    /**
-     * Kiá»ƒm tra xem roles cÃ³ compatible vá»›i nhau khÃ´ng
-     * Táº¥t cáº£ pháº£i cÃ¹ng group
-     * 
-     * @param roles Danh sÃ¡ch roles cáº§n kiá»ƒm tra
-     * @return true náº¿u compatible, false náº¿u khÃ´ng
+     * @param roles Danh sách roles cần kiểm tra
+     * @return true nếu compatible, false nếu không
      */
     public boolean areRolesCompatible(Set<Role> roles) {
         if (roles.isEmpty() || roles.size() == 1) {
@@ -179,11 +155,11 @@ public class RoleValidationService {
     }
     
     /**
-     * Láº¥y role group tá»« danh sÃ¡ch roles
-     * Tráº£ vá» null náº¿u empty hoáº·c cÃ³ conflict
+     * Lấy role group từ danh sách roles
+     * Trả về null nếu empty hoặc có conflict
      * 
-     * @param roles Danh sÃ¡ch roles
-     * @return RoleGroup chung hoáº·c null
+     * @param roles Danh sách roles
+     * @return RoleGroup chung hoặc null
      */
     public RoleGroup getRoleGroupFromRoles(Set<Role> roles) {
         if (roles.isEmpty()) {
@@ -202,18 +178,18 @@ public class RoleValidationService {
     }
     
     /**
-     * Validate toÃ n bá»™ user data vá» roles
-     * Kiá»ƒm tra táº¥t cáº£ business rules
+     * Validate toàn bộ user data về roles
+     * Kiểm tra tất cả business rules
      * 
-     * @param user User cáº§n validate
-     * @throws RoleGroupConflictException náº¿u cÃ³ lá»—i
+     * @param user User cần validate
+     * @throws RoleGroupConflictException nếu có lỗi
      */
     public void validateUserRoles(User user) {
         if (user.getRoles().isEmpty()) {
             return;
         }
         
-        // Kiá»ƒm tra roles cÃ³ compatible khÃ´ng
+        // Kiểm tra roles có compatible không
         if (!areRolesCompatible(user.getRoles())) {
             throw new RoleGroupConflictException(
                 "User has roles from multiple groups: " + 
@@ -222,26 +198,5 @@ public class RoleValidationService {
                     .collect(Collectors.joining(", "))
             );
         }
-        
-        // Kiá»ƒm tra role group phÃ¹ há»£p vá»›i user type
-        RoleGroup group = user.getRoleGroup();
-        boolean hasCustomer = user.getCustomer() != null;
-        boolean hasEmployee = user.getEmployee() != null;
-        
-        if (hasCustomer && group != RoleGroup.EXTERNAL) {
-            throw new RoleGroupConflictException(
-                "User has Customer information but has INTERNAL roles. " +
-                "Customer users must have EXTERNAL roles only."
-            );
-        }
-        
-        if (hasEmployee && group != RoleGroup.INTERNAL) {
-            throw new RoleGroupConflictException(
-                "User has Employee information but has EXTERNAL roles. " +
-                "Employee users must have INTERNAL roles only."
-            );
-        }
     }
 }
-
-

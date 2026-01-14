@@ -28,9 +28,6 @@ public class UserDTO {
     private LocalDateTime lastLogin;
     private Set<String> roles;  // Chá»‰ tráº£ vá» tÃªn roles
     private String roleGroup;   // INTERNAL hoáº·c EXTERNAL
-    
-    // Customer/Employee info flags
-    private Boolean hasCustomerInfo;
-    private Boolean hasEmployeeInfo;
+
 }
 

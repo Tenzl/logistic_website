@@ -304,11 +304,7 @@ public class UserService {
         // Validate role assignment
         roleValidationService.validateRoleAssignment(user, role);
         
-        // Kiá»ƒm tra vá»›i user type
-        boolean hasCustomer = user.getCustomer() != null;
-        boolean hasEmployee = user.getEmployee() != null;
-        roleValidationService.validateRoleForUserType(hasCustomer, hasEmployee, role);
-        
+
         user.addRole(role);
         return userRepository.save(user);
     }
@@ -327,11 +323,7 @@ public class UserService {
         // Validate role assignments
         roleValidationService.validateRoleAssignments(user, roles);
         
-        // Kiá»ƒm tra vá»›i user type
-        boolean hasCustomer = user.getCustomer() != null;
-        boolean hasEmployee = user.getEmployee() != null;
         for (Role role : roles) {
-            roleValidationService.validateRoleForUserType(hasCustomer, hasEmployee, role);
             user.addRole(role);
         }
         

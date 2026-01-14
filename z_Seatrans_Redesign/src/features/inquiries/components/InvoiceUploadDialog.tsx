@@ -203,12 +203,12 @@ export function InvoiceUploadDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
+      {/* <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Upload className="h-4 w-4" />
           Manage Invoice
         </Button>
-      </DialogTrigger>
+      </DialogTrigger> */}
 
       <DialogContent className="max-w-2xl">
         <DialogHeader>

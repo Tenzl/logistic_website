@@ -329,7 +329,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       <section className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground py-16">
         <div className="container">
           <div ref={heroRef} className={`text-center max-w-3xl mx-auto ${heroVisible ? 'fade-rise' : 'opacity-0'}`}>
-            <h1 className="mb-4">Contact SEATRANS</h1>
+            <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Contact SEATRANS</h2>
             <p className="text-lg opacity-90">
               Our nationwide network is ready to support your maritime logistics needs
             </p>
@@ -374,7 +374,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       <section ref={mapRef} className="py-16">
         <div className="container">
           <div className={`text-center mb-12 ${mapVisible ? 'fade-rise' : 'opacity-0'}`}>
-            <h2 className="mb-4">Our Offices</h2>
+            <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Our Offices</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Nationwide presence across Vietnam's key maritime hubs
             </p>
@@ -642,7 +642,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       <section ref={departmentsRef} className="py-16 bg-muted/30">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="mb-4">Department Contacts</h2>
+            <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Department Contacts</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Connect directly with our specialized teams for expert assistance
             </p>
@@ -726,7 +726,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
         <div className="container">
           <div className={`max-w-3xl mx-auto ${formVisible ? 'fade-rise' : 'opacity-0'}`}>
             <div className="text-center mb-12">
-              <h2 className="mb-4">Special Request</h2>
+              <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Special Request</h2>
               <p className="text-lg text-muted-foreground">
                 Have a unique requirement? Submit your special request and our team will contact you shortly.
               </p>

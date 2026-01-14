@@ -1,3 +1,5 @@
+import { apiClient } from '@/shared/utils/apiClient'
+
 interface LoginRequest {
   email: string
   password: string
@@ -10,7 +12,6 @@ export interface User {
   phone?: string
   company?: string
   nation?: string
-  company?: string
   roles: string[]
   roleGroup: string
 }
@@ -41,7 +42,12 @@ interface SignupResponse {
   data: AuthResponse | null
 }
 
-const API_BASE_URL = 'http://localhost:8080/api'
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T | null
+}
+
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 
@@ -53,14 +59,11 @@ const persistAuth = (auth: AuthResponse) => {
 export const authService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password } satisfies LoginRequest),
-      })
+      // Skip auth for login endpoint
+      const response = await apiClient.post('/auth/login', 
+        { email, password } satisfies LoginRequest,
+        { skipAuth: true }
+      )
 
       const data = await response.json()
 
@@ -111,14 +114,11 @@ export const authService = {
 
   register: async (email: string, fullName: string, password: string, phone?: string, company?: string): Promise<SignupResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register/customer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, fullName, password, phone, company } as SignupRequest),
-      })
+      // Skip auth for register endpoint
+      const response = await apiClient.post('/auth/register/customer',
+        { email, fullName, password, phone, company } as SignupRequest,
+        { skipAuth: true }
+      )
 
       const data = await response.json()
 
@@ -157,13 +157,8 @@ export const authService = {
 
   getCurrentUser: async (): Promise<ApiResponse<User>> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/current-user`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...authService.getAuthHeader(),
-        },
-        credentials: 'include',
-      })
+      // apiClient will automatically handle 401 and logout
+      const response = await apiClient.get('/auth/current-user')
 
       const result = await response.json()
 
@@ -195,14 +190,8 @@ export const authService = {
 
   updateProfile: async (userId: number, data: Partial<User>): Promise<ApiResponse<User>> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authService.getAuthHeader(),
-        },
-        body: JSON.stringify(data),
-      })
+      // apiClient will automatically handle 401 and logout
+      const response = await apiClient.put(`/users/${userId}`, data)
 
       const result = await response.json()
 
@@ -234,9 +223,4 @@ export const authService = {
     }
   },
 }
-
-interface ApiResponse<T> {
-  success: boolean
-  message: string
-  data: T | null
-}
+ 

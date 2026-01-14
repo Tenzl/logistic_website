@@ -63,12 +63,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhone(String phone);
 
     // ==================== Complex Queries ====================
-    @Query("SELECT u FROM User u WHERE u.customer IS NOT NULL")
-    List<User> findUsersWithCustomerInfo();
-
-    @Query("SELECT u FROM User u WHERE u.employee IS NOT NULL")
-    List<User> findUsersWithEmployeeInfo();
-
     @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r.roleGroup = :roleGroup")
     Long countByRoleGroup(@Param("roleGroup") RoleGroup roleGroup);
 

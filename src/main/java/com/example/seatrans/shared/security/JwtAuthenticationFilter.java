@@ -63,11 +63,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(email, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
-                    log.warn("Invalid JWT token provided");
+                    // Token invalid/expired - return 401 to force frontend logout
+                    log.warn("Invalid or expired JWT token provided - returning 401");
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Token expired or invalid\"}");
+                    return;
                 }
             }
         } catch (Exception e) {
             log.error("Failed to set user authentication: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"success\":false,\"message\":\"Authentication failed\"}");
+            return;
         }
         
         filterChain.doFilter(request, response);
