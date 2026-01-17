@@ -15,12 +15,9 @@ import com.example.seatrans.features.auth.dto.LoginDTO;
 import com.example.seatrans.features.auth.dto.RefreshTokenRequest;
 import com.example.seatrans.features.auth.dto.RegisterDTO;
 import com.example.seatrans.features.auth.dto.UserDTO;
-import com.example.seatrans.features.auth.model.User;
-import com.example.seatrans.features.auth.service.UserService;
+import com.example.seatrans.features.auth.service.AuthService;
 import com.example.seatrans.shared.dto.ApiResponse;
 import com.example.seatrans.shared.exception.DuplicateUserException;
-import com.example.seatrans.shared.mapper.EntityMapper;
-import com.example.seatrans.shared.security.TokenProvider;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,9 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 public class AuthController {
-    private final UserService userService;
-    private final EntityMapper entityMapper;
-    private final TokenProvider tokenProvider;
+    private final AuthService authService;
 
     /**
      * POST /api/auth/register/customer
@@ -46,20 +41,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponseDTO>> registerCustomer(
             @Valid @RequestBody RegisterDTO registerDTO) {
         try {
-            User createdUser = userService.registerOrUpgradeCustomer(registerDTO);
-
-            UserDTO userDTO = entityMapper.toUserDTO(createdUser);
-
-            String token = tokenProvider.generateToken(createdUser);
-            String refreshToken = tokenProvider.generateRefreshToken(createdUser);
-
-            AuthResponseDTO authResponse = AuthResponseDTO.builder()
-                    .token(token)
-                    .refreshToken(refreshToken)
-                    .type("Bearer")
-                    .user(userDTO)
-                    .build();
-
+            AuthResponseDTO authResponse = authService.register(registerDTO);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Customer registered successfully", authResponse));
@@ -75,29 +57,12 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
-            @Valid @RequestBody LoginDTO loginDTO) {
-        boolean isValid = userService.verifyCredentials(loginDTO.getEmail(), loginDTO.getPassword());
-
-        if (!isValid) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid email or password"));
+        @Valid @RequestBody LoginDTO loginDTO) {
+        AuthResponseDTO authResponse = authService.login(loginDTO);
+        if (authResponse == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid email or password"));
         }
-
-        User user = userService.getUserByEmail(loginDTO.getEmail());
-        userService.updateLastLogin(user.getId());
-
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-
-        String token = tokenProvider.generateToken(user);
-        String refreshToken = tokenProvider.generateRefreshToken(user);
-
-        AuthResponseDTO authResponse = AuthResponseDTO.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .type("Bearer")
-                .user(userDTO)
-                .build();
 
         return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
     }
@@ -108,40 +73,22 @@ public class AuthController {
      */
     @PostMapping("/refresh-token")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest request) {
-
-        String refreshToken = request.getRefreshToken();
-
-        if (!tokenProvider.validateToken(refreshToken)) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid or expired refresh token"));
+        @Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponseDTO authResponse = authService.refreshToken(request);
+        if (authResponse == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid refresh token"));
         }
-
-        Long userId = tokenProvider.getUserIdFromToken(refreshToken);
-        User user = userService.getUserById(userId);
-
-        String newToken = tokenProvider.generateToken(user);
-        String newRefreshToken = tokenProvider.generateRefreshToken(user);
-
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-
-        AuthResponseDTO authResponse = AuthResponseDTO.builder()
-                .token(newToken)
-                .refreshToken(newRefreshToken)
-                .type("Bearer")
-                .user(userDTO)
-                .build();
 
         return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authResponse));
     }
 
     /**
      * POST /api/auth/logout
-     * Đăng xuất (JWT token bị vô hiệu hóa trên client)
+     * Đăng xuất (client removes token)
      */
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<String>> logout() {
+    public ResponseEntity<ApiResponse<Void>> logout() {
         return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
     }
 
@@ -157,17 +104,14 @@ public class AuthController {
                     .body(ApiResponse.error("Missing or invalid Authorization header"));
         }
 
-        String token = authHeader.substring(7);
-        if (!tokenProvider.validateToken(token)) {
+        try {
+            String token = authHeader.substring(7);
+            UserDTO userDTO = authService.getCurrentUser(token);
+            return ResponseEntity.ok(ApiResponse.success("Current user fetched successfully", userDTO));
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Invalid or expired token"));
         }
-
-        Long userId = tokenProvider.getUserIdFromToken(token);
-        User user = userService.getUserById(userId);
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-
-        return ResponseEntity.ok(ApiResponse.success("Current user fetched successfully", userDTO));
     }
 }
 

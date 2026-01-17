@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -55,7 +56,7 @@ public class PostService {
             .content(request.getContent())
             .author(author)
             .thumbnailUrl(request.getThumbnailUrl())
-            .isPublished(request.getIsPublished() != null ? request.getIsPublished() : false)
+            .isPublished(Boolean.TRUE.equals(request.getIsPublished()))
             .build();
         
         if (post.getIsPublished()) {
@@ -97,8 +98,8 @@ public class PostService {
         post.setThumbnailUrl(request.getThumbnailUrl());
         
         // Handle publish status change
-        if (request.getIsPublished() != null && request.getIsPublished() != post.getIsPublished()) {
-            if (request.getIsPublished()) {
+        if (request.getIsPublished() != null && !request.getIsPublished().equals(post.getIsPublished())) {
+            if (Boolean.TRUE.equals(request.getIsPublished())) {
                 post.publish();
             } else {
                 post.unpublish();
@@ -145,6 +146,7 @@ public class PostService {
     /**
      * Get post by ID
      */
+    @Transactional(readOnly = true)
     public PostResponse getPostById(Long id) {
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
@@ -168,6 +170,7 @@ public class PostService {
     /**
      * Get all posts (for admin)
      */
+    @Transactional(readOnly = true)
     public List<PostResponse> getAllPosts() {
         List<Post> posts = postRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         return posts.stream()
@@ -178,6 +181,7 @@ public class PostService {
     /**
      * Get all published posts
      */
+    @Transactional(readOnly = true)
     public List<PostResponse> getAllPublishedPosts() {
         List<Post> posts = postRepository.findByIsPublishedTrueOrderByPublishedAtDesc();
         return posts.stream()
@@ -188,15 +192,20 @@ public class PostService {
     /**
      * Get published posts with pagination
      */
+    @Transactional(readOnly = true)
     public Page<PostResponse> getPublishedPostsPaginated(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"));
         Page<Post> posts = postRepository.findByIsPublishedTrue(pageable);
-        return posts.map(this::toResponse);
+        List<PostResponse> content = posts.getContent().stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+        return new PageImpl<>(content, pageable, posts.getTotalElements());
     }
     
     /**
      * Get posts by category
      */
+    @Transactional(readOnly = true)
     public List<PostResponse> getPostsByCategory(String category) {
         List<Post> posts = postRepository.findByIsPublishedTrueAndCategoryOrderByPublishedAtDesc(category);
         return posts.stream()
@@ -207,6 +216,7 @@ public class PostService {
     /**
      * Search posts by keyword
      */
+    @Transactional(readOnly = true)
     public List<PostResponse> searchPosts(String keyword) {
         List<Post> posts = postRepository.searchPublishedByKeyword(keyword);
         return posts.stream()
@@ -217,6 +227,7 @@ public class PostService {
     /**
      * Get latest published posts
      */
+    @Transactional(readOnly = true)
     public List<PostResponse> getLatestPosts(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         List<Post> posts = postRepository.findLatestPublished(pageable);

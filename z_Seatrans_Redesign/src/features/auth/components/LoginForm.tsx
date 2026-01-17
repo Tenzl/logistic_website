@@ -7,6 +7,7 @@ import { Label } from "@/shared/components/ui/label"
 import { Pending } from "@/shared/components/pending"
 import { useState } from "react"
 import { useAuth } from "@/features/auth/context/AuthContext"
+import { authService } from "@/features/auth/services/authService"
 import { useRouter } from "next/navigation"
 import { Alert, AlertDescription } from "@/shared/components/ui/alert"
 import { AlertCircle, Loader2 } from "lucide-react"
@@ -19,7 +20,7 @@ export function LoginForm({
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { refreshUser } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,8 +29,11 @@ export function LoginForm({
     setIsLoading(true)
 
     try {
-      const result = await login(email, password)
-      if (result.success) {
+      const result = await authService.login(email, password)
+
+      if (result.success && result.data) {
+        // Ensure context/user is refreshed after token is stored
+        await refreshUser()
         router.push('/')
       } else {
         setError(result.message || 'Login failed. Please check your credentials.')

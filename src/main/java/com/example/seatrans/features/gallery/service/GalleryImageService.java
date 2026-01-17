@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -158,7 +159,10 @@ public class GalleryImageService {
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
         
-        return images.map(entityMapper::toGalleryImageDTO);
+        List<GalleryImageDTO> content = images.getContent().stream()
+            .map(entityMapper::toGalleryImageDTO)
+            .toList();
+        return new PageImpl<>(content, pageable, images.getTotalElements());
     }
 
     /**
@@ -186,7 +190,10 @@ public class GalleryImageService {
             images = galleryImageRepository.findAll(pageable);
         }
         
-        return images.map(entityMapper::toGalleryImageDTO);
+        List<GalleryImageDTO> content = images.getContent().stream()
+            .map(entityMapper::toGalleryImageDTO)
+            .toList();
+        return new PageImpl<>(content, pageable, images.getTotalElements());
     }
     
     /**

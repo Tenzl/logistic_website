@@ -26,8 +26,8 @@ public class UserDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
-    private Set<String> roles;  // Chá»‰ tráº£ vá» tÃªn roles
-    private String roleGroup;   // INTERNAL hoáº·c EXTERNAL
+    private Set<String> roles;  // Chỉ trả về tên roles
+    private String roleGroup;   // INTERNAL hoặc EXTERNAL
 
 }
 

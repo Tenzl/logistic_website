@@ -422,21 +422,6 @@ public class UserService {
     public boolean hasRole(Long userId, String roleName) {
         return userRepository.hasRole(userId, roleName);
     }
-    
-    /**
-     * Verify credentials (login) using email.
-     */
-    @Transactional(readOnly = true)
-    public boolean verifyCredentials(String email, String password) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-
-        if (userOpt.isEmpty()) {
-            return false;
-        }
-
-        User user = userOpt.get();
-        return user.getIsActive() && passwordEncoder.matches(password, user.getPassword());
-    }
 
     /**
      * Find or create user from OAuth2 provider (Google)
