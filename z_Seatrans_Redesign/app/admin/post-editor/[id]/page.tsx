@@ -10,10 +10,15 @@ export default function PostEditor() {
   const router = useRouter()
   const params = useParams()
   const { user } = useAuth()
+
+  const derivedGroup = user?.role
+    ? (user.role.includes('ADMIN') || user.role.includes('EMPLOYEE') ? 'INTERNAL' : 'EXTERNAL')
+    : undefined
+  const roleGroup = user?.roleGroup ?? derivedGroup
   
   const postId = params?.id && params.id !== 'new' ? Number(params.id) : undefined
   
-  if (!user || user.roleGroup !== 'INTERNAL') {
+  if (!user || roleGroup !== 'INTERNAL') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

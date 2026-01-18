@@ -14,7 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
@@ -39,7 +39,7 @@ public class Role {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     
-    @ManyToMany(mappedBy = "roles")
+    @OneToMany(mappedBy = "role")
     @JsonIgnore
     private Set<User> users = new HashSet<>();
     

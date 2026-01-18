@@ -9,7 +9,12 @@ export default function AdminPosts() {
   const router = useRouter()
   const { user } = useAuth()
 
-  if (!user || user.roleGroup !== 'INTERNAL') {
+  const derivedGroup = user?.role
+    ? (user.role.includes('ADMIN') || user.role.includes('EMPLOYEE') ? 'INTERNAL' : 'EXTERNAL')
+    : undefined
+  const roleGroup = user?.roleGroup ?? derivedGroup
+
+  if (!user || roleGroup !== 'INTERNAL') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

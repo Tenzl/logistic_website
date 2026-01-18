@@ -1,7 +1,6 @@
 package com.example.seatrans.features.auth.dto;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO cho User response (khÃ´ng tráº£ vá» password)
+ * DTO for User response (does not return password)
  */
 @Data
 @Builder
@@ -26,8 +25,9 @@ public class UserDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
-    private Set<String> roles;  // Chỉ trả về tên roles
-    private String roleGroup;   // INTERNAL hoặc EXTERNAL
+    private Long roleId;
+    private String role;        // Role name
+    private String roleGroup;   // INTERNAL or EXTERNAL
 
 }
 

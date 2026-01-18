@@ -12,8 +12,9 @@ export interface User {
   phone?: string
   company?: string
   nation?: string
-  roles: string[]
-  roleGroup: string
+  role?: string
+  roleId?: number
+  roleGroup?: string
 }
 
 interface AuthResponse {
@@ -191,7 +192,8 @@ export const authService = {
   updateProfile: async (userId: number, data: Partial<User>): Promise<ApiResponse<User>> => {
     try {
       // apiClient will automatically handle 401 and logout
-      const response = await apiClient.put(`/users/${userId}`, data)
+      // Changed from /users/{id} to /user/profile/me for external user self-update
+      const response = await apiClient.put('/user/profile/me', data)
 
       const result = await response.json()
 
@@ -203,9 +205,8 @@ export const authService = {
         }
       }
 
-      // Update local storage if current user
-      const currentUser = authService.getUser()
-      if (currentUser && currentUser.id === userId && result.data) {
+      // Update local storage with new user data
+      if (result.data) {
         localStorage.setItem(USER_KEY, JSON.stringify(result.data))
       }
 

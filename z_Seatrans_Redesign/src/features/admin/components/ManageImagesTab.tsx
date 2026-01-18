@@ -742,6 +742,8 @@ function ImagesDataTable({
               type="button"
               onClick={() => onPreview(image)}
               className="block w-24 h-16 overflow-hidden rounded-md border hover:shadow-md"
+              aria-label={`Preview ${image.title || 'image'}`}
+              title="Click to preview image"
             >
               <ImageWithFallback
                 src={formatImageUrl(image.imageUrl)}
@@ -785,6 +787,8 @@ function ImagesDataTable({
               type="button"
               className="inline-flex items-center gap-1 whitespace-nowrap"
               onClick={() => column.toggleSorting(sorted === 'asc')}
+              aria-label={`Sort by upload date ${sorted === 'asc' ? 'descending' : 'ascending'}`}
+              title="Click to sort by upload date"
             >
               Uploaded
               {sorted === 'asc' && <ArrowUp className="h-4 w-4" />}
@@ -806,10 +810,22 @@ function ImagesDataTable({
           const image = row.original
           return (
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => onEdit(image)}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onEdit(image)}
+                aria-label={`Edit ${image.title}`}
+                title="Edit image"
+              >
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => onDelete(image.id)}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onDelete(image.id)}
+                aria-label={`Delete ${image.title}`}
+                title="Delete image"
+              >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>

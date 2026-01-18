@@ -1,14 +1,10 @@
 package com.example.seatrans.features.auth.service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,9 +46,9 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // Validate roles nếu có
-        if (!user.getRoles().isEmpty()) {
-            roleValidationService.validateUserRoles(user);
+        // Validate role nếu có
+        if (user.getRole() != null) {
+            roleValidationService.validateUserRole(user);
         }
 
         return userRepository.save(user);
@@ -73,8 +69,7 @@ public class UserService {
 
         if (existingByEmail.isPresent()) {
             User existing = existingByEmail.get();
-            boolean isGuest = existing.getRoles().stream()
-                    .anyMatch(role -> "ROLE_GUEST".equals(role.getName()));
+                boolean isGuest = existing.getRole() != null && "ROLE_GUEST".equals(existing.getRole().getName());
 
             if (!isGuest) {
                 throw new DuplicateUserException("Email", dto.getEmail());
@@ -85,8 +80,7 @@ public class UserService {
             existing.setPhone(dto.getPhone());
             existing.setCompany(dto.getCompany());
             existing.setPassword(passwordEncoder.encode(dto.getPassword()));
-            // Use mutable set so Hibernate can manage the collection
-            existing.setRoles(new HashSet<>(Collections.singleton(customerRole)));
+            existing.setRole(customerRole);
             return userRepository.save(existing);
         }
 
@@ -95,7 +89,7 @@ public class UserService {
         user.setFullName(dto.getFullName());
         user.setPhone(dto.getPhone());
         user.setCompany(dto.getCompany());
-        user.setRoles(new HashSet<>(Collections.singleton(customerRole)));
+        user.setRole(customerRole);
         return userRepository.save(user);
     }
 
@@ -138,30 +132,24 @@ public class UserService {
         guest.setPhone(phone);
         guest.setCompany(company);
         guest.setPassword(passwordEncoder.encode("guest-" + UUID.randomUUID()));
-        guest.setRoles(new HashSet<>(Collections.singleton(guestRole)));
+        guest.setRole(guestRole);
         return userRepository.save(guest);
     }
     
     /**
-     * Táº¡o user vá»›i roles
+     * Táº¡o user vá»›i role
      * 
      * @param user User entity
-     * @param roleNames Danh sÃ¡ch role names (VD: "ROLE_ADMIN", "ROLE_EMPLOYEE")
+     * @param roleName role name (VD: "ROLE_ADMIN", "ROLE_EMPLOYEE")
      * @return User Ä‘Ã£ lÆ°u
      */
-    public User createUserWithRoles(User user, Set<String> roleNames) {
-        // Tìm các roles
-        Set<Role> roles = roleNames.stream()
-            .map(name -> roleRepository.findByName(name)
-                .orElseThrow(() -> new RoleNotFoundException("name", name)))
-            .collect(Collectors.toSet());
-        
-        // Validate roles compatible
-        roleValidationService.validateRoleAssignments(user, roles);
-        
-        // Gán roles
-        user.setRoles(roles);
-        
+    public User createUserWithRole(User user, String roleName) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RoleNotFoundException("name", roleName));
+
+        roleValidationService.validateRoleAssignment(user, role);
+        user.setRole(role);
+
         return createUser(user);
     }
     
@@ -303,51 +291,7 @@ public class UserService {
         
         // Validate role assignment
         roleValidationService.validateRoleAssignment(user, role);
-        
-
-        user.addRole(role);
-        return userRepository.save(user);
-    }
-    
-    /**
-     * GÃ¡n nhiá»u roles cho user
-     */
-    public User assignRoles(Long userId, Set<String> roleNames) {
-        User user = getUserById(userId);
-        
-        Set<Role> roles = roleNames.stream()
-            .map(name -> roleRepository.findByName(name)
-                .orElseThrow(() -> new RoleNotFoundException("name", name)))
-            .collect(java.util.stream.Collectors.toSet());
-        
-        // Validate role assignments
-        roleValidationService.validateRoleAssignments(user, roles);
-        
-        for (Role role : roles) {
-            user.addRole(role);
-        }
-        
-        return userRepository.save(user);
-    }
-    
-    /**
-     * XÃ³a role khá»i user
-     */
-    public User removeRole(Long userId, String roleName) {
-        User user = getUserById(userId);
-        Role role = roleRepository.findByName(roleName)
-            .orElseThrow(() -> new RoleNotFoundException("name", roleName));
-        
-        user.removeRole(role);
-        return userRepository.save(user);
-    }
-    
-    /**
-     * XÃ³a táº¥t cáº£ roles cá»§a user
-     */
-    public User clearRoles(Long userId) {
-        User user = getUserById(userId);
-        user.getRoles().clear();
+        user.setRole(role);
         return userRepository.save(user);
     }
     
@@ -458,7 +402,7 @@ public class UserService {
         // Assign ROLE_CUSTOMER
         Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
                 .orElseThrow(() -> new RoleNotFoundException("name", "ROLE_CUSTOMER"));
-        newUser.setRoles(new HashSet<>(Collections.singletonList(customerRole)));
+        newUser.setRole(customerRole);
         
         return userRepository.save(newUser);
     }

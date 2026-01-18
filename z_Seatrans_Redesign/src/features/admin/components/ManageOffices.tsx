@@ -244,6 +244,8 @@ export function ManageOffices() {
               <Label htmlFor="provinceId">Province *</Label>
               <select
                 id="provinceId"
+                name="provinceId"
+                aria-label="Select province"
                 value={formData.provinceId}
                 onChange={(e) => setFormData({ ...formData, provinceId: e.target.value })}
                 className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
@@ -350,6 +352,8 @@ export function ManageOffices() {
               <input
                 type="checkbox"
                 id="isHeadquarter"
+                name="isHeadquarter"
+                aria-label="Mark as head office"
                 checked={formData.isHeadquarter}
                 onChange={(e) => setFormData({ ...formData, isHeadquarter: e.target.checked })}
                 className="h-4 w-4"

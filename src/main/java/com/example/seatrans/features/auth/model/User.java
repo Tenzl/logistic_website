@@ -1,10 +1,6 @@
 package com.example.seatrans.features.auth.model;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.example.seatrans.features.auth.model.enums.RoleGroup;
 
@@ -15,8 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -66,13 +61,9 @@ public class User {
     @Column(name = "email_verified")
     private Boolean emailVerified = false;
     
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private Role role;
     
     // Lifecycle callbacks
     @PrePersist
@@ -95,37 +86,12 @@ public class User {
     }
     
     // Helper methods
-    public void addRole(Role role) {
-        this.roles.add(role);
-        role.getUsers().add(this);
-    }
-    
-    public void removeRole(Role role) {
-        this.roles.remove(role);
-        role.getUsers().remove(this);
-    }
-    
     public boolean hasRole(String roleName) {
-        return roles.stream()
-            .anyMatch(role -> role.getName().equals(roleName));
+        return role != null && role.getName().equals(roleName);
     }
-    
-    public boolean hasAnyRole(String... roleNames) {
-        return roles.stream()
-            .anyMatch(role -> Arrays.asList(roleNames).contains(role.getName()));
-    }
-    
-    public Set<String> getRoleNames() {
-        return roles.stream()
-            .map(Role::getName)
-            .collect(Collectors.toSet());
-    }
-    
+
     public RoleGroup getRoleGroup() {
-        return roles.stream()
-            .map(Role::getRoleGroup)
-            .findFirst()
-            .orElse(null);
+        return role != null ? role.getRoleGroup() : null;
     }
     
     public boolean isInternal() {
@@ -243,12 +209,12 @@ public class User {
         this.emailVerified = emailVerified;
     }
 
-    public Set<Role> getRoles() {
-        return roles;
+    public Role getRole() {
+        return role;
     }
 
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
+    public void setRole(Role role) {
+        this.role = role;
     }
 }
 

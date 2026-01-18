@@ -32,18 +32,19 @@ public class EntityMapper {
         }
         
         return UserDTO.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .phone(user.getPhone())
-                .company(user.getCompany())
-                .isActive(user.getIsActive())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .lastLogin(user.getLastLogin())
-                .roles(user.getRoleNames())
-                .roleGroup(user.getRoleGroup() != null ? user.getRoleGroup().name() : null)
-                .build();
+            .id(user.getId())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .phone(user.getPhone())
+            .company(user.getCompany())
+            .isActive(user.getIsActive())
+            .createdAt(user.getCreatedAt())
+            .updatedAt(user.getUpdatedAt())
+            .lastLogin(user.getLastLogin())
+            .roleId(user.getRole() != null ? user.getRole().getId() : null)
+            .role(user.getRole() != null ? user.getRole().getName() : null)
+            .roleGroup(user.getRoleGroup() != null ? user.getRoleGroup().name() : null)
+            .build();
     }
     
     // ==================== Gallery Image Mapping ====================

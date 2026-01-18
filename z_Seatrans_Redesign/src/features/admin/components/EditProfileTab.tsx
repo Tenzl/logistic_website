@@ -112,7 +112,8 @@ export function EditProfileTab() {
 
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+      // Use apiClient for consistent API calls and automatic auth handling
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

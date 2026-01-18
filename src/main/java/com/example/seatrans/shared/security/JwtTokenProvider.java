@@ -2,7 +2,6 @@ package com.example.seatrans.shared.security;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -74,21 +73,21 @@ public class JwtTokenProvider implements TokenProvider {
      */
     @Override
     public String generateToken(User user) {
-        Set<String> roleNames = user.getRoles().stream()
-                .map(role -> role.getName())
-                .collect(Collectors.toSet());
+        List<String> roleNames = user.getRole() != null
+            ? List.of(user.getRole().getName())
+            : List.of();
         return generateToken(user.getId(), user.getEmail(), jwtExpirationMs, roleNames);
     }
 
     @Override
     public String generateRefreshToken(User user) {
-        Set<String> roleNames = user.getRoles().stream()
-                .map(role -> role.getName())
-                .collect(Collectors.toSet());
+        List<String> roleNames = user.getRole() != null
+            ? List.of(user.getRole().getName())
+            : List.of();
         return generateToken(user.getId(), user.getEmail(), refreshExpirationMs, roleNames);
     }
 
-    private String generateToken(Long userId, String email, long expirationMs, Set<String> roleNames) {
+        private String generateToken(Long userId, String email, long expirationMs, List<String> roleNames) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
         

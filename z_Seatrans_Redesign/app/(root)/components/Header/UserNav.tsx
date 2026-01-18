@@ -10,8 +10,9 @@ interface UserNavProps {
     email: string
     fullName: string
     phone?: string
-    roles: string[]
-    roleGroup: string
+    role?: string
+    roleId?: number
+    roleGroup?: string
   }
   onLogout: () => void
 }
@@ -20,13 +21,18 @@ export function UserNav({ user, onLogout }: UserNavProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const router = useRouter()
 
+  const derivedGroup = user.role
+    ? (user.role.includes('ADMIN') || user.role.includes('EMPLOYEE') ? 'INTERNAL' : 'EXTERNAL')
+    : undefined
+  const roleGroup = user.roleGroup ?? derivedGroup
+
   const handleNavigate = (path: string) => {
     setShowDropdown(false)
     router.push(path)
   }
 
-  const isInternal = user.roleGroup === 'INTERNAL'
-  const isExternal = user.roleGroup === 'EXTERNAL'
+  const isInternal = roleGroup === 'INTERNAL'
+  const isExternal = roleGroup === 'EXTERNAL'
 
   // Close dropdown when clicking outside
   useEffect(() => {

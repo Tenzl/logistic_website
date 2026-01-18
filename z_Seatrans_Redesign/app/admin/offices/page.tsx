@@ -8,8 +8,13 @@ import { useAuth } from '@/features/auth/context/AuthContext'
 export default function ManageOffices() {
   const router = useRouter()
   const { user } = useAuth()
+
+  const derivedGroup = user?.role
+    ? (user.role.includes('ADMIN') || user.role.includes('EMPLOYEE') ? 'INTERNAL' : 'EXTERNAL')
+    : undefined
+  const roleGroup = user?.roleGroup ?? derivedGroup
   
-  if (!user || user.roleGroup !== 'INTERNAL') {
+  if (!user || roleGroup !== 'INTERNAL') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

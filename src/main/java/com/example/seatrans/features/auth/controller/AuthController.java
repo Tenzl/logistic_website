@@ -24,7 +24,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Controller xá»­ lÃ½ authentication (Ä‘Äƒng kÃ½, Ä‘Äƒng nháº­p)
+ * Controller xử lý authentication (đăng ký, đăng nhập)
  */
 @RestController
 @RequestMapping("/api/auth")

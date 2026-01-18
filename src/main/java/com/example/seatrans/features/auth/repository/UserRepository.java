@@ -31,19 +31,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByIsActive(Boolean isActive);
 
     // ==================== Role Queries ====================
-    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
+    @Query("SELECT u FROM User u WHERE u.role.name = :roleName")
     List<User> findByRoleName(@Param("roleName") String roleName);
 
-    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.roleGroup = :roleGroup")
+    @Query("SELECT u FROM User u WHERE u.role.roleGroup = :roleGroup")
     List<User> findByRoleGroup(@Param("roleGroup") RoleGroup roleGroup);
 
-    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.roleGroup = 'INTERNAL'")
+    @Query("SELECT u FROM User u WHERE u.role.roleGroup = 'INTERNAL'")
     List<User> findInternalUsers();
 
-    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.roleGroup = 'EXTERNAL'")
+    @Query("SELECT u FROM User u WHERE u.role.roleGroup = 'EXTERNAL'")
     List<User> findExternalUsers();
 
-    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM User u JOIN u.roles r WHERE u.id = :userId AND r.name = :roleName")
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.id = :userId AND u.role.name = :roleName")
     boolean hasRole(@Param("userId") Long userId, @Param("roleName") String roleName);
 
     // ==================== Date Range Queries ====================
@@ -63,12 +63,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhone(String phone);
 
     // ==================== Complex Queries ====================
-    @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r.roleGroup = :roleGroup")
+    @Query("SELECT COUNT(u) FROM User u WHERE u.role.roleGroup = :roleGroup")
     Long countByRoleGroup(@Param("roleGroup") RoleGroup roleGroup);
 
     List<User> findTop10ByOrderByCreatedAtDesc();
 
-    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE u.isActive = true AND r.name = :roleName")
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.role.name = :roleName")
     List<User> findActiveUsersByRole(@Param("roleName") String roleName);
 
     // ==================== Statistics Queries ====================

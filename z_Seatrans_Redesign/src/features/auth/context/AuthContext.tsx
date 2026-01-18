@@ -11,8 +11,9 @@ interface User {
   phone?: string
   company?: string
   nation?: string
-  roles: string[]
-  roleGroup: string
+  role?: string
+  roleId?: number
+  roleGroup?: string
 }
 
 interface AuthContextType {

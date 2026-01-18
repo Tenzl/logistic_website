@@ -1,7 +1,6 @@
 package com.example.seatrans.features.auth.controller;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -225,51 +224,6 @@ public class UserController {
         UserDTO userDTO = entityMapper.toUserDTO(user);
         
         return ResponseEntity.ok(ApiResponse.success("Role assigned successfully", userDTO));
-    }
-    
-    /**
-     * POST /api/users/{id}/roles/batch
-     * GÃ¡n nhiá»u roles cho user
-     */
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @PostMapping("/{id}/roles/batch")
-    public ResponseEntity<ApiResponse<UserDTO>> assignRoles(
-            @PathVariable Long id,
-            @RequestBody Set<String> roleNames) {
-        
-        User user = userService.assignRoles(id, roleNames);
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-        
-        return ResponseEntity.ok(ApiResponse.success("Roles assigned successfully", userDTO));
-    }
-    
-    /**
-     * DELETE /api/users/{id}/roles/{roleName}
-     * XÃ³a role khá»i user
-     */
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @DeleteMapping("/{id}/roles/{roleName}")
-    public ResponseEntity<ApiResponse<UserDTO>> removeRole(
-            @PathVariable Long id,
-            @PathVariable String roleName) {
-        
-        User user = userService.removeRole(id, roleName);
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-        
-        return ResponseEntity.ok(ApiResponse.success("Role removed successfully", userDTO));
-    }
-    
-    /**
-     * DELETE /api/users/{id}/roles
-     * XÃ³a táº¥t cáº£ roles cá»§a user
-     */
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @DeleteMapping("/{id}/roles")
-    public ResponseEntity<ApiResponse<UserDTO>> clearRoles(@PathVariable Long id) {
-        User user = userService.clearRoles(id);
-        UserDTO userDTO = entityMapper.toUserDTO(user);
-        
-        return ResponseEntity.ok(ApiResponse.success("All roles removed", userDTO));
     }
     
     // ==================== Delete Operations ====================

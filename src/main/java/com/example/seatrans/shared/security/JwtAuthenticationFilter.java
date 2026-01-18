@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String email = tokenProvider.getEmailFromToken(token);
                     List<String> roles = tokenProvider.getRolesFromToken(token);
                     
-                    log.debug("JWT token validated for user: {} (ID: {})", email, userId);
+                    log.debug("JWT token validated for user: {} (ID: {}) with roles: {}", email, userId, roles);
                     
                     // Store in request attributes for downstream use
                     request.setAttribute("userId", userId);
