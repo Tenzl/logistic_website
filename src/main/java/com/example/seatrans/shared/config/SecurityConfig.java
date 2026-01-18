@@ -100,7 +100,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/ports/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers("/api/posts/**").permitAll()
-                .requestMatchers("/api/gallery/**", "/api/gallery-images/**").permitAll()
+                .requestMatchers("/api/gallery/**", "/api/gallery/page-image/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/image-types/**").permitAll()
                 .requestMatchers("/api/offices/**").permitAll()
                 .requestMatchers("/api/service-types/**").permitAll()

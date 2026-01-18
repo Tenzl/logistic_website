@@ -2,7 +2,6 @@ package com.example.seatrans.features.gallery.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -11,34 +10,33 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.criteria.Predicate;
-
-import com.example.seatrans.features.gallery.dto.CreateImageRequest;
 import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.dto.UpdateImageRequest;
 import com.example.seatrans.features.gallery.model.GalleryImage;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
+import com.example.seatrans.features.gallery.repository.GalleryImageRepository;
+import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
 import com.example.seatrans.features.logistics.model.Port;
 import com.example.seatrans.features.logistics.model.Province;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
-import com.example.seatrans.shared.mapper.EntityMapper;
-import com.example.seatrans.features.gallery.repository.GalleryImageRepository;
-import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
 import com.example.seatrans.features.logistics.repository.PortRepository;
 import com.example.seatrans.features.logistics.repository.ProvinceRepository;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service for Gallery Image management
+ * Admin Service for Gallery Image management
+ * Handles admin-only operations: upload, update, delete
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class GalleryImageService {
+public class GalleryImageAdminService {
     
     private final GalleryImageRepository galleryImageRepository;
     private final ServiceTypeRepository serviceTypeRepository;
@@ -68,7 +66,6 @@ public class GalleryImageService {
      */
     @Deprecated
     public boolean checkFileExists(String fileHash) {
-        // Check if any image URL contains this file hash
         return galleryImageRepository.findAll().stream()
             .anyMatch(image -> image.getImageUrl() != null && 
                       image.getImageUrl().contains(fileHash));
@@ -80,7 +77,6 @@ public class GalleryImageService {
     @SuppressWarnings("null")
     public GalleryImageDTO uploadImage(String imageUrl, Long provinceId, Long portId, 
                                        Long serviceTypeId, Long imageTypeId, Long uploadedById) {
-        // Fetch entities from repositories
         ServiceTypeEntity serviceType = serviceTypeRepository.findById(serviceTypeId)
                 .orElseThrow(() -> new RuntimeException("Service type not found: " + serviceTypeId));
         
@@ -93,7 +89,6 @@ public class GalleryImageService {
         Port port = portRepository.findById(portId)
                 .orElseThrow(() -> new RuntimeException("Port not found: " + portId));
         
-        // Create and save image
         GalleryImage galleryImage = GalleryImage.builder()
                 .serviceType(serviceType)
                 .imageType(imageType)
@@ -108,36 +103,9 @@ public class GalleryImageService {
         
         return entityMapper.toGalleryImageDTO(saved);
     }
-
-    /**
-     * Upload new gallery image (legacy version, kept for compatibility)
-     */
-    public GalleryImageDTO uploadImage(String imageUrl, CreateImageRequest request, Long uploadedById) {
-        // Fetch entities from repositories
-        ServiceTypeEntity serviceType = serviceTypeRepository.findByName(request.getServiceType())
-                .orElseThrow(() -> new RuntimeException("Service type not found: " + request.getServiceType()));
-        
-        ImageTypeEntity imageType = imageTypeRepository.findByName(request.getImageType())
-                .orElseThrow(() -> new RuntimeException("Image type not found: " + request.getImageType()));
-        
-        // Create and save image
-        GalleryImage galleryImage = GalleryImage.builder()
-                .serviceType(serviceType)
-                .imageType(imageType)
-                .province(request.getProvince() != null ? provinceRepository.findByName(request.getProvince()).orElse(null) : null)
-                .port(request.getPort() != null ? portRepository.findByName(request.getPort()).orElse(null) : null)
-                .uploadedById(uploadedById)
-                .imageUrl(imageUrl)
-                .build();
-        
-        GalleryImage saved = galleryImageRepository.save(galleryImage);
-        log.info("Image uploaded successfully. ID: {}, Service: {}, Type: {}", saved.getId(), serviceType.getName(), imageType.getName());
-        
-        return entityMapper.toGalleryImageDTO(saved);
-    }
     
     /**
-     * Get all images with ID filters (paginated)
+     * Get all images with ID filters (paginated) - Admin version
      */
     public Page<GalleryImageDTO> getAllImages(Long provinceId, Long portId, Long serviceTypeId, Long imageTypeId, Pageable pageable) {
         Page<GalleryImage> images = galleryImageRepository.findAll((Specification<GalleryImage>) (root, query, cb) -> {
@@ -164,36 +132,15 @@ public class GalleryImageService {
             .toList();
         return new PageImpl<>(content, pageable, images.getTotalElements());
     }
-
+    
     /**
-     * Get all images with optional filters (paginated)
-     * @deprecated Use getAllImages with IDs instead
+     * Get all images without pagination (for admin management)
      */
-    public Page<GalleryImageDTO> getAllImages(String serviceType, String imageType, Pageable pageable) {
-        Page<GalleryImage> images;
-        
-        if (serviceType != null && imageType != null) {
-            ServiceTypeEntity service = serviceTypeRepository.findByName(serviceType)
-                    .orElseThrow(() -> new RuntimeException("Service type not found: " + serviceType));
-            ImageTypeEntity type = imageTypeRepository.findByName(imageType)
-                    .orElseThrow(() -> new RuntimeException("Image type not found: " + imageType));
-            images = galleryImageRepository.findByServiceTypeAndImageType(service, type, pageable);
-        } else if (serviceType != null) {
-            ServiceTypeEntity service = serviceTypeRepository.findByName(serviceType)
-                    .orElseThrow(() -> new RuntimeException("Service type not found: " + serviceType));
-            images = galleryImageRepository.findByServiceType(service, pageable);
-        } else if (imageType != null) {
-            ImageTypeEntity type = imageTypeRepository.findByName(imageType)
-                    .orElseThrow(() -> new RuntimeException("Image type not found: " + imageType));
-            images = galleryImageRepository.findByImageType(type, pageable);
-        } else {
-            images = galleryImageRepository.findAll(pageable);
-        }
-        
-        List<GalleryImageDTO> content = images.getContent().stream()
-            .map(entityMapper::toGalleryImageDTO)
-            .toList();
-        return new PageImpl<>(content, pageable, images.getTotalElements());
+    public List<GalleryImageDTO> getAllImagesNoPagination() {
+        List<GalleryImage> images = galleryImageRepository.findAll();
+        return images.stream()
+                .map(entityMapper::toGalleryImageDTO)
+                .toList();
     }
     
     /**
@@ -252,33 +199,4 @@ public class GalleryImageService {
         galleryImageRepository.delete(image);
         log.info("Image deleted successfully. ID: {}", id);
     }
-    
-    /**
-     * Get all images without pagination (for admin management)
-     */
-    public List<GalleryImageDTO> getAllImagesNoPagination() {
-        List<GalleryImage> images = galleryImageRepository.findAll();
-        return images.stream()
-                .map(entityMapper::toGalleryImageDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Get gallery images for frontend (ordered by uploadedAt)
-     */
-    public List<GalleryImageDTO> getGalleryImages(String serviceType, String imageType) {
-        ServiceTypeEntity service = serviceTypeRepository.findByName(serviceType)
-                .orElseThrow(() -> new RuntimeException("Service type not found: " + serviceType));
-        ImageTypeEntity type = imageTypeRepository.findByName(imageType)
-                .orElseThrow(() -> new RuntimeException("Image type not found: " + imageType));
-        
-        List<GalleryImage> images = galleryImageRepository.findByServiceTypeAndImageTypeOrderByUploadedAtDesc(
-                service, type
-        );
-        
-        return images.stream()
-                .map(entityMapper::toGalleryImageDTO)
-                .collect(Collectors.toList());
-    }
 }
-

@@ -9,6 +9,7 @@ import { provinceService, Province } from '@/features/logistics/services/provinc
 import { portService } from '@/features/logistics/services/portService'
 import { useAuth } from '@/features/auth/context/AuthContext'
 import { toast } from 'sonner'
+import { apiClient } from '@/shared/utils/apiClient'
 import {
   FileUpload,
   FileUploadDropzone,
@@ -133,7 +134,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
         setLoading(true)
         
         // Fetch offices from backend
-        const officesResponse = await fetch(`${API_URL}/api/offices/active`)
+        const officesResponse = await apiClient.get('/api/offices/active')
         const officesData = await officesResponse.json()
         
         if (officesData.success && officesData.data) {
@@ -145,7 +146,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
         }
         
         // Fetch active service types
-        const servicesResponse = await fetch(`${API_URL}/api/service-types/active`)
+        const servicesResponse = await apiClient.get('/api/service-types/active')
         const servicesData = await servicesResponse.json()
         
         if (servicesData.success && servicesData.data) {

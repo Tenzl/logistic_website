@@ -6,6 +6,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Building2, MapPin, Plus, Edit, Trash2, Save, X } from 'lucide-react'
+import { apiClient } from '@/shared/utils/apiClient'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
@@ -64,7 +65,7 @@ export function ManageOffices() {
   const fetchOffices = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${API_URL}/api/offices/active`)
+      const response = await apiClient.get('/api/offices/active')
       const data = await response.json()
       if (data.success) {
         setOffices(data.data)

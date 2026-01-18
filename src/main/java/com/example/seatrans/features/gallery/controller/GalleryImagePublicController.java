@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
-import com.example.seatrans.features.gallery.service.GalleryImageService;
+import com.example.seatrans.features.gallery.service.GalleryImagePublicService;
 import com.example.seatrans.shared.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -23,19 +23,19 @@ import lombok.extern.slf4j.Slf4j;
  * Accessible by all users (no role required)
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/gallery")
 @RequiredArgsConstructor
 @Slf4j
 public class GalleryImagePublicController {
     
-    private final GalleryImageService galleryImageService;
+    private final GalleryImagePublicService galleryImageService;
     
     /**
      * Get paginated gallery images with filters
-     * GET /api/gallery-images?serviceTypeId=1&imageTypeId=2&page=0&size=100
+     * GET /api/gallery/page-image?serviceTypeId=1&imageTypeId=2&page=0&size=100
      * Public endpoint for frontend service pages
      */
-    @GetMapping("/gallery-images")
+    @GetMapping("/page-image")
     public ResponseEntity<ApiResponse<PagedGalleryResponse>> getGalleryImages(
             @RequestParam(required = false) Long serviceTypeId,
             @RequestParam(required = false) Long imageTypeId,
@@ -71,10 +71,10 @@ public class GalleryImagePublicController {
     /**
      * Get gallery images for frontend (old version)
      * GET /api/gallery/images?serviceType=SHIPPING_AGENCY&imageType=GALLERY
-     * @deprecated Use /api/gallery-images instead
+     * @deprecated Use /api/gallery/page-image instead
      */
     @Deprecated
-    @GetMapping("/gallery/images/by-type")
+    @GetMapping("/images/by-type")
     public ResponseEntity<ApiResponse<List<GalleryImageDTO>>> getGalleryImagesByType(
             @RequestParam String serviceType,
             @RequestParam String imageType) {
@@ -94,7 +94,7 @@ public class GalleryImagePublicController {
      * GET /api/gallery/images
      * Returns images with flattened structure for easy frontend consumption
      */
-    @GetMapping("/gallery/images")
+    @GetMapping("/images")
     public ResponseEntity<List<GalleryImageResponse>> getAllGalleryImages() {
         try {
             List<GalleryImageDTO> images = galleryImageService.getAllImagesNoPagination();

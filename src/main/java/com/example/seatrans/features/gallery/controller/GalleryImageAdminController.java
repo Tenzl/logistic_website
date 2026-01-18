@@ -20,7 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.dto.UpdateImageRequest;
-import com.example.seatrans.features.gallery.service.GalleryImageService;
+import com.example.seatrans.features.gallery.service.GalleryImageAdminService;
 import com.example.seatrans.shared.dto.ApiResponse;
 import com.example.seatrans.shared.util.FileUploadUtil;
 
@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
 public class GalleryImageAdminController {
     
-    private final GalleryImageService galleryImageService;
+    private final GalleryImageAdminService galleryImageService;
     private final FileUploadUtil fileUploadUtil;
     
     /**
