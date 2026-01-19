@@ -7,8 +7,9 @@ import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Building2, MapPin, Plus, Edit, Trash2, Save, X } from 'lucide-react'
 import { apiClient } from '@/shared/utils/apiClient'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+import { API_CONFIG } from '@/shared/config/api.config'
+import { provinceService, type Province } from '@/modules/logistics/services/provinceService'
+import type { ApiResponse } from '@/shared/types/api.types'
 
 interface Office {
   id: number
@@ -31,11 +32,6 @@ interface Office {
   }
   isHeadquarter: boolean
   isActive: boolean
-}
-
-interface Province {
-  id: number
-  name: string
 }
 
 export function ManageOffices() {
@@ -65,11 +61,9 @@ export function ManageOffices() {
   const fetchOffices = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.get('/api/offices/active')
+      const response = await apiClient.get<ApiResponse<Office[]>>(API_CONFIG.OFFICES.ADMIN_BASE)
       const data = await response.json()
-      if (data.success) {
-        setOffices(data.data)
-      }
+      setOffices(data.data)
     } catch (error) {
       console.error('Error fetching offices:', error)
     } finally {
@@ -79,11 +73,8 @@ export function ManageOffices() {
 
   const fetchProvinces = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/provinces`)
-      const data = await response.json()
-      if (data.success) {
-        setProvinces(data.data)
-      }
+      const data = await provinceService.getAllProvinces()
+      setProvinces(data)
     } catch (error) {
       console.error('Error fetching provinces:', error)
     }
@@ -134,16 +125,6 @@ export function ManageOffices() {
     }
 
     try {
-      const token = localStorage.getItem('auth_token')
-      if (!token) {
-        alert('Authentication token not found. Please login again.')
-        return
-      }
-
-      const url = editing 
-        ? `${API_URL}/api/admin/offices/${editing}`
-        : `${API_URL}/api/admin/offices`
-      
       const payload: Record<string, unknown> = {
         provinceId: parseInt(formData.provinceId),
         name: formData.name,
@@ -161,18 +142,22 @@ export function ManageOffices() {
 
       console.log('Saving office:', payload)
 
-      const response = await fetch(url, {
-        method: editing ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      })
+      const url = editing 
+        ? API_CONFIG.OFFICES.ADMIN_BY_ID(editing)
+        : API_CONFIG.OFFICES.ADMIN_BASE
+
+      const response = editing
+        ? await apiClient.put<ApiResponse<Office>>(url, payload)
+        : await apiClient.post<ApiResponse<Office>>(url, payload)
 
       if (response.ok) {
+        const data = await response.json()
         alert('Office saved successfully!')
-        fetchOffices()
+        if (editing) {
+          setOffices(prev => prev.map(item => item.id === editing ? data.data : item))
+        } else {
+          setOffices(prev => [...prev, data.data])
+        }
         setEditing(null)
         setAdding(false)
       } else {
@@ -196,16 +181,10 @@ export function ManageOffices() {
     if (!confirm('Are you sure you want to delete this office?')) return
     
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${API_URL}/api/admin/offices/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await apiClient.delete(API_CONFIG.OFFICES.ADMIN_BY_ID(id))
 
       if (response.ok) {
-        fetchOffices()
+        setOffices(prev => prev.filter(office => office.id !== id))
       }
     } catch (error) {
       console.error('Error deleting office:', error)

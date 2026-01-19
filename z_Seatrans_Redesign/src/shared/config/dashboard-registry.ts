@@ -58,16 +58,16 @@ const FreightForwardingInquiriesTab = lazy(() => import("@/features/admin/compon
 const LogisticsInquiriesTab = lazy(() => import("@/features/admin/components/LogisticsInquiriesTab").then(m => ({ default: m.LogisticsInquiriesTab })))
 const CharteringInquiriesTab = lazy(() => import("@/features/admin/components/CharteringInquiriesTab").then(m => ({ default: m.CharteringInquiriesTab })))
 const SpecialRequestInquiriesTab = lazy(() => import("@/features/admin/components/SpecialRequestInquiriesTab").then(m => ({ default: m.SpecialRequestInquiriesTab })))
-const AddImageTab = lazy(() => import("@/features/admin/components/AddImageTab").then(m => ({ default: m.AddImageTab })))
-const ManageImagesTab = lazy(() => import("@/features/admin/components/ManageImagesTab").then(m => ({ default: m.ManageImagesTab })))
+const AddImageTab = lazy(() => import("@/modules/gallery/components/admin/ImageUpload").then(m => ({ default: m.AddImageTab })))
+const ManageImagesTab = lazy(() => import("@/modules/gallery/components/admin/ImageManagement").then(m => ({ default: m.ManageImagesTab })))
 const ManageServices = lazy(() => import("@/features/admin/components/ManageServices").then(m => ({ default: m.ManageServices })))
 const ManagePorts = lazy(() => import("@/features/admin/components/ManagePorts").then(m => ({ default: m.ManagePorts })))
 const ManageOffices = lazy(() => import("@/features/admin/components/ManageOffices").then(m => ({ default: m.ManageOffices })))
-const ManageImageTypes = lazy(() => import("@/features/admin/components/ManageImageTypes").then(m => ({ default: m.ManageImageTypes })))
-const ManageCategories = lazy(() => import("@/features/admin/components/ManageCategories").then(m => ({ default: m.ManageCategories })))
-const ManagePosts = lazy(() => import("@/features/admin/components/ManagePosts").then(m => ({ default: m.ManagePosts })))
+const ManageImageTypes = lazy(() => import("@/modules/gallery/components/admin/ImageTypeManagement").then(m => ({ default: m.ManageImageTypes })))
+const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
+const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
 
-const UserInquiryHistoryTab = lazy(() => import("@/features/user/components/UserInquiryHistoryTab").then(m => ({ default: m.UserInquiryHistoryTab })))
+const UserInquiryHistoryTab = lazy(() => import("@/modules/users/components/UserInquiryHistoryTab").then(m => ({ default: m.UserInquiryHistoryTab })))
 
 export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
   profile: {

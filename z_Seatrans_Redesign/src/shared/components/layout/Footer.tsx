@@ -1,3 +1,6 @@
+'use client'
+
+import Link from 'next/link'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { ImageWithFallback } from '@/shared/components/ImageWithFallback'
 import {
@@ -73,8 +76,25 @@ export function Footer() {
               </h4>
 
               <div className="text-sm space-y-1 mt-4">
-                <p className="leading-relaxed">Shipping Agency / Chartering & Ship-broking /</p>
-                <p className="leading-relaxed">Freight Forwarding & Logistics / Customs Clearance</p>
+                <p className="leading-relaxed">
+                  <Link href="/shipping-agency" className="hover:text-primary transition-colors">
+                    Shipping Agency
+                  </Link>
+                  {' / '}
+                  <Link href="/chartering-broking" className="hover:text-primary transition-colors">
+                    Chartering & Ship-broking
+                  </Link>
+                  {' /'}
+                </p>
+                <p className="leading-relaxed">
+                  <Link href="/freight-forwarding" className="hover:text-primary transition-colors">
+                    Freight Forwarding & Logistics
+                  </Link>
+                  {' / '}
+                  <Link href="/total-logistics" className="hover:text-primary transition-colors">
+                    Total Logistics
+                  </Link>
+                </p>
               </div>
             </div>
 

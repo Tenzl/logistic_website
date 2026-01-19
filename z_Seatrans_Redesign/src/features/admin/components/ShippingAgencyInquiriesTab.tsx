@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import {
   Card,
   CardContent,
@@ -11,7 +10,7 @@ import {
 } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
-import { useToast } from '@/shared/hooks/use-toast'
+import { toast } from '@/shared/utils/toast'
 import {
   Table,
   TableBody,
@@ -29,9 +28,12 @@ import {
 } from '@/shared/components/ui/dialog'
 import { Badge } from '@/shared/components/ui/badge'
 import { Loader2, Ship, User, CalendarClock, MapPin, Mail, CheckCircle2, Trash2, FileText, Upload, RefreshCw } from 'lucide-react'
-import { authService } from '@/features/auth/services/authService'
-import { InvoiceUploadDialog } from '@/features/inquiries/components/InvoiceUploadDialog'
-import { InquiryDocument } from '@/features/inquiries/services/documentService'
+import { InvoiceUploadDialog } from '@/modules/inquiries/components/admin/InvoiceUploadDialog'
+import { InquiryDocument } from '@/modules/inquiries/services/documentService'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
+import { INQUIRY_STATUS_OPTIONS } from '@/shared/constants/inquiry-status'
+import { renderInquiryStatusBadge } from '@/shared/utils/inquiry-helpers'
 
 interface ShippingAgencyInquiry {
   id: number
@@ -80,30 +82,27 @@ interface PageResponse<T> {
 }
 
 export function ShippingAgencyInquiriesTab() {
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [inquiries, setInquiries] = useState<ShippingAgencyInquiry[]>([])
   const [selected, setSelected] = useState<ShippingAgencyInquiry | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
+  const SERVICE_SLUG = 'shipping-agency'
+  const ADMIN_BASE = `${API_CONFIG.INQUIRIES.ADMIN_BASE}/inquiries/${SERVICE_SLUG}`
+
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      const res = await axios.get<PageResponse<ShippingAgencyInquiry>>(
-        `${API_BASE}/api/admin/inquiries/shipping-agency`,
-        {
-          params: { page: 0, size: 20 },
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        },
+      const params = new URLSearchParams({ page: '0', size: '20' })
+      const response = await apiClient.get<PageResponse<ShippingAgencyInquiry>>(
+        `${ADMIN_BASE}?${params.toString()}`
       )
-      setInquiries(res.data.content)
+      const result = await response.json()
+      const payload = (result as any).data || result
+      setInquiries(payload.content || [])
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to load inquiries'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to load inquiries'
+      toast.error(detail)
     } finally {
       setIsLoading(false)
     }
@@ -120,57 +119,34 @@ export function ShippingAgencyInquiriesTab() {
     return date.toLocaleDateString()
   }
 
-  const statusOptions: ShippingAgencyInquiry['status'][] = ['PENDING', 'PROCESSING', 'QUOTED', 'COMPLETED', 'CANCELLED']
+  const statusOptions = INQUIRY_STATUS_OPTIONS
   const formOptions = ['HCM', 'QN']
-
-  const getStatusBadge = (status?: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      PENDING: 'secondary',
-      PROCESSING: 'default',
-      QUOTED: 'outline',
-      COMPLETED: 'default',
-      CANCELLED: 'destructive',
-    }
-    if (!status) return <Badge variant="secondary">Unknown</Badge>
-    const variant = variants[status] || 'outline'
-    return <Badge variant={variant}>{status}</Badge>
-  }
 
   const updateStatus = async (id: number, status: ShippingAgencyInquiry['status']) => {
     try {
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      await axios.patch(
-        `${API_BASE}/api/admin/inquiries/shipping-agency/${id}/status`,
-        { status },
-        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
-      )
+      await apiClient.fetch(`${ADMIN_BASE}/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
       setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, status } : inq)))
-      toast({ title: 'Success', description: 'Status updated' })
+      toast.success('Status updated')
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to update status'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to update status'
+      toast.error(detail)
     }
   }
 
   const updateForm = async (id: number, form: string) => {
     try {
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      await axios.patch(
-        `${API_BASE}/api/admin/inquiries/shipping-agency/${id}/form`,
-        { form },
-        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
-      )
+      await apiClient.fetch(`${ADMIN_BASE}/${id}/form`, {
+        method: 'PATCH',
+        body: JSON.stringify({ form }),
+      })
       setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, quoteForm: form } : inq)))
-      toast({ title: 'Success', description: 'Form updated' })
+      toast.success('Form updated')
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to update form'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to update form'
+      toast.error(detail)
     }
   }
 
@@ -178,7 +154,7 @@ export function ShippingAgencyInquiriesTab() {
     if (inquiry.status !== 'PROCESSING') {
       await updateStatus(inquiry.id, 'PROCESSING')
     }
-    const targetUrl = `/admin/shipping-agency/inquiries/${inquiry.id}/pdf`
+    const targetUrl = `/admin/inquiries/shipping-agency/${inquiry.id}/pdf`
     if (typeof window !== 'undefined') {
       window.open(targetUrl, '_blank')
     }
@@ -189,19 +165,13 @@ export function ShippingAgencyInquiriesTab() {
     if (!confirmed) return
     try {
       setDeletingId(id)
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      await axios.delete(`${API_BASE}/api/admin/inquiries/shipping-agency/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      })
+      await apiClient.delete(`${ADMIN_BASE}/${id}`)
       setInquiries(prev => prev.filter(inq => inq.id !== id))
       setSelected(current => (current?.id === id ? null : current))
-      toast({ title: 'Success', description: 'Inquiry deleted' })
+      toast.success('Inquiry deleted')
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to delete inquiry'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to delete inquiry'
+      toast.error(detail)
     } finally {
       setDeletingId(null)
     }
@@ -274,7 +244,7 @@ export function ShippingAgencyInquiriesTab() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <div className="inline-flex cursor-pointer">{getStatusBadge(inq.status)}</div>
+                            <div className="inline-flex cursor-pointer">{renderInquiryStatusBadge(inq.status)}</div>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="min-w-[180px]">
                             {statusOptions.map(option => (
@@ -421,7 +391,7 @@ export function ShippingAgencyInquiriesTab() {
                 <div>Submitted: {formatDate(selected.submittedAt)}</div>
                 <div className="flex items-center gap-2">
                   <span>Status:</span>
-                  {getStatusBadge(selected.status)}
+                  {renderInquiryStatusBadge(selected.status)}
                 </div>
               </div>
 

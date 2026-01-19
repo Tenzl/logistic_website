@@ -1,9 +1,10 @@
+import { API_CONFIG } from '@/shared/config/api.config'
+
 /**
- * API Client with automatic token refresh and 401 handling
- * Automatically logs out user when receiving 401 Unauthorized
+ * API Client with automatic token handling and base URL from config.
+ * Automatically logs out user when receiving 401 Unauthorized.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 const TOKEN_KEY = 'auth_token'
 
 export interface ApiClientConfig extends RequestInit {
@@ -37,8 +38,40 @@ class ApiClient {
     window.location.href = '/login?reason=session_expired'
   }
 
+  private buildUrl(endpoint: string): string {
+    if (endpoint.startsWith('http')) return endpoint
+
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    return `${API_CONFIG.API_URL}${normalizedEndpoint}`
+  }
+
+  private withTimeout(signal?: AbortSignal | null): AbortSignal | undefined {
+    if (!API_CONFIG.TIMEOUT) return signal ?? undefined
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT)
+
+    if (signal) {
+      signal.addEventListener('abort', () => controller.abort())
+    }
+
+    // Clear timeout on abort to avoid leaks
+    controller.signal.addEventListener('abort', () => clearTimeout(timeoutId))
+
+    return controller.signal
+  }
+
+  private logRequest(method: string | undefined, url: string, body?: any) {
+    if (!API_CONFIG.ENABLE_LOGS) return
+    console.log(`[API Request] ${method?.toUpperCase() || 'GET'} ${url}`, body)
+  }
+
+  private logResponse(url: string, data: any) {
+    if (!API_CONFIG.ENABLE_LOGS) return
+    console.log(`[API Response] ${url}`, data)
+  }
+
   async fetch(endpoint: string, config: ApiClientConfig = {}): Promise<Response> {
-    const { skipAuth, headers, ...restConfig } = config
+    const { skipAuth, headers, signal, ...restConfig } = config
 
     const token = this.getToken()
     const requestHeaders: Record<string, string> = {
@@ -51,13 +84,23 @@ class ApiClient {
       requestHeaders['Authorization'] = `Bearer ${token}`
     }
 
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`
+    const url = this.buildUrl(endpoint)
+
+    this.logRequest(restConfig.method, url, restConfig.body)
 
     try {
+      const isFormData = restConfig.body instanceof FormData
+
+      if (isFormData) {
+        // Let the browser set multipart boundaries
+        delete requestHeaders['Content-Type']
+      }
+
       const response = await fetch(url, {
         ...restConfig,
         headers: requestHeaders,
         credentials: 'include',
+        signal: this.withTimeout(signal),
       })
 
       // Handle 401 Unauthorized - token expired or invalid
@@ -66,6 +109,8 @@ class ApiClient {
         this.clearAuth()
         throw new Error('Session expired. Please login again.')
       }
+
+      this.logResponse(url, response.clone())
 
       return response
     } catch (error) {
@@ -77,11 +122,11 @@ class ApiClient {
     }
   }
 
-  async get(endpoint: string, config?: ApiClientConfig): Promise<Response> {
+  async get<T = unknown>(endpoint: string, config?: ApiClientConfig): Promise<Response> {
     return this.fetch(endpoint, { ...config, method: 'GET' })
   }
 
-  async post(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
+  async post<T = unknown>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
     return this.fetch(endpoint, {
       ...config,
       method: 'POST',
@@ -90,7 +135,7 @@ class ApiClient {
     })
   }
 
-  async put(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
+  async put<T = unknown>(endpoint: string, body?: any, config?: ApiClientConfig): Promise<Response> {
     return this.fetch(endpoint, {
       ...config,
       method: 'PUT',
@@ -98,7 +143,7 @@ class ApiClient {
     })
   }
 
-  async delete(endpoint: string, config?: ApiClientConfig): Promise<Response> {
+  async delete<T = unknown>(endpoint: string, config?: ApiClientConfig): Promise<Response> {
     return this.fetch(endpoint, { ...config, method: 'DELETE' })
   }
 }

@@ -3,7 +3,7 @@ import { QueryClient, DefaultOptions } from "@tanstack/react-query"
 const defaultQueryOptions: DefaultOptions = {
   queries: {
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (replaces cacheTime in TanStack v5)
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 1,
@@ -12,7 +12,7 @@ const defaultQueryOptions: DefaultOptions = {
 
 export const queryClientOptions: DefaultOptions = defaultQueryOptions
 
-export const createQueryClient = () => new QueryClient(queryClientOptions)
+export const createQueryClient = () => new QueryClient({ defaultOptions: queryClientOptions })
 
 export const queryKeys = {
   inquiries: (type: string = "all") => ["inquiries", type] as const,

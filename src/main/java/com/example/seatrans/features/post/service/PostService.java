@@ -155,14 +155,20 @@ public class PostService {
     }
     
     /**
-     * Get post by ID and increment view count
+     * Get post by ID and increment view count (atomic, thread-safe)
      */
+    @Transactional
     public PostResponse getPostByIdWithViewCount(Long id) {
+        // Verify post exists
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
         
-        post.incrementViewCount();
-        postRepository.save(post);
+        // Atomic increment - prevents race conditions
+        postRepository.incrementViewCount(id);
+        
+        // Refresh post to get updated view count
+        postRepository.flush();
+        post = postRepository.findById(id).orElseThrow();
         
         return toResponse(post);
     }

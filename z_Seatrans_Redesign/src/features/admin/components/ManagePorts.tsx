@@ -6,7 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
-import { useToast } from '@/shared/hooks/use-toast'
+import { toast } from '@/shared/utils/toast'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
+import { provinceService, type Province } from '@/modules/logistics/services/provinceService'
+import type { ApiResponse } from '@/shared/types/api.types'
 import {
   Select,
   SelectContent,
@@ -29,13 +33,7 @@ interface Port {
   provinceId: number
 }
 
-interface Province {
-  id: number
-  name: string
-}
-
 export function ManagePorts() {
-  const { toast } = useToast()
   const [provinces, setProvinces] = useState<Province[]>([])
   const [selectedProvinceId, setSelectedProvinceId] = useState<number | null>(null)
   const [ports, setPorts] = useState<Port[]>([])
@@ -58,46 +56,25 @@ export function ManagePorts() {
 
   const fetchProvinces = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch('http://localhost:8080/api/provinces', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (response.ok) {
-        const result = await response.json()
-        setProvinces(result.data || result)
-      }
+      const result = await provinceService.getAllProvinces()
+      setProvinces(result)
     } catch (error) {
       console.error('Error fetching provinces:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load provinces',
-        variant: 'destructive'
-      })
+      toast.error('Failed to load provinces')
     }
   }
 
   const fetchPorts = async (provinceId: number) => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://localhost:8080/api/ports/province/${provinceId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await apiClient.get<ApiResponse<Port[]>>(API_CONFIG.PORTS.BY_PROVINCE(provinceId))
       if (response.ok) {
         const result = await response.json()
-        setPorts(result.data || result)
+        setPorts(result.data)
       }
     } catch (error) {
       console.error('Error fetching ports:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load ports',
-        variant: 'destructive'
-      })
+      toast.error('Failed to load ports')
     } finally {
       setLoading(false)
     }
@@ -105,55 +82,32 @@ export function ManagePorts() {
 
   const handleAddPort = async () => {
     if (!selectedProvinceId) {
-      toast({
-        title: 'Error',
-        description: 'Please select a province first',
-        variant: 'destructive'
-      })
+      toast.error('Please select a province first')
       return
     }
     
     if (!newPortName.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Port name cannot be empty',
-        variant: 'destructive'
-      })
+      toast.error('Port name cannot be empty')
       return
     }
 
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch('http://localhost:8080/api/ports', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: newPortName.trim(),
-          provinceId: selectedProvinceId
-        })
+      const response = await apiClient.post<ApiResponse<Port>>(API_CONFIG.PORTS.BASE, {
+        name: newPortName.trim(),
+        provinceId: selectedProvinceId
       })
 
       if (response.ok) {
-        const newPort = await response.json()
-        setPorts([...ports, newPort])
+        const result = await response.json()
+        setPorts([...ports, result.data])
         setNewPortName('')
-        toast({
-          title: 'Success',
-          description: 'Port added successfully'
-        })
+        toast.success('Port added successfully')
       } else {
         throw new Error('Failed to add port')
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to add port',
-        variant: 'destructive'
-      })
+      toast.error('Failed to add port')
     } finally {
       setLoading(false)
     }
@@ -166,47 +120,28 @@ export function ManagePorts() {
 
   const handleSavePort = async (portId: number) => {
     if (!editingPortName.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Port name cannot be empty',
-        variant: 'destructive'
-      })
+      toast.error('Port name cannot be empty')
       return
     }
 
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://localhost:8080/api/ports/${portId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: editingPortName.trim(),
-          provinceId: selectedProvinceId
-        })
+      const response = await apiClient.put<ApiResponse<Port>>(API_CONFIG.PORTS.BY_ID(portId), {
+        name: editingPortName.trim(),
+        provinceId: selectedProvinceId
       })
 
       if (response.ok) {
         const updatedPort = await response.json()
-        setPorts(ports.map(p => p.id === portId ? updatedPort : p))
+        setPorts(ports.map(p => p.id === portId ? updatedPort.data : p))
         setEditingPortId(null)
         setEditingPortName('')
-        toast({
-          title: 'Success',
-          description: 'Port updated successfully'
-        })
+        toast.success('Port updated successfully')
       } else {
         throw new Error('Failed to update port')
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update port',
-        variant: 'destructive'
-      })
+      toast.error('Failed to update port')
     } finally {
       setLoading(false)
     }
@@ -217,29 +152,16 @@ export function ManagePorts() {
 
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://localhost:8080/api/ports/${portId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await apiClient.delete(API_CONFIG.PORTS.BY_ID(portId))
 
       if (response.ok) {
         setPorts(ports.filter(p => p.id !== portId))
-        toast({
-          title: 'Success',
-          description: 'Port deleted successfully'
-        })
+        toast.success('Port deleted successfully')
       } else {
         throw new Error('Failed to delete port')
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete port',
-        variant: 'destructive'
-      })
+      toast.error('Failed to delete port')
     } finally {
       setLoading(false)
     }

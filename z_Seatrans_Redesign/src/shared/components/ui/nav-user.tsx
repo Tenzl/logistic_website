@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/features/auth/context/AuthContext"
+import { useAuth } from "@/modules/auth/context/AuthContext"
 
 import {
   Avatar,

@@ -7,13 +7,14 @@ import { Input } from '@/shared/components/ui/input'
 import { PhoneInput } from '@/shared/components/ui/phone-input'
 import { Label } from '@/shared/components/ui/label'
 import { Button } from '@/shared/components/ui/button'
-import { useAuth } from '@/features/auth/context/AuthContext'
-import { useToast } from '@/shared/hooks/use-toast'
-import { authService } from '@/features/auth/services/authService'
+import { useAuth } from '@/modules/auth/context/AuthContext'
+import { toast } from '@/shared/utils/toast'
+import { authService } from '@/modules/auth/services/authService'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
 
 export function EditProfileTab() {
   const { user, refreshUser } = useAuth()
-  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
   const [editingPassword, setEditingPassword] = useState(false)
@@ -49,11 +50,7 @@ export function EditProfileTab() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.fullName || !formData.email || !formData.phone || !formData.company) {
-      toast({
-        title: 'Missing information',
-        description: 'Please complete Full Name, Company, Email, and Phone before updating.',
-        variant: 'destructive'
-      })
+      toast.error('Please complete Full Name, Company, Email, and Phone before updating.')
       return
     }
 
@@ -73,18 +70,11 @@ export function EditProfileTab() {
         throw new Error(result.message || 'Failed to update profile')
       }
 
-      toast({
-        title: 'Success',
-        description: 'Profile updated successfully'
-      })
+      toast.success('Profile updated successfully')
       await refreshUser()
       setEditingProfile(false)
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update profile',
-        variant: 'destructive'
-      })
+      toast.error('Failed to update profile')
     } finally {
       setLoading(false)
     }
@@ -93,47 +83,28 @@ export function EditProfileTab() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
-      toast({
-        title: 'Missing information',
-        description: 'Please fill all password fields before updating.',
-        variant: 'destructive'
-      })
+      toast.error('Please fill all password fields before updating.')
       return
     }
     
     if (formData.newPassword !== formData.confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Passwords do not match',
-        variant: 'destructive'
-      })
+      toast.error('Passwords do not match')
       return
     }
 
     try {
       setLoading(true)
-      // Use apiClient for consistent API calls and automatic auth handling
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/auth/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authService.getAuthHeader(),
-        },
-        body: JSON.stringify({
-          oldPassword: formData.currentPassword,
-          newPassword: formData.newPassword
-        })
+      const response = await apiClient.post(API_CONFIG.AUTH.CHANGE_PASSWORD, {
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
       })
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
-        throw new Error(data.message || 'Failed to change password')
+        throw new Error((data as any).message || 'Failed to change password')
       }
 
-      toast({
-        title: 'Success',
-        description: 'Password changed successfully'
-      })
+      toast.success('Password changed successfully')
       setFormData(prev => ({
         ...prev,
         currentPassword: '',
@@ -142,11 +113,7 @@ export function EditProfileTab() {
       }))
       setEditingPassword(false)
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to change password',
-        variant: 'destructive'
-      })
+      toast.error('Failed to change password')
     } finally {
       setLoading(false)
     }

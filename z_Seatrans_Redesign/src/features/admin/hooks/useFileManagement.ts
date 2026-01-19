@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
-import { UploadedFile, FileUploadResponse, ServiceFilesGroup } from '../types/spreadsheet-file.types';
-
-const API_BASE_URL = 'http://localhost:8080/api/spreadsheet-files';
+import { useState, useCallback, useEffect } from 'react'
+import { UploadedFile, FileUploadResponse, ServiceFilesGroup } from '../types/spreadsheet-file.types'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
 
 export function useFileManagement() {
   const [files, setFiles] = useState<ServiceFilesGroup>({});
@@ -14,7 +14,7 @@ export function useFileManagement() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/all`);
+      const response = await apiClient.get<ServiceFilesGroup>(`${API_CONFIG.SPREADSHEET_FILES.ALL}`);
       if (!response.ok) {
         throw new Error('Failed to fetch files');
       }
@@ -33,7 +33,7 @@ export function useFileManagement() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/service/${encodeURIComponent(serviceName)}`);
+      const response = await apiClient.get<UploadedFile[]>(`${API_CONFIG.SPREADSHEET_FILES.BY_SERVICE(serviceName)}`);
       if (!response.ok) {
         throw new Error('Failed to fetch files');
       }
@@ -63,10 +63,7 @@ export function useFileManagement() {
     formData.append('uploadedBy', uploadedBy);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await apiClient.post<FileUploadResponse>(API_CONFIG.SPREADSHEET_FILES.UPLOAD, formData);
 
       const data: FileUploadResponse = await response.json();
 
@@ -98,9 +95,7 @@ export function useFileManagement() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/${fileId}`, {
-        method: 'DELETE',
-      });
+      const response = await apiClient.delete(`${API_CONFIG.SPREADSHEET_FILES.DELETE(fileId)}`);
 
       if (!response.ok) {
         throw new Error('Failed to delete file');
@@ -122,7 +117,7 @@ export function useFileManagement() {
   // Download a file
   const downloadFile = useCallback(async (fileId: number, fileName: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/download/${fileId}`);
+      const response = await apiClient.get(`${API_CONFIG.SPREADSHEET_FILES.DOWNLOAD(fileId)}`);
       if (!response.ok) {
         throw new Error('Failed to download file');
       }

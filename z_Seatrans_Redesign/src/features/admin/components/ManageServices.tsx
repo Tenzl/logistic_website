@@ -15,8 +15,11 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
-import { useToast } from '@/shared/hooks/use-toast'
+import { toast } from '@/shared/utils/toast'
 import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
+import type { ApiResponse } from '@/shared/types/api.types'
 
 interface ServiceType {
   id: number
@@ -26,10 +29,7 @@ interface ServiceType {
   isActive?: boolean
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-
 export function ManageServices() {
-  const { toast } = useToast()
   const [services, setServices] = useState<ServiceType[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -46,18 +46,13 @@ export function ManageServices() {
 
   const fetchServices = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${API_BASE_URL}/api/service-types`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await apiClient.get<ApiResponse<ServiceType[]>>(API_CONFIG.SERVICE_TYPES.BASE)
       if (!response.ok) throw new Error('Failed to load services')
       const data = await response.json()
       const payload = data.data || data
       setServices(Array.isArray(payload) ? payload : [])
     } catch (error) {
-      toast({ title: 'Load failed', description: 'Could not load services', variant: 'destructive' })
+      toast.error('Could not load services')
     } finally {
       setLoading(false)
     }
@@ -66,44 +61,29 @@ export function ManageServices() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem('auth_token')
       const url = editing
-        ? `${API_BASE_URL}/api/service-types/${editing.id}`
-        : `${API_BASE_URL}/api/service-types`
+        ? API_CONFIG.SERVICE_TYPES.BY_ID(editing.id)
+        : API_CONFIG.SERVICE_TYPES.BASE
 
-      const response = await fetch(url, {
-        method: editing ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
+      const response = editing
+        ? await apiClient.put<ApiResponse<ServiceType>>(url, formData)
+        : await apiClient.post<ApiResponse<ServiceType>>(url, formData)
 
       if (!response.ok) throw new Error('Save failed')
-      toast({
-        title: 'Saved',
-        description: `Service ${editing ? 'updated' : 'created'} successfully`,
-      })
+      toast.success(`Service ${editing ? 'updated' : 'created'} successfully`)
       setDialogOpen(false)
       setEditing(null)
       setFormData({ name: '', displayName: '', description: '' })
       fetchServices()
     } catch (error) {
-      toast({ title: 'Save failed', description: 'Could not save service', variant: 'destructive' })
+      toast.error('Could not save service')
     }
   }
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this service? Images linked to it will block deletion.')) return
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${API_BASE_URL}/api/service-types/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await apiClient.delete(API_CONFIG.SERVICE_TYPES.BY_ID(id))
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
@@ -111,10 +91,10 @@ export function ManageServices() {
         throw new Error(message)
       }
 
-      toast({ title: 'Deleted', description: 'Service removed successfully' })
+      toast.success('Service removed successfully')
       fetchServices()
     } catch (error: any) {
-      toast({ title: 'Delete failed', description: error?.message || 'Could not delete service', variant: 'destructive' })
+      toast.error(error?.message || 'Could not delete service')
     }
   }
 

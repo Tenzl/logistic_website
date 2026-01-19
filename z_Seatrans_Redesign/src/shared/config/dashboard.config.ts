@@ -137,17 +137,17 @@ export const internalDashboardConfig: DashboardConfig = {
   projects: [
     {
       name: "Freight Forwarding",
-      url: "/freight-forwarding",
+      url: "/services/freight-forwarding",
       icon: Package,
     },
     {
       name: "Shipping Agency",
-      url: "/shipping-agency",
+      url: "/services/shipping-agency",
       icon: Ship,
     },
     {
       name: "Chartering & Broking",
-      url: "/chartering-broking",
+      url: "/services/chartering-broking",
       icon: FileText,
     },
   ],
@@ -230,17 +230,17 @@ export const externalDashboardConfig: DashboardConfig = {
   projects: [
     {
       name: "Freight Forwarding",
-      url: "/freight-forwarding",
+      url: "/services/freight-forwarding",
       icon: Package,
     },
     {
       name: "Shipping Agency",
-      url: "/shipping-agency",
+      url: "/services/shipping-agency",
       icon: Ship,
     },
     {
       name: "Chartering & Broking",
-      url: "/chartering-broking",
+      url: "/services/chartering-broking",
       icon: FileText,
     },
   ],

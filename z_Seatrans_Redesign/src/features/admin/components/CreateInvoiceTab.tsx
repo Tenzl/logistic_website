@@ -6,10 +6,10 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { DatePicker } from '@/shared/components/ui/date-picker'
-import { useToast } from '@/shared/hooks/use-toast'
+import { toast } from '@/shared/utils/toast'
 import { Loader2, FileText, Eye } from 'lucide-react'
-import { renderQuoteHtml as renderQuoteHtmlHcm, QuoteData, QuotePreview } from '@/features/inquiries/components/Quote-hcm'
-import { renderQuoteHtml as renderQuoteHtmlQn } from '@/features/inquiries/components/Quote-qn'
+import { renderQuoteHtml as renderQuoteHtmlHcm, QuoteData, QuotePreview } from '@/modules/inquiries/components/common/Quote-hcm'
+import { renderQuoteHtml as renderQuoteHtmlQn } from '@/modules/inquiries/components/common/Quote-qn'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 import {
   Select,
@@ -21,7 +21,6 @@ import {
 import { Textarea } from '@/shared/components/ui/textarea'
 
 export function CreateInvoiceTab() {
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
@@ -101,11 +100,7 @@ export function CreateInvoiceTab() {
       setShowPreview(true)
     } catch (err) {
       console.error('Failed to generate preview:', err)
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to generate invoice preview', 
-        variant: 'destructive' 
-      })
+      toast.error('Failed to generate invoice preview')
     } finally {
       setIsLoading(false)
     }

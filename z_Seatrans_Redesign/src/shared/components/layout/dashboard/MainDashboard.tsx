@@ -7,7 +7,7 @@ import { ChevronRight, Database, FileText, Image as ImageIcon, ListChecks, Recei
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible"
 import Image from "next/image"
 
-import { useAuth } from "@/features/auth/context/AuthContext"
+import { useAuth } from "@/modules/auth/context/AuthContext"
 import { DashboardContent } from "@/shared/components/layout/dashboard/DashboardContent"
 import {
   canAccessSection,

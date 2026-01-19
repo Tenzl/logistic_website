@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import {
   Card,
   CardContent,
@@ -11,7 +10,7 @@ import {
 } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
-import { useToast } from '@/shared/hooks/use-toast'
+import { toast } from '@/shared/utils/toast'
 import {
   Table,
   TableBody,
@@ -30,8 +29,11 @@ import {
 import { Badge } from '@/shared/components/ui/badge'
 import { PdfPreviewDialog } from '@/shared/components/PdfPreviewDialog'
 import { Loader2, Mail, FileText, CheckCircle2, Trash2, Download, Paperclip, RefreshCw, Eye } from 'lucide-react'
-import { authService } from '@/features/auth/services/authService'
-import { documentService, type InquiryDocument } from '@/features/inquiries/services/documentService'
+import { documentService, type InquiryDocument } from '@/modules/inquiries/services/documentService'
+import { apiClient } from '@/shared/utils/apiClient'
+import { API_CONFIG } from '@/shared/config/api.config'
+import { INQUIRY_STATUS_OPTIONS } from '@/shared/constants/inquiry-status'
+import { renderInquiryStatusBadge } from '@/shared/utils/inquiry-helpers'
 
 interface SpecialRequestInquiry {
   id: number
@@ -63,7 +65,6 @@ interface PageResponse<T> {
 }
 
 export function SpecialRequestInquiriesTab() {
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [inquiries, setInquiries] = useState<SpecialRequestInquiry[]>([])
   const [selected, setSelected] = useState<SpecialRequestInquiry | null>(null)
@@ -71,24 +72,22 @@ export function SpecialRequestInquiriesTab() {
   const [documents, setDocuments] = useState<InquiryDocument[]>([])
   const [loadingDocuments, setLoadingDocuments] = useState(false)
 
+  const SERVICE_SLUG = 'special-request'
+  const ADMIN_BASE = `${API_CONFIG.INQUIRIES.ADMIN_BASE}/inquiries/${SERVICE_SLUG}`
+
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      const res = await axios.get<PageResponse<SpecialRequestInquiry>>(
-        `${API_BASE}/api/admin/inquiries/special-request`,
-        {
-          params: { page: 0, size: 20 },
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        },
+      const params = new URLSearchParams({ page: '0', size: '20' })
+      const response = await apiClient.get<PageResponse<SpecialRequestInquiry>>(
+        `${ADMIN_BASE}?${params.toString()}`
       )
-      setInquiries(res.data.content)
+      const result = await response.json()
+      const payload = (result as any).data || result
+      setInquiries(payload.content || [])
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to load inquiries'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to load inquiries'
+      toast.error(detail)
     } finally {
       setIsLoading(false)
     }
@@ -98,12 +97,7 @@ export function SpecialRequestInquiriesTab() {
     fetchData()
   }, [])
 
-  const statusOptions: string[] = ['PENDING', 'PROCESSING', 'QUOTED', 'COMPLETED', 'CANCELLED']
-
-  const renderStatus = (status?: string) => {
-    if (!status) return <Badge variant="secondary">Unknown</Badge>
-    return <Badge variant="outline">{status}</Badge>
-  }
+  const statusOptions = INQUIRY_STATUS_OPTIONS
 
   const formatDate = (value?: string) => {
     if (!value) return '—'
@@ -114,20 +108,15 @@ export function SpecialRequestInquiriesTab() {
 
   const updateStatus = async (id: number, status: string) => {
     try {
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      await axios.patch(
-        `${API_BASE}/api/admin/inquiries/special-request/${id}/status`,
-        { status },
-        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
-      )
+      await apiClient.fetch(`${ADMIN_BASE}/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
       setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, status } : inq)))
-      toast({ title: 'Success', description: 'Status updated' })
+      toast.success('Status updated')
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to update status'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to update status'
+      toast.error(detail)
     }
   }
 
@@ -161,7 +150,7 @@ export function SpecialRequestInquiriesTab() {
       link.click()
       document.body.removeChild(link)
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to initiate download', variant: 'destructive' })
+      toast.error('Failed to initiate download')
     }
   }
 
@@ -180,19 +169,13 @@ export function SpecialRequestInquiriesTab() {
     if (!confirmed) return
     try {
       setDeletingId(id)
-      const token = authService.getToken()
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      await axios.delete(`${API_BASE}/api/admin/inquiries/special-request/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      })
+      await apiClient.delete(`${ADMIN_BASE}/${id}`)
       setInquiries(prev => prev.filter(inq => inq.id !== id))
       setSelected(current => (current?.id === id ? null : current))
-      toast({ title: 'Success', description: 'Inquiry deleted' })
+      toast.success('Inquiry deleted')
     } catch (err) {
-      const detail = axios.isAxiosError(err)
-        ? (err.response?.data as any)?.message || (err.response?.data as any)?.error || err.message
-        : 'Failed to delete inquiry'
-      toast({ title: 'Error', description: detail, variant: 'destructive' })
+      const detail = err instanceof Error ? err.message : 'Failed to delete inquiry'
+      toast.error(detail)
     } finally {
       setDeletingId(null)
     }
@@ -247,7 +230,25 @@ export function SpecialRequestInquiriesTab() {
                         <div className="font-medium">{inq.fullName || '—'}</div>
                         <div className="text-xs text-muted-foreground">{inq.contactInfo || inq.phone || '—'}</div>
                       </TableCell>
-                      <TableCell>{renderStatus(inq.status)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <div className="inline-flex cursor-pointer">{renderInquiryStatusBadge(inq.status)}</div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[180px]">
+                            {statusOptions.map(option => (
+                              <DropdownMenuItem
+                                key={option}
+                                onClick={() => updateStatus(inq.id, option)}
+                                className="flex items-center gap-2"
+                              >
+                                {inq.status === option && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                                <span>{option}</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => {
@@ -256,23 +257,6 @@ export function SpecialRequestInquiriesTab() {
                           }}>
                             View
                           </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="ghost" className="text-primary">Status</Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="min-w-[180px]">
-                              {statusOptions.map(option => (
-                                <DropdownMenuItem
-                                  key={option}
-                                  onClick={() => updateStatus(inq.id, option)}
-                                  className="flex items-center gap-2"
-                                >
-                                  {inq.status === option && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                                  <span>{option}</span>
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -404,7 +388,7 @@ export function SpecialRequestInquiriesTab() {
                 <div>Submitted: {formatDate(selected.submittedAt)}</div>
                 <div className="flex items-center gap-2">
                   <span>Status:</span>
-                  {renderStatus(selected.status)}
+                  {renderInquiryStatusBadge(selected.status)}
                 </div>
               </div>
 

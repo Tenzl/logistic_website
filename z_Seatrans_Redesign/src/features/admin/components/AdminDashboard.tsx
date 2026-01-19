@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/features/auth/context/AuthContext'
+import { useAuth } from '@/modules/auth/context/AuthContext'
 import { 
   User, 
   FileText, 

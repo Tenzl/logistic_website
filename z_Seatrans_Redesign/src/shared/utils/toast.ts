@@ -1,9 +1,15 @@
 import { toast as sonnerToast } from "sonner"
 
 export const toast = {
-  success: (message: string) => sonnerToast.success(message, { duration: 3000 }),
+  success: (message: string) => sonnerToast.success(message, { 
+    duration: 3000,
+    style: { background: '#10b981', color: 'white' }
+  }),
   error: (message: string, error?: unknown) => {
-    sonnerToast.error(message, { duration: 5000 })
+    sonnerToast.error(message, { 
+      duration: 5000,
+      style: { background: '#ef4444', color: 'white' }
+    })
     if (error) console.error(message, error)
   },
   info: (message: string) => sonnerToast(message, { duration: 3000 }),

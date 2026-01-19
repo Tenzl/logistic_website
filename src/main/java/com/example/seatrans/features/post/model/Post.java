@@ -1,6 +1,7 @@
 package com.example.seatrans.features.post.model;
 
 import java.time.LocalDateTime;
+import java.util.Random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +99,9 @@ public class Post {
             isPublished = false;
         }
         if (viewCount == null) {
-            viewCount = 0;
+            // Random initial view count between 800 and 1600
+            Random random = new Random();
+            viewCount = 800 + random.nextInt(801); // 800 + [0-800] = [800-1600]
         }
     }
     

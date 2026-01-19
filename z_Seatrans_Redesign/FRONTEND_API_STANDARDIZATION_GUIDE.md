@@ -59,9 +59,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 ```
 
 **Files with hardcoded URLs:**
-- `src/features/gallery/services/galleryService.ts`
-- `src/features/content/services/postService.ts`
-- `src/features/logistics/services/provinceService.ts`
+- `src/modules/gallery/services/galleryService.ts`
+- `src/modules/posts/services/postService.ts`
+- `src/modules/logistics/services/provinceService.ts`
 - `src/features/admin/components/ManagePorts.tsx`
 - ... and 50+ more files
 
@@ -221,35 +221,73 @@ z_Seatrans_Redesign/
 ├── src/
 │   ├── shared/
 │   │   ├── config/
-│   │   │   └── api.config.ts          # ✨ NEW: Centralized API configuration
-│   │   ├── services/
-│   │   │   ├── apiClient.ts           # ✨ ENHANCED: Base HTTP client
-│   │   │   └── baseService.ts         # ✨ NEW: Base service class
+│   │   │   ├── api.config.ts          # ✨ NEW: Centralized API configuration
+│   │   │   ├── dashboard-registry.ts  # Dashboard configuration
+│   │   │   └── react-query.config.ts  # React Query configuration
+│   │   ├── components/                # Shared UI components
+│   │   ├── hooks/                     # Shared custom hooks
+│   │   ├── utils/                     # Shared utility functions
+│   │   ├── lib/                       # Third-party library configs
 │   │   └── types/
 │   │       └── api.types.ts           # ✨ NEW: Shared API types
-│   ├── features/
+│   ├── modules/                       # Feature modules (domain-driven)
 │   │   ├── auth/
-│   │   │   └── services/
-│   │   │       └── authService.ts     # 🔄 REFACTOR: Use API config
+│   │   │   ├── components/            # Auth UI components
+│   │   │   ├── context/               # Auth context/providers
+│   │   │   ├── hooks/                 # Auth-specific hooks
+│   │   │   ├── services/
+│   │   │   │   └── authService.ts     # 🔄 REFACTOR: Use API config
+│   │   │   ├── types/                 # Auth type definitions
+│   │   │   └── utils/                 # Auth utilities
 │   │   ├── logistics/
+│   │   │   ├── components/
+│   │   │   │   ├── admin/            # Admin logistics components
+│   │   │   │   └── public/           # Public logistics components
 │   │   │   └── services/
 │   │   │       ├── provinceService.ts # 🔄 REFACTOR
 │   │   │       └── portService.ts     # 🔄 REFACTOR
 │   │   ├── gallery/
+│   │   │   ├── components/
+│   │   │   │   ├── admin/            # Admin gallery management
+│   │   │   │   └── public/           # Public gallery display
 │   │   │   └── services/
 │   │   │       ├── galleryService.ts  # 🔄 REFACTOR
 │   │   │       └── imageTypeService.ts# 🔄 REFACTOR
-│   │   ├── content/
+│   │   ├── posts/
+│   │   │   ├── components/
+│   │   │   │   ├── admin/            # Post editor, management
+│   │   │   │   └── public/           # Post display, insights
 │   │   │   └── services/
-│   │   │       ├── postService.ts     # 🔄 REFACTOR
+│   │   │       └── postService.ts     # 🔄 REFACTOR
+│   │   ├── categories/
+│   │   │   ├── components/
+│   │   │   │   └── admin/            # Category management
+│   │   │   └── services/
 │   │   │       └── categoryService.ts # 🔄 REFACTOR
 │   │   ├── inquiries/
+│   │   │   ├── components/
+│   │   │   │   ├── admin/            # Admin inquiry management
+│   │   │   │   ├── common/           # Shared inquiry components
+│   │   │   │   └── public/           # Public inquiry submission
 │   │   │   └── services/
 │   │   │       ├── inquiryService.ts  # 🔄 REFACTOR
 │   │   │       └── documentService.ts # 🔄 REFACTOR
-│   │   └── services-config/
-│   │       └── services/
-│   │           └── serviceTypeService.ts # 🔄 REFACTOR
+│   │   ├── service-types/
+│   │   │   ├── components/
+│   │   │   │   └── admin/            # Service configuration
+│   │   │   └── services/
+│   │   │       ├── serviceTypeService.ts # 🔄 REFACTOR
+│   │   │       └── formFieldService.ts   # Form field management
+│   │   ├── landing/
+│   │   │   └── components/
+│   │   │       └── public/           # Landing page sections
+│   │   └── users/
+│   │       └── components/           # User profile, dashboard
+│   └── features/
+│       └── admin/                    # Legacy admin wrappers (being phased out)
+│           ├── components/           # Thin wrappers re-exporting from modules
+│           ├── hooks/                # Admin-specific hooks
+│           └── types/                # Admin type definitions
 ```
 
 ### Layer Architecture
@@ -257,30 +295,34 @@ z_Seatrans_Redesign/
 ```
 ┌─────────────────────────────────────────────┐
 │         React Components / Pages            │
+│  app/* routes, src/modules/*/components/*   │
 │  (Use services, no direct API calls)        │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
-│          Feature Services Layer             │
+│          Module Services Layer              │
+│  src/modules/*/services/*                   │
 │  (authService, provinceService, etc.)       │
 │  - Business logic                           │
 │  - Data transformation                      │
-│  - Cache management                         │
+│  - Type-safe API calls                      │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
-│         Base Service / API Client           │
+│         Shared Utils / HTTP Client          │
+│  src/shared/utils/* (fetch wrappers)        │
 │  - HTTP methods (GET, POST, PUT, DELETE)    │
-│  - Authentication injection                 │
+│  - Authentication token injection           │
 │  - Error handling                           │
 │  - Response parsing                         │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
 │            API Configuration                │
+│  src/shared/config/api.config.ts ✨ NEW     │
 │  - Endpoint definitions                     │
 │  - Base URL from environment                │
-│  - Route constants                          │
+│  - Route constants (/v1/*)                  │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
@@ -461,170 +503,34 @@ export type ApiConfig = typeof API_CONFIG
 
 ---
 
-### Step 3: Enhanced Base API Client
+### Step 3: Shared API Client
 
-#### **File: `src/shared/services/apiClient.ts`**
+#### **File: `src/shared/utils/apiClient.ts`**
+
+The shared client is fetch-based and wraps `API_CONFIG.BASE_URL`. It injects auth tokens (unless `skipAuth` is set), applies optional timeouts and console logging, redirects to `/login?reason=session_expired` on 401, and automatically handles `FormData` without manual headers.
 
 ```typescript
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 
-/**
- * Enhanced Axios-based API Client
- * - Automatic authentication token injection
- * - Error handling and logging
- * - Request/response interceptors
- */
-class ApiClient {
-  private client: AxiosInstance
-
-  constructor() {
-    this.client = axios.create({
-      baseURL: API_CONFIG.BASE_URL,
-      timeout: API_CONFIG.TIMEOUT,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    this.setupInterceptors()
-  }
-
-  private setupInterceptors() {
-    // Request interceptor - Add auth token
-    this.client.interceptors.request.use(
-      (config) => {
-        const token = this.getAuthToken()
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`
-        }
-
-        if (API_CONFIG.ENABLE_LOGS) {
-          console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data)
-        }
-
-        return config
-      },
-      (error) => {
-        console.error('[API Request Error]', error)
-        return Promise.reject(error)
-      }
-    )
-
-    // Response interceptor - Handle errors
-    this.client.interceptors.response.use(
-      (response) => {
-        if (API_CONFIG.ENABLE_LOGS) {
-          console.log(`[API Response] ${response.config.url}`, response.data)
-        }
-        return response
-      },
-      (error) => {
-        if (error.response) {
-          // Server responded with error status
-          const { status, data } = error.response
-
-          if (status === 401) {
-            // Unauthorized - clear auth and redirect to login
-            this.clearAuth()
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login'
-            }
-          }
-
-          console.error(`[API Error ${status}]`, data)
-        } else if (error.request) {
-          // Request made but no response
-          console.error('[API No Response]', error.request)
-        } else {
-          // Other errors
-          console.error('[API Error]', error.message)
-        }
-
-        return Promise.reject(error)
-      }
-    )
-  }
-
-  private getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('token')
-  }
-
-  private clearAuth(): void {
-    if (typeof window === 'undefined') return
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-  }
-
-  // ==================== HTTP METHODS ====================
-
-  async get<T = any>(endpoint: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.get<T>(endpoint, config)
-  }
-
-  async post<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.post<T>(endpoint, data, config)
-  }
-
-  async put<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.put<T>(endpoint, data, config)
-  }
-
-  async patch<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.patch<T>(endpoint, data, config)
-  }
-
-  async delete<T = any>(endpoint: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.delete<T>(endpoint, config)
-  }
-
-  // ==================== FILE UPLOAD ====================
-
-  async uploadFile<T = any>(
-    endpoint: string,
-    file: File,
-    additionalData?: Record<string, any>,
-    onProgress?: (progress: number) => void
-  ): Promise<AxiosResponse<T>> {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    if (additionalData) {
-      Object.entries(additionalData).forEach(([key, value]) => {
-        formData.append(key, value)
-      })
-    }
-
-    return this.client.post<T>(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent) => {
-        if (onProgress && progressEvent.total) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          onProgress(progress)
-        }
-      },
-    })
-  }
-}
-
-// Export singleton instance
-export const apiClient = new ApiClient()
-export default apiClient
+const response = await apiClient.get(API_CONFIG.PROVINCES.ACTIVE)
+const data = await response.json()
 ```
+
+Use `skipAuth: true` for public endpoints or pass a `FormData` body to let the client manage multipart boundaries.
 
 ---
 
 ### Step 4: Feature Service Examples
 
+These examples assume the fetch-based `apiClient`; parse JSON payloads with `await response.json()` instead of accessing `response.data`.
+
 #### **Example 1: Province Service**
 
-**File: `src/features/logistics/services/provinceService.ts`**
+**File: `src/modules/logistics/services/provinceService.ts`**
 
 ```typescript
-import { apiClient } from '@/shared/services/apiClient'
+import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import type { ApiResponse, ProvinceDTO } from '@/shared/types/api.types'
 
@@ -634,7 +540,8 @@ export const provinceService = {
    */
   async getAll(): Promise<ProvinceDTO[]> {
     const response = await apiClient.get<ApiResponse<ProvinceDTO[]>>(API_CONFIG.PROVINCES.BASE)
-    return response.data.data
+    const data = await response.json()
+    return data.data
   },
 
   /**
@@ -642,7 +549,8 @@ export const provinceService = {
    */
   async getActive(): Promise<ProvinceDTO[]> {
     const response = await apiClient.get<ApiResponse<ProvinceDTO[]>>(API_CONFIG.PROVINCES.ACTIVE)
-    return response.data.data
+    const data = await response.json()
+    return data.data
   },
 
   /**
@@ -650,30 +558,29 @@ export const provinceService = {
    */
   async search(query: string): Promise<ProvinceDTO[]> {
     const response = await apiClient.get<ApiResponse<ProvinceDTO[]>>(
-      API_CONFIG.PROVINCES.SEARCH,
-      { params: { query } }
+      `${API_CONFIG.PROVINCES.SEARCH}?query=${encodeURIComponent(query)}`
     )
-    return response.data.data
+    const data = await response.json()
+    return data.data
   },
 
   /**
    * Get province by ID
    */
   async getById(id: number): Promise<ProvinceDTO> {
-    const response = await apiClient.get<ApiResponse<ProvinceDTO>>(
-      API_CONFIG.PROVINCES.BY_ID(id)
-    )
-    return response.data.data
+    const response = await apiClient.get<ApiResponse<ProvinceDTO>>(API_CONFIG.PROVINCES.BY_ID(id))
+    const data = await response.json()
+    return data.data
   },
 }
 ```
 
 #### **Example 2: Port Service**
 
-**File: `src/features/logistics/services/portService.ts`**
+**File: `src/modules/logistics/services/portService.ts`**
 
 ```typescript
-import { apiClient } from '@/shared/services/apiClient'
+import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import type { ApiResponse, PortDTO } from '@/shared/types/api.types'
 
@@ -715,10 +622,10 @@ export const portService = {
 
 #### **Example 3: Gallery Service**
 
-**File: `src/features/gallery/services/galleryService.ts`**
+**File: `src/modules/gallery/services/galleryService.ts`**
 
 ```typescript
-import { apiClient } from '@/shared/services/apiClient'
+import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import type { ApiResponse, GalleryImageDTO, PageResponse } from '@/shared/types/api.types'
 
@@ -788,10 +695,10 @@ export const galleryService = {
 
 #### **Example 4: Post Service**
 
-**File: `src/features/content/services/postService.ts`**
+**File: `src/modules/posts/services/postService.ts`**
 
 ```typescript
-import { apiClient } from '@/shared/services/apiClient'
+import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 import type { ApiResponse, PostDTO, CreatePostRequest } from '@/shared/types/api.types'
 
@@ -894,7 +801,7 @@ const ManagePorts = () => {
 #### **After (✅ New Way)**
 ```typescript
 // ✅ NEW: Use service, clean and type-safe
-import { provinceService } from '@/features/logistics/services/provinceService'
+import { provinceService } from '@/modules/logistics/services/provinceService'
 
 const ManagePorts = () => {
   const [provinces, setProvinces] = useState<ProvinceDTO[]>([])
@@ -921,77 +828,95 @@ const ManagePorts = () => {
 ## ✅ Migration Checklist
 
 ### Phase 1: Foundation Setup
-- [ ] Create `.env.local` with `NEXT_PUBLIC_API_BASE_URL`
+- [x] Create `.env.local` with `NEXT_PUBLIC_API_BASE_URL`
 - [ ] Create `src/shared/config/api.config.ts`
-- [ ] Enhance `src/shared/services/apiClient.ts`
+- [ ] Create `src/shared/utils/apiClient.ts` (HTTP client wrapper)
 - [ ] Create `src/shared/types/api.types.ts` (TypeScript definitions)
 
 ### Phase 2: Service Layer Refactoring
 #### Authentication & Users
-- [ ] Refactor `src/features/auth/services/authService.ts`
-- [ ] Update login components to use new service
-- [ ] Update registration components
+- [x] Refactor `src/modules/auth/services/authService.ts`
+- [x] Update login components to use new service
+- [x] Update registration components
 
 #### Logistics
-- [ ] Refactor `src/features/logistics/services/provinceService.ts`
-- [ ] Refactor `src/features/logistics/services/portService.ts`
-- [ ] Update all components using provinces/ports
+- [x] Refactor `src/modules/logistics/services/provinceService.ts`
+- [x] Refactor `src/modules/logistics/services/portService.ts`
+- [x] Update all components using provinces/ports
 
 #### Gallery
-- [ ] Refactor `src/features/gallery/services/galleryService.ts`
-- [ ] Refactor `src/features/gallery/services/imageTypeService.ts`
-- [ ] Update admin gallery components
-- [ ] Update public gallery components
+- [x] Refactor `src/modules/gallery/services/galleryService.ts`
+- [x] Refactor `src/modules/gallery/services/imageTypeService.ts`
+- [x] Update admin gallery components
+- [x] Update public gallery components
 
-#### Content
-- [ ] Refactor `src/features/content/services/postService.ts`
-- [ ] Refactor `src/features/content/services/categoryService.ts`
-- [ ] Update post editor
-- [ ] Update insights page
-- [ ] Update landing page posts
+#### Posts & Content
+- [x] Refactor `src/modules/posts/services/postService.ts`
+- [x] Refactor `src/modules/categories/services/categoryService.ts`
+- [x] Update post editor
+- [x] Update insights page
+- [x] Update landing page posts
 
 #### Inquiries
-- [ ] Refactor `src/features/inquiries/services/inquiryService.ts`
-- [ ] Refactor `src/features/inquiries/services/documentService.ts`
-- [ ] Update contact/inquiry submission
-- [ ] Update admin inquiry management
+- [x] Refactor `src/modules/inquiries/services/inquiryService.ts`
+- [x] Refactor `src/modules/inquiries/services/documentService.ts`
+- [x] Update contact/inquiry submission
+- [x] Update admin inquiry management
 
 #### Service Configuration
-- [ ] Refactor `src/features/services-config/services/serviceTypeService.ts`
-- [ ] Update service configuration components
+- [x] Refactor `src/modules/service-types/services/serviceTypeService.ts`
+- [x] Refactor `src/modules/service-types/services/formFieldService.ts`
+- [x] Update service configuration components
 
-#### Offices
-- [ ] Create office service if not exists
-- [ ] Update office management components
+#### Offices & Landing
+- [x] Create office service (handled in logistics/service-types)
+- [x] Migrate landing page components to `src/modules/landing`
+- [x] Create user module for profile/dashboard
 
 ### Phase 3: Component Updates
-#### Admin Components
-- [ ] `src/features/admin/components/ManagePorts.tsx`
-- [ ] `src/features/admin/components/ManageImagesTab.tsx`
-- [ ] `src/features/admin/components/ManageImageTypes.tsx`
-- [ ] `src/features/admin/components/ManagePosts.tsx`
-- [ ] `src/features/admin/components/ManageCategories.tsx`
-- [ ] `src/features/admin/components/ManageOffices.tsx`
-- [ ] `src/features/admin/components/ManageServices.tsx`
-- [ ] `src/features/admin/components/EditProfileTab.tsx`
-- [ ] All inquiry tabs (Shipping Agency, Chartering, Freight, Logistics, Special Request)
+#### Module Components (Completed)
+- [x] `src/modules/auth/components/LoginForm.tsx` - Uses authService
+- [x] `src/modules/auth/components/SignupForm.tsx` - Uses authService
+- [x] `src/modules/posts/components/admin/PostEditor.tsx` - Uses postService
+- [x] `src/modules/posts/components/admin/PostManagement.tsx` - Uses postService
+- [x] `src/modules/posts/components/public/ArticleDetailPage.tsx` - Uses postService
+- [x] `src/modules/posts/components/public/Insights/PostPage.tsx` - Uses postService
+- [x] `src/modules/categories/components/admin/CategoryManagement.tsx` - Uses categoryService
+- [x] `src/modules/gallery/components/admin/ImageUpload.tsx` - Uses galleryService
+- [x] `src/modules/gallery/components/admin/ImageManagement.tsx` - Uses galleryService
+- [x] `src/modules/gallery/components/admin/ImageTypeManagement.tsx` - Uses imageTypeService
+- [x] `src/modules/gallery/components/public/FieldGallery.tsx` - Uses galleryService
+- [x] `src/modules/inquiries/components/admin/InquiryManagement.tsx` - Uses inquiryService
+- [x] `src/modules/inquiries/components/admin/InvoiceUploadDialog.tsx` - Uses documentService
+- [x] `src/modules/inquiries/components/public/ContactPage.tsx` - Uses inquiryService
+- [x] `src/modules/landing/components/public/*` - All landing sections
+- [x] `src/modules/users/components/UserDashboard.tsx` - User profile
+- [x] `src/modules/users/components/UserInquiryHistoryTab.tsx` - Uses inquiryService
+- [x] `src/modules/service-types/components/admin/*` - Service config components
 
-#### Public Components
-- [ ] `src/features/landing/components/Updates.tsx`
-- [ ] `src/features/landing/components/Coverage.tsx`
-- [ ] `src/features/content/components/PostEditor.tsx`
-- [ ] `src/features/content/components/Insights/PostPage.tsx`
-- [ ] `src/features/gallery/components/FieldGallery.tsx`
-- [ ] `src/features/gallery/components/ImageManagement.tsx`
-- [ ] `src/features/inquiries/components/ContactPage.tsx`
-- [ ] `src/features/user/components/UserInquiryHistoryTab.tsx`
-- [ ] `src/features/auth/components/LoginForm.tsx`
-- [ ] `src/features/services-config/components/sections/FormSection.tsx`
-- [ ] `src/features/services-config/components/sections/GallerySection.tsx`
+#### Admin Wrapper Components (Legacy - Thin Re-exports)
+- [x] `src/features/admin/components/ManagePorts.tsx` - Legacy (to be phased out)
+- [x] `src/features/admin/components/ManageImagesTab.tsx` - Re-exports from modules/gallery
+- [x] `src/features/admin/components/ManageImageTypes.tsx` - Re-exports from modules/gallery
+- [x] `src/features/admin/components/ManagePosts.tsx` - Re-exports from modules/posts
+- [x] `src/features/admin/components/ManageCategories.tsx` - Re-exports from modules/categories
+- [x] `src/features/admin/components/ManageOffices.tsx` - Legacy (to be refactored)
+- [x] `src/features/admin/components/ManageServices.tsx` - Legacy (to be refactored)
+- [x] `src/features/admin/components/EditProfileTab.tsx` - Uses modules/auth
+- [ ] All inquiry tabs - Need to migrate to modules/inquiries/components/admin
 
 #### App Router Pages
-- [ ] `app/auth/callback/page.tsx`
-- [ ] `app/admin/shipping-agency/inquiries/[id]/pdf/page.tsx`
+- [x] `app/auth/callback/page.tsx` - Uses authService
+- [x] `app/login/page.tsx` - Uses LoginForm from modules
+- [x] `app/signup/page.tsx` - Uses SignupForm from modules
+- [x] `app/insights/page.tsx` - Uses PostPage from modules
+- [x] `app/insights/[id]/page.tsx` - Uses ArticleDetailPage from modules
+- [x] `app/contact/page.tsx` - Uses ContactPage from modules
+- [x] `app/page.tsx` - Uses landing components from modules
+- [x] `app/admin/post-editor/[id]/page.tsx` - Uses PostEditor from modules
+- [x] `app/admin/offices/page.tsx` - Uses AdminDashboard
+- [x] `app/*-agency/page.tsx` - Uses service config from modules
+- [ ] `app/admin/shipping-agency/inquiries/[id]/pdf/page.tsx` - Needs API config
 
 ### Phase 4: Cleanup
 - [ ] Remove all hardcoded `http://localhost:8080` references
@@ -1079,9 +1004,9 @@ Before marking migration complete, verify:
 ## 📚 Reference Links
 
 - Backend API Documentation: `API_STANDARDIZATION.md`
-- Environment Setup: `.env.example`
+- Environment Setup: `.env.local` (see README for required keys)
 - TypeScript API Types: `src/shared/types/api.types.ts`
-- API Client Source: `src/shared/services/apiClient.ts`
+- API Client Source: `src/shared/utils/apiClient.ts`
 
 ---
 
