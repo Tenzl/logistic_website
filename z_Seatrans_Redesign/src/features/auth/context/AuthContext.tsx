@@ -1,20 +1,9 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authService } from '../services/authService'
 import { toast } from 'sonner'
-
-interface User {
-  id: number
-  email: string
-  fullName: string
-  phone?: string
-  company?: string
-  nation?: string
-  role?: string
-  roleId?: number
-  roleGroup?: string
-}
+import { User } from '@/types/dashboard'
+import { authService } from '../services/authService'
 
 interface AuthContextType {
   user: User | null

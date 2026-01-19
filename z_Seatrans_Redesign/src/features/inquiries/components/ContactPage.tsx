@@ -836,6 +836,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         value={formData.office}
                         onChange={handleInputChange}
                         disabled={loading}
+                        aria-label="Preferred Province"
                         className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                       >
                         <option value="">Select province...</option>
@@ -856,6 +857,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                         value={formData.department}
                         onChange={handleInputChange}
                         disabled={loading}
+                        aria-label="Related Department"
                         className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                       >
                         <option value="">Select department...</option>

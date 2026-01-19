@@ -1,8 +1,6 @@
 package com.example.seatrans.features.logistics.service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -13,9 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.seatrans.features.logistics.dto.CreateOfficeRequest;
 import com.example.seatrans.features.logistics.dto.OfficeDTO;
 import com.example.seatrans.features.logistics.model.Office;
-import com.example.seatrans.features.logistics.model.Province;
+import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.repository.OfficeRepository;
-import com.example.seatrans.features.logistics.repository.ProvinceRepository;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -27,31 +25,6 @@ public class OfficeService {
     @Autowired
     private ProvinceRepository provinceRepository;
     
-    // Mapping province names to regions
-    private static final Map<String, String> PROVINCE_REGIONS = new HashMap<>();
-    
-    static {
-        // Northern Vietnam
-        PROVINCE_REGIONS.put("Hà Nội", "Northern Vietnam");
-        PROVINCE_REGIONS.put("Hải Phòng", "Northern Vietnam");
-        PROVINCE_REGIONS.put("Quảng Ninh", "Northern Vietnam");
-        
-        // Central Vietnam
-        PROVINCE_REGIONS.put("Đà Nẵng", "Central Vietnam");
-        PROVINCE_REGIONS.put("Quảng Nam", "Central Vietnam");
-        PROVINCE_REGIONS.put("Khánh Hòa", "Central Vietnam");
-        
-        // Southern Vietnam
-        PROVINCE_REGIONS.put("Hồ Chí Minh", "Southern Vietnam");
-        PROVINCE_REGIONS.put("Bà Rịa - Vũng Tàu", "Southern Vietnam");
-        PROVINCE_REGIONS.put("Đồng Nai", "Southern Vietnam");
-        
-        // Mekong Delta
-        PROVINCE_REGIONS.put("Cần Thơ", "Mekong Delta");
-        PROVINCE_REGIONS.put("An Giang", "Mekong Delta");
-        PROVINCE_REGIONS.put("Kiên Giang", "Mekong Delta");
-    }
-
     public List<OfficeDTO> getAllActiveOffices() {
         return officeRepository.findAllActiveOffices()
                 .stream()
@@ -61,7 +34,7 @@ public class OfficeService {
 
     private OfficeDTO convertToDTO(Office office) {
         String provinceName = office.getProvince() != null ? office.getProvince().getName() : "";
-        String region = PROVINCE_REGIONS.getOrDefault(provinceName, "Vietnam");
+        String region = ""; // No region mapping required
         
         return OfficeDTO.builder()
                 .id(office.getId())

@@ -27,14 +27,14 @@ import lombok.RequiredArgsConstructor;
  * Controller xử lý authentication (đăng ký, đăng nhập)
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Validated
 public class AuthController {
     private final AuthService authService;
 
     /**
-     * POST /api/auth/register/customer
+     * POST /api/v1/auth/register/customer
      * Đăng ký customer mới (ROLE_CUSTOMER) - trả về JWT token
      */
     @PostMapping("/register/customer")

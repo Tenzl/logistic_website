@@ -2,8 +2,8 @@ package com.example.seatrans.features.gallery.dto;
 
 import java.time.LocalDateTime;
 
-import com.example.seatrans.features.logistics.dto.PortDTO;
-import com.example.seatrans.features.logistics.dto.ProvinceDTO;
+import com.example.seatrans.features.ports.dto.PortDTO;
+import com.example.seatrans.features.provinces.dto.ProvinceDTO;
 import com.example.seatrans.features.logistics.dto.ServiceTypeDTO;
 
 import lombok.AllArgsConstructor;

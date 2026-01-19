@@ -37,9 +37,9 @@ public class CategoryController {
     
     /**
      * Get all categories (Public)
-     * GET /api/categories
+     * GET /api/v1/categories
      */
-    @GetMapping("/api/categories")
+    @GetMapping("/api/v1/categories")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
         log.info("Public: Fetching all categories");
         List<CategoryResponse> categories = categoryService.getAllCategories();
@@ -48,9 +48,9 @@ public class CategoryController {
     
     /**
      * Get all categories (Admin)
-     * GET /api/admin/categories
+     * GET /api/v1/admin/categories
      */
-    @GetMapping("/api/admin/categories")
+    @GetMapping("/api/v1/admin/categories")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAdminCategories() {
         log.info("Admin: Fetching all categories");
@@ -60,9 +60,9 @@ public class CategoryController {
     
     /**
      * Get category by ID
-     * GET /api/admin/categories/{id}
+     * GET /api/v1/admin/categories/{id}
      */
-    @GetMapping("/api/admin/categories/{id}")
+    @GetMapping("/api/v1/admin/categories/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(@PathVariable Long id) {
         log.info("Fetching category with ID: {}", id);
@@ -72,9 +72,9 @@ public class CategoryController {
     
     /**
      * Create new category
-     * POST /api/admin/categories
+     * POST /api/v1/admin/categories
      */
-    @PostMapping("/api/admin/categories")
+    @PostMapping("/api/v1/admin/categories")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
             @Valid @RequestBody CategoryRequest request) {
@@ -86,9 +86,9 @@ public class CategoryController {
     
     /**
      * Update existing category
-     * PUT /api/admin/categories/{id}
+     * PUT /api/v1/admin/categories/{id}
      */
-    @PutMapping("/api/admin/categories/{id}")
+    @PutMapping("/api/v1/admin/categories/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
             @PathVariable Long id,
@@ -100,9 +100,9 @@ public class CategoryController {
     
     /**
      * Delete category
-     * DELETE /api/admin/categories/{id}
+     * DELETE /api/v1/admin/categories/{id}
      */
-    @DeleteMapping("/api/admin/categories/{id}")
+    @DeleteMapping("/api/v1/admin/categories/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         log.info("Deleting category with ID: {}", id);

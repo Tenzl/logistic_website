@@ -14,7 +14,7 @@ import com.example.seatrans.features.logistics.service.OfficeService;
 import com.example.seatrans.shared.dto.ApiResponse;
 
 @RestController
-@RequestMapping("/api/offices")
+@RequestMapping("/api/v1/offices")
 public class OfficeController {
 
     @Autowired

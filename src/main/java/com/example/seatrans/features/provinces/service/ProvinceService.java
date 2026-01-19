@@ -1,4 +1,4 @@
-package com.example.seatrans.features.logistics.service;
+package com.example.seatrans.features.provinces.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,11 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.seatrans.features.logistics.dto.CreateProvinceRequest;
-import com.example.seatrans.features.logistics.dto.ProvinceDTO;
-import com.example.seatrans.features.logistics.model.Port;
-import com.example.seatrans.features.logistics.model.Province;
-import com.example.seatrans.features.logistics.repository.ProvinceRepository;
+import com.example.seatrans.features.provinces.dto.CreateProvinceRequest;
+import com.example.seatrans.features.provinces.dto.ProvinceDTO;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.provinces.model.Province;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 
 @Service
 @Transactional(readOnly = true)

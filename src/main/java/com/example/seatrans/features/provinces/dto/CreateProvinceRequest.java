@@ -1,4 +1,4 @@
-package com.example.seatrans.features.logistics.dto;
+package com.example.seatrans.features.provinces.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -33,13 +33,13 @@ import lombok.extern.slf4j.Slf4j;
  * Provides endpoints for uploading, retrieving, and deleting inquiry documents
  * 
  * Endpoints:
- * - POST   /api/admin/inquiries/{serviceSlug}/{targetId}/documents (Admin Only)
- * - GET    /api/inquiries/{serviceSlug}/{targetId}/documents
- * - GET    /api/inquiries/{serviceSlug}/{targetId}/documents/download/{documentId}
- * - DELETE /api/admin/inquiries/{serviceSlug}/{targetId}/documents/{documentId} (Admin Only)
+ * - POST   /api/v1/admin/inquiries/{serviceSlug}/{targetId}/documents (Admin Only)
+ * - GET    /api/v1/inquiries/{serviceSlug}/{targetId}/documents
+ * - GET    /api/v1/inquiries/{serviceSlug}/{targetId}/documents/download/{documentId}
+ * - DELETE /api/v1/admin/inquiries/{serviceSlug}/{targetId}/documents/{documentId} (Admin Only)
  */
 @RestController
-@RequestMapping("/api/inquiries")
+@RequestMapping("/api/v1/inquiries")
 @RequiredArgsConstructor
 @Slf4j
 public class InquiryDocumentController {

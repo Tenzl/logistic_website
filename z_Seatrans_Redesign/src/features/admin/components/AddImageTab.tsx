@@ -100,6 +100,12 @@ export function AddImageTab() {
       setProvincesWithPorts(data.filter(p => provinceIdsWithPorts.has(p.id)))
     } catch (error) {
       console.error('Error loading provinces:', error)
+      toast({
+        title: 'Failed to load provinces',
+        description: 'Unable to fetch province data. Please check your connection and try again.',
+        variant: 'destructive',
+      })
+      setProvincesWithPorts([])
     }
   }
 
@@ -109,6 +115,12 @@ export function AddImageTab() {
       setServiceTypes(data)
     } catch (error) {
       console.error('Error loading services:', error)
+      toast({
+        title: 'Failed to load services',
+        description: 'Unable to fetch service types. Please refresh the page.',
+        variant: 'destructive',
+      })
+      setServiceTypes([])
     }
   }
 
@@ -119,6 +131,12 @@ export function AddImageTab() {
       setPorts(data)
     } catch (error) {
       console.error('Error loading ports:', error)
+      toast({
+        title: 'Failed to load ports',
+        description: 'Unable to fetch ports for selected province. Please try again.',
+        variant: 'destructive',
+      })
+      setPorts([])
     } finally {
       setLoading(false)
     }
@@ -131,6 +149,12 @@ export function AddImageTab() {
       setImageTypes(data)
     } catch (error) {
       console.error('Error loading image types:', error)
+      toast({
+        title: 'Failed to load commodities',
+        description: 'Unable to fetch commodity types for selected service. Please try again.',
+        variant: 'destructive',
+      })
+      setImageTypes([])
     } finally {
       setLoading(false)
     }
@@ -143,6 +167,11 @@ export function AddImageTab() {
       setExistingCount(count.current)
     } catch (error) {
       console.error('Error fetching image count:', error)
+      toast({
+        title: 'Failed to fetch image count',
+        description: 'Unable to check existing images. Upload may still work.',
+        variant: 'destructive',
+      })
       setExistingCount(null)
     }
   }

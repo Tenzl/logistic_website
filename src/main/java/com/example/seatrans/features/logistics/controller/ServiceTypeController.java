@@ -21,7 +21,7 @@ import com.example.seatrans.features.logistics.service.ServiceTypeService;
 import com.example.seatrans.shared.dto.ApiResponse;
 
 @RestController
-@RequestMapping("/api/service-types")
+@RequestMapping("/api/v1/service-types")
 public class ServiceTypeController {
 
     @Autowired

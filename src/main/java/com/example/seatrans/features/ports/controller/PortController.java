@@ -1,9 +1,9 @@
-package com.example.seatrans.features.logistics.controller;
+package com.example.seatrans.features.ports.controller;
 
 import com.example.seatrans.shared.dto.ApiResponse;
-import com.example.seatrans.features.logistics.dto.PortDTO;
-import com.example.seatrans.features.logistics.dto.CreatePortRequest;
-import com.example.seatrans.features.logistics.service.PortService;
+import com.example.seatrans.features.ports.dto.PortDTO;
+import com.example.seatrans.features.ports.dto.CreatePortRequest;
+import com.example.seatrans.features.ports.service.PortService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/ports")
+@RequestMapping("/api/v1/ports")
 public class PortController {
 
     @Autowired

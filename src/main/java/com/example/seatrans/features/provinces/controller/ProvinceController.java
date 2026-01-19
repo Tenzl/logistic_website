@@ -1,4 +1,4 @@
-package com.example.seatrans.features.logistics.controller;
+package com.example.seatrans.features.provinces.controller;
 
 import java.util.List;
 
@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.seatrans.features.logistics.dto.CreateProvinceRequest;
-import com.example.seatrans.features.logistics.dto.ProvinceDTO;
-import com.example.seatrans.features.logistics.service.ProvinceService;
+import com.example.seatrans.features.provinces.dto.CreateProvinceRequest;
+import com.example.seatrans.features.provinces.dto.ProvinceDTO;
+import com.example.seatrans.features.provinces.service.ProvinceService;
 import com.example.seatrans.shared.dto.ApiResponse;
 
 @RestController
-@RequestMapping("/api/provinces")
+@RequestMapping("/api/v1/provinces")
 public class ProvinceController {
 
     @Autowired

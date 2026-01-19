@@ -45,8 +45,8 @@ import com.example.seatrans.features.inquiry.repository.ShippingAgencyInquiryRep
 import com.example.seatrans.features.inquiry.repository.SpecialRequestInquiryRepository;
 import com.example.seatrans.features.inquiry.repository.TotalLogisticInquiryRepository;
 import com.example.seatrans.features.inquiry.service.InquiryDocumentService;
-import com.example.seatrans.features.logistics.repository.PortRepository;
-import com.example.seatrans.features.logistics.repository.ProvinceRepository;
+import com.example.seatrans.features.ports.repository.PortRepository;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -54,7 +54,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/inquiries")
+@RequestMapping("/api/v1/inquiries")
 @Validated
 public class PublicInquiryController {
 

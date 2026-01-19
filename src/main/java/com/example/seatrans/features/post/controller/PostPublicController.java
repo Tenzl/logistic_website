@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * Public controller for posts (no authentication required)
  */
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
 @Slf4j
 public class PostPublicController {
@@ -30,7 +30,7 @@ public class PostPublicController {
     
     /**
      * Get all published posts
-     * GET /api/posts
+     * GET /api/v1/posts
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<PostResponse>>> getPublishedPosts(

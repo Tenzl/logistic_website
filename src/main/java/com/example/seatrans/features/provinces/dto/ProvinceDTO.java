@@ -1,4 +1,4 @@
-package com.example.seatrans.features.logistics.dto;
+package com.example.seatrans.features.provinces.dto;
 
 import java.util.List;
 

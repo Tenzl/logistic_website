@@ -1,6 +1,6 @@
-package com.example.seatrans.features.logistics.repository;
+package com.example.seatrans.features.ports.repository;
 
-import com.example.seatrans.features.logistics.model.Port;
+import com.example.seatrans.features.ports.model.Port;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

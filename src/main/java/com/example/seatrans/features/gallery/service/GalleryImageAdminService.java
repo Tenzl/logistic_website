@@ -16,11 +16,11 @@ import com.example.seatrans.features.gallery.model.GalleryImage;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 import com.example.seatrans.features.gallery.repository.GalleryImageRepository;
 import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
-import com.example.seatrans.features.logistics.model.Port;
-import com.example.seatrans.features.logistics.model.Province;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
-import com.example.seatrans.features.logistics.repository.PortRepository;
-import com.example.seatrans.features.logistics.repository.ProvinceRepository;
+import com.example.seatrans.features.ports.repository.PortRepository;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
 import com.example.seatrans.shared.mapper.EntityMapper;
 

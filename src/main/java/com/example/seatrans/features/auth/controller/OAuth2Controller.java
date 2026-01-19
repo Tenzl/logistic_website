@@ -1,5 +1,11 @@
 package com.example.seatrans.features.auth.controller;
 
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,29 +13,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.beans.factory.annotation.Value;
 
-import com.example.seatrans.features.auth.dto.AuthResponseDTO;
 import com.example.seatrans.features.auth.dto.UserDTO;
 import com.example.seatrans.features.auth.model.User;
 import com.example.seatrans.features.auth.service.UserService;
-import com.example.seatrans.shared.dto.ApiResponse;
 import com.example.seatrans.shared.mapper.EntityMapper;
 import com.example.seatrans.shared.security.TokenProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-
 /**
  * Controller for OAuth2 authentication (Google login)
  */
 @RestController
-@RequestMapping("/api/auth/oauth2")
+@RequestMapping("/api/v1/auth/oauth2")
 @RequiredArgsConstructor
 @Slf4j
 public class OAuth2Controller {

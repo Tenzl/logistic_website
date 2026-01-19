@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
  * Requires ROLE_INTERNAL (ADMIN or EMPLOYEE)
  */
 @RestController
-@RequestMapping("/api/admin/image-types")
+@RequestMapping("/api/v1/admin/image-types")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
 public class ImageTypeAdminController {

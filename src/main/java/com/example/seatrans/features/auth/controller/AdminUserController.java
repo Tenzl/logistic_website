@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
  * Tất cả endpoints yêu cầu ROLE_ADMIN
  */
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class AdminUserController {
@@ -38,7 +38,7 @@ public class AdminUserController {
     // ==================== Read Operations ====================
     
     /**
-     * GET /api/admin/users
+     * GET /api/v1/admin/users
      * Lấy tất cả users
      */
     @GetMapping

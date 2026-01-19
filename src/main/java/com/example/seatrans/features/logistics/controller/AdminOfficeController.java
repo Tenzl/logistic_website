@@ -21,7 +21,7 @@ import com.example.seatrans.features.logistics.service.OfficeService;
 import com.example.seatrans.shared.dto.ApiResponse;
 
 @RestController
-@RequestMapping("/api/admin/offices")
+@RequestMapping("/api/v1/admin/offices")
 @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
 public class AdminOfficeController {
 

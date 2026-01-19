@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  * Requires ROLE_INTERNAL
  */
 @RestController
-@RequestMapping("/api/admin/gallery-images")
+@RequestMapping("/api/v1/admin/gallery-images")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
@@ -46,7 +46,7 @@ public class GalleryImageAdminController {
     
     /**
      * Check if file already exists in database
-     * GET /api/admin/gallery-images/check-duplicate
+     * GET /api/v1/admin/gallery-images/check-duplicate
      */
     @GetMapping("/check-duplicate")
     public ResponseEntity<ApiResponse<Boolean>> checkDuplicate(

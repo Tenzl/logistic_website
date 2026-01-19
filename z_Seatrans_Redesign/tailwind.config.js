@@ -109,28 +109,52 @@ module.exports = {
   				}
   			},
   			'marquee-left': {
-  				'0%': { transform: 'translateX(0%)' },
-  				'100%': { transform: 'translateX(calc(-100% - var(--marquee-gap)))' }
+  				'0%': {
+  					transform: 'translateX(0%)'
+  				},
+  				'100%': {
+  					transform: 'translateX(calc(-100% - var(--marquee-gap)))'
+  				}
   			},
   			'marquee-right': {
-  				'0%': { transform: 'translateX(calc(-100% - var(--marquee-gap)))' },
-  				'100%': { transform: 'translateX(0%)' }
+  				'0%': {
+  					transform: 'translateX(calc(-100% - var(--marquee-gap)))'
+  				},
+  				'100%': {
+  					transform: 'translateX(0%)'
+  				}
   			},
   			'marquee-up': {
-  				'0%': { transform: 'translateY(0%)' },
-  				'100%': { transform: 'translateY(calc(-100% - var(--marquee-gap)))' }
+  				'0%': {
+  					transform: 'translateY(0%)'
+  				},
+  				'100%': {
+  					transform: 'translateY(calc(-100% - var(--marquee-gap)))'
+  				}
   			},
   			'marquee-down': {
-  				'0%': { transform: 'translateY(calc(-100% - var(--marquee-gap)))' },
-  				'100%': { transform: 'translateY(0%)' }
+  				'0%': {
+  					transform: 'translateY(calc(-100% - var(--marquee-gap)))'
+  				},
+  				'100%': {
+  					transform: 'translateY(0%)'
+  				}
   			},
   			'marquee-left-rtl': {
-  				'0%': { transform: 'translateX(0%)' },
-  				'100%': { transform: 'translateX(calc(100% + var(--marquee-gap)))' }
+  				'0%': {
+  					transform: 'translateX(0%)'
+  				},
+  				'100%': {
+  					transform: 'translateX(calc(100% + var(--marquee-gap)))'
+  				}
   			},
   			'marquee-right-rtl': {
-  				'0%': { transform: 'translateX(calc(100% + var(--marquee-gap)))' },
-  				'100%': { transform: 'translateX(0%)' }
+  				'0%': {
+  					transform: 'translateX(calc(100% + var(--marquee-gap)))'
+  				},
+  				'100%': {
+  					transform: 'translateX(0%)'
+  				}
   			}
   		},
   		animation: {

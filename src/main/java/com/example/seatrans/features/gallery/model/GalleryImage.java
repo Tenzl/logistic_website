@@ -2,8 +2,8 @@ package com.example.seatrans.features.gallery.model;
 
 import java.time.LocalDateTime;
 
-import com.example.seatrans.features.logistics.model.Port;
-import com.example.seatrans.features.logistics.model.Province;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
 
 import jakarta.persistence.Column;

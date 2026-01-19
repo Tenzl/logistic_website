@@ -123,7 +123,7 @@ export const galleryService = {
     params.append('size', size.toString())
 
     // Public endpoint - no authentication required
-    const response = await fetch(`${API_BASE_URL}/gallery-images?${params}`, { signal })
+    const response = await fetch(`${API_BASE_URL}/gallery/page-image?${params}`, { signal })
     
     if (!response.ok) {
       throw new Error('Failed to fetch images')

@@ -8,11 +8,11 @@ import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.dto.ImageTypeDTO;
 import com.example.seatrans.features.gallery.model.GalleryImage;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
-import com.example.seatrans.features.logistics.dto.PortDTO;
-import com.example.seatrans.features.logistics.dto.ProvinceDTO;
+import com.example.seatrans.features.ports.dto.PortDTO;
+import com.example.seatrans.features.provinces.dto.ProvinceDTO;
 import com.example.seatrans.features.logistics.dto.ServiceTypeDTO;
-import com.example.seatrans.features.logistics.model.Port;
-import com.example.seatrans.features.logistics.model.Province;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
 
 /**

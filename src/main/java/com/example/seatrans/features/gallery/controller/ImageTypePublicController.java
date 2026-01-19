@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
  * Accessible by all users (no role required)
  */
 @RestController
-@RequestMapping("/api/image-types")
+@RequestMapping("/api/v1/image-types")
 @RequiredArgsConstructor
 public class ImageTypePublicController {
 

@@ -1,11 +1,11 @@
-package com.example.seatrans.features.logistics.service;
+package com.example.seatrans.features.ports.service;
 
-import com.example.seatrans.features.logistics.dto.PortDTO;
-import com.example.seatrans.features.logistics.dto.CreatePortRequest;
-import com.example.seatrans.features.logistics.model.Port;
-import com.example.seatrans.features.logistics.model.Province;
-import com.example.seatrans.features.logistics.repository.PortRepository;
-import com.example.seatrans.features.logistics.repository.ProvinceRepository;
+import com.example.seatrans.features.ports.dto.PortDTO;
+import com.example.seatrans.features.ports.dto.CreatePortRequest;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.provinces.model.Province;
+import com.example.seatrans.features.ports.repository.PortRepository;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

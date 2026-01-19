@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  * Accessible by all users (no role required)
  */
 @RestController
-@RequestMapping("/api/gallery")
+@RequestMapping("/api/v1/gallery")
 @RequiredArgsConstructor
 @Slf4j
 public class GalleryImagePublicController {
@@ -32,7 +32,7 @@ public class GalleryImagePublicController {
     
     /**
      * Get paginated gallery images with filters
-     * GET /api/gallery/page-image?serviceTypeId=1&imageTypeId=2&page=0&size=100
+     * GET /api/v1/gallery/page-image?serviceTypeId=1&imageTypeId=2&page=0&size=100
      * Public endpoint for frontend service pages
      */
     @GetMapping("/page-image")

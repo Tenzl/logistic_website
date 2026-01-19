@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * Requires ROLE_INTERNAL
  */
 @RestController
-@RequestMapping("/api/admin/posts")
+@RequestMapping("/api/v1/admin/posts")
 @RequiredArgsConstructor
 @Validated
 @Slf4j

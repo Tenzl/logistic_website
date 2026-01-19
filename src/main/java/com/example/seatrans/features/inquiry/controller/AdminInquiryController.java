@@ -37,7 +37,7 @@ import com.example.seatrans.features.inquiry.repository.TotalLogisticInquiryRepo
 import com.example.seatrans.features.inquiry.service.InquiryResponseEnricher;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/v1/admin/inquiries")
 @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE','ROLE_INTERNAL')")
 public class AdminInquiryController {
 

@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
  * Controller xá»­ lÃ½ User management
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
     
@@ -42,7 +42,7 @@ public class UserController {
     // ==================== Read Operations ====================
     
     /**
-     * GET /api/users
+     * GET /api/v1/users
      * Láº¥y táº¥t cáº£ users
      */
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")

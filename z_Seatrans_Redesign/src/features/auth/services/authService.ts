@@ -1,20 +1,9 @@
 import { apiClient } from '@/shared/utils/apiClient'
+import { User } from '@/types/dashboard'
 
 interface LoginRequest {
   email: string
   password: string
-}
-
-export interface User {
-  id: number
-  email: string
-  fullName: string
-  phone?: string
-  company?: string
-  nation?: string
-  role?: string
-  roleId?: number
-  roleGroup?: string
 }
 
 interface AuthResponse {
@@ -61,7 +50,7 @@ export const authService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
     try {
       // Skip auth for login endpoint
-      const response = await apiClient.post('/auth/login', 
+      const response = await apiClient.post('/api/auth/login', 
         { email, password } satisfies LoginRequest,
         { skipAuth: true }
       )
@@ -116,7 +105,7 @@ export const authService = {
   register: async (email: string, fullName: string, password: string, phone?: string, company?: string): Promise<SignupResponse> => {
     try {
       // Skip auth for register endpoint
-      const response = await apiClient.post('/auth/register/customer',
+      const response = await apiClient.post('/api/auth/register/customer',
         { email, fullName, password, phone, company } as SignupRequest,
         { skipAuth: true }
       )
@@ -159,7 +148,7 @@ export const authService = {
   getCurrentUser: async (): Promise<ApiResponse<User>> => {
     try {
       // apiClient will automatically handle 401 and logout
-      const response = await apiClient.get('/auth/current-user')
+      const response = await apiClient.get('/api/auth/current-user')
 
       const result = await response.json()
 
