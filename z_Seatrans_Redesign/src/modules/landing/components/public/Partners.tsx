@@ -133,11 +133,11 @@ export function Partners() {
               <MarqueeContent>
                 {partnersData.map((partner) => (
                   <MarqueeItem key={partner.name} asChild>
-                    <div className="flex items-center justify-center mx-4 md:mx-6">
+                    <div className="flex items-center justify-center mx-4 md:mx-6 min-w-[140px] md:min-w-[200px]">
                       <img 
                         src={partner.logo} 
                         alt={partner.name}
-                        className="h-12 md:h-16 w-auto transition-all duration-300 hover:scale-110"
+                        className="h-14 md:h-20 w-auto transition-all duration-300 hover:scale-110"
                       />
                     </div>
                   </MarqueeItem>

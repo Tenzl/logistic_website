@@ -8,15 +8,15 @@ import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.dto.ImageTypeDTO;
 import com.example.seatrans.features.gallery.model.GalleryImage;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
-import com.example.seatrans.features.ports.dto.PortDTO;
-import com.example.seatrans.features.provinces.dto.ProvinceDTO;
 import com.example.seatrans.features.logistics.dto.ServiceTypeDTO;
-import com.example.seatrans.features.ports.model.Port;
-import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
+import com.example.seatrans.features.ports.dto.PortDTO;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.provinces.dto.ProvinceDTO;
+import com.example.seatrans.features.provinces.model.Province;
 
 /**
- * Mapper class Ã„â€˜Ã¡Â»Æ’ convert giÃ¡Â»Â¯a Entity vÃƒÂ  DTO
+ * Entity to DTO Mapper
  */
 @Component
 public class EntityMapper {

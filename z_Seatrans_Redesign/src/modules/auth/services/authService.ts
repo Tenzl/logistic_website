@@ -42,13 +42,25 @@ interface ApiResponse<T> {
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 
-const persistAuth = (auth: AuthResponse) => {
-  localStorage.setItem(TOKEN_KEY, auth.token)
-  localStorage.setItem(USER_KEY, JSON.stringify(auth.user))
+const persistAuth = (auth: AuthResponse, remember = true) => {
+  const storage = remember ? localStorage : sessionStorage
+  storage.setItem(TOKEN_KEY, auth.token)
+  storage.setItem(USER_KEY, JSON.stringify(auth.user))
 }
 
+const clearAuth = () => {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_KEY)
+  sessionStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(USER_KEY)
+}
+
+const readToken = () => sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
+const readUser = () => sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY)
+const getActiveStorage = () => (sessionStorage.getItem(TOKEN_KEY) ? sessionStorage : localStorage)
+
 export const authService = {
-  login: async (email: string, password: string): Promise<LoginResponse> => {
+  login: async (email: string, password: string, remember = true): Promise<LoginResponse> => {
     try {
       // Skip auth for login endpoint
       const response = await apiClient.post(API_CONFIG.AUTH.LOGIN, 
@@ -68,7 +80,7 @@ export const authService = {
 
       // Save token and user to localStorage
       if (data.success && data.data) {
-        persistAuth(data.data)
+        persistAuth(data.data, remember)
       }
 
       return {
@@ -86,21 +98,20 @@ export const authService = {
   },
 
   logout: () => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
+    clearAuth()
   },
 
   getToken: () => {
-    return localStorage.getItem(TOKEN_KEY)
+    return readToken()
   },
 
   getUser: (): User | null => {
-    const user = localStorage.getItem(USER_KEY)
+    const user = readUser()
     return user ? JSON.parse(user) : null
   },
 
   isAuthenticated: () => {
-    return !!localStorage.getItem(TOKEN_KEY)
+    return !!readToken()
   },
 
   register: async (email: string, fullName: string, password: string, phone?: string, company?: string): Promise<SignupResponse> => {
@@ -162,7 +173,8 @@ export const authService = {
       }
 
       if (result?.data) {
-        localStorage.setItem(USER_KEY, JSON.stringify(result.data))
+        const storage = getActiveStorage()
+        storage.setItem(USER_KEY, JSON.stringify(result.data))
       }
 
       return {
@@ -197,7 +209,8 @@ export const authService = {
 
       // Update local storage with new user data
       if (result.data) {
-        localStorage.setItem(USER_KEY, JSON.stringify(result.data))
+        const storage = getActiveStorage()
+        storage.setItem(USER_KEY, JSON.stringify(result.data))
       }
 
       return {

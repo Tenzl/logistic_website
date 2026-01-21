@@ -7,7 +7,6 @@ import { Pending } from '@/shared/components/pending'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Ship, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
-import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 
 interface SignupProps {
@@ -30,7 +29,6 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [ref, isInView] = useIntersectionObserver()
   const { register } = useAuth()
 
   const handleInputChange = (field: string, value: string) => {
@@ -89,222 +87,165 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
   ]
 
   return (
-    <div ref={ref} className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted/30 px-4 py-12">
-      {/* Back to Home Button */}
-      <button
-        onClick={onNavigateHome}
-        className="absolute top-8 left-8 flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Back to Home</span>
-      </button>
+    <div className="min-h-screen bg-background px-4 py-10 flex items-center justify-center">
+      <div className="relative w-full max-w-md">
 
-      <div className={`w-full max-w-md ${isInView ? 'fade-rise' : 'opacity-0'}`}>
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4 shadow-lg">
-            <Ship className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">Create Account</h1>
-          <p className="text-muted-foreground mt-2">Join Seatrans and streamline your shipping</p>
-        </div>
-
-        {/* Signup Card */}
-        <Card className={`shadow-xl border-border/50 ${isInView ? 'fade-rise stagger-1' : 'opacity-0'}`}>
-          <CardHeader>
-            <CardTitle>Sign Up</CardTitle>
+        <Card className="shadow-lg border border-border/60 pb-2">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-xl">Sign Up</CardTitle>
             <CardDescription>Fill in your details to create your account</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Error Message */}
-              {error && (
-                <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-md text-sm">
-                  {error}
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="John Doe"
+                value={formData.fullName}
+                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@company.com"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <PhoneInput
+                id="phone"
+                defaultCountry="VN"
+                value={formData.phone || undefined}
+                onChange={(val) => handleInputChange('phone', val || '')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Input
+                id="company"
+                type="text"
+                placeholder="Your company name"
+                value={formData.company}
+                onChange={(e) => handleInputChange('company', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Create a strong password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {formData.password && (
+                <div className="mt-2 space-y-1">
+                  {passwordRequirements.map((req, index) => (
+                    <div key={index} className="flex items-center space-x-2 text-xs">
+                      <CheckCircle2
+                        className={`w-3 h-3 ${req.met ? 'text-green-600 dark:text-green-500' : 'text-muted-foreground'}`}
+                      />
+                      <span className={req.met ? 'text-green-700 dark:text-green-600' : 'text-muted-foreground'}>
+                        {req.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
-
-              {/* Full Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@company.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* Phone Field */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <PhoneInput
-                  id="phone"
-                  defaultCountry="VN"
-                  value={formData.phone || undefined}
-                  onChange={(val) => handleInputChange('phone', val || '')}
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* Company Field */}
-              <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
-                <Input
-                  id="company"
-                  type="text"
-                  placeholder="Your company name"
-                  value={formData.company}
-                  onChange={(e) => handleInputChange('company', e.target.value)}
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a strong password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    required
-                    className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {/* Password Requirements */}
-                {formData.password && (
-                  <div className="mt-2 space-y-1">
-                    {passwordRequirements.map((req, index) => (
-                      <div key={index} className="flex items-center space-x-2 text-xs">
-                        <CheckCircle2 
-                          className={`w-3 h-3 ${
-                            req.met ? 'text-green-600 dark:text-green-500' : 'text-muted-foreground'
-                          }`}
-                        />
-                        <span className={req.met ? 'text-green-700 dark:text-green-600' : 'text-muted-foreground'}>
-                          {req.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Re-enter your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    required
-                    className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <p className="text-xs text-destructive">Passwords do not match</p>
-                )}
-              </div>
-
-              {/* Terms & Conditions */}
-              <div className="flex items-start space-x-2">
-                <Checkbox
-                  id="terms"
-                  checked={agreeToTerms}
-                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
-                  className="mt-1"
-                />
-                <Label
-                  htmlFor="terms"
-                  className="text-sm font-normal cursor-pointer leading-relaxed"
-                >
-                  I agree to the{' '}
-                  <a href="#" className="text-primary hover:underline">
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="text-primary hover:underline">
-                    Privacy Policy
-                  </a>
-                </Label>
-              </div>
-
-              {/* Signup Button */}
-              <Pending isPending={isLoading} disabled={!agreeToTerms}>
-                <Button
-                  type="submit"
-                  className="w-full transition-all duration-200 hover:shadow-lg"
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </Pending>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or</span>
-              </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter your password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="text-xs text-destructive">Passwords do not match</p>
+              )}
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="terms"
+                checked={agreeToTerms}
+                onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                className="mt-1"
+              />
+              <Label htmlFor="terms" className="text-sm font-normal leading-relaxed cursor-pointer">
+                I agree to the{' '}
+                <a href="#" className="text-primary hover:underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="#" className="text-primary hover:underline">
+                  Privacy Policy
+                </a>
+              </Label>
+            </div>
+
+            <Pending isPending={isLoading} disabled={!agreeToTerms}>
+              <Button type="submit" className="w-full">
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </Pending>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3 border-t pt-4">
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <button 
-                onClick={onNavigateLogin}
-                className="text-primary hover:underline font-medium"
-              >
+              <button onClick={onNavigateLogin} className="text-primary hover:underline font-medium">
                 Sign in
               </button>
             </p>
+            <p className="text-center text-xs text-muted-foreground">
+              Protected by industry-standard encryption and security measures
+            </p>
           </CardFooter>
         </Card>
-
-        {/* Footer Links */}
-        <div className={`mt-8 text-center text-sm text-muted-foreground ${isInView ? 'fade-rise stagger-2' : 'opacity-0'}`}>
-          <p>
-            Protected by industry-standard encryption and security measures
-          </p>
-        </div>
       </div>
     </div>
   )

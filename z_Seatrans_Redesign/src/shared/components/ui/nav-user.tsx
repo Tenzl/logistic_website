@@ -5,10 +5,12 @@ import {
   Bell,
   ChevronsUpDown,
   CreditCard,
+  LayoutDashboard,
   LogOut,
   Sparkles,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import NProgress from "nprogress"
 import { useAuth } from "@/modules/auth/context/AuthContext"
 
 import {
@@ -45,9 +47,17 @@ export function NavUser({
   const { logout } = useAuth()
   const router = useRouter()
 
+  const handleNavigateDashboard = () => {
+    NProgress.start()
+    router.push("/admin")
+    setTimeout(() => NProgress.done(), 300)
+  }
+
   const handleLogout = () => {
+    NProgress.start()
     logout()
     router.push("/login")
+    setTimeout(() => NProgress.done(), 300)
   }
 
   return (
@@ -88,6 +98,13 @@ export function NavUser({
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={handleNavigateDashboard}>
+                <LayoutDashboard />
+                Dashboard
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {/* <DropdownMenuGroup>
               <DropdownMenuItem>

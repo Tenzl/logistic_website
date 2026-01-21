@@ -19,25 +19,23 @@ interface GalleryImage {
   portName: string
   commodities: string
   province: string
-  serviceType: string
+  serviceTypeId?: number
+  serviceTypeName: string
 }
 
-const serviceOptions = ['Shipping Agency', 'Chartering & Broking', 'Freight Forwarding', 'Total Logistics']
-
-// Map display names to backend service names
-const serviceNameMap: Record<string, string> = {
-  'Shipping Agency': 'Shipping Agency',
-  'Chartering & Broking': 'Chartering & Broking',
-  'Freight Forwarding': 'Freight Forwarding',
-  'Total Logistics': 'Logistics'
-}
+const services = [
+  { id: 1, key: 'SHIPPING_AGENCY', label: 'Shipping Agency' },
+  { id: 2, key: 'FREIGHT_FORWARDING', label: 'Freight Forwarding' },
+  { id: 3, key: 'CHARTERING', label: 'Chartering & Broking' },
+  { id: 4, key: 'LOGISTICS', label: 'Total Logistics' },
+] as const
 
 // Map service to gallery page URLs
-const serviceGalleryUrls: Record<string, string> = {
-  'Shipping Agency': '/services/shipping-agency#gallery',
-  'Chartering & Broking': '/services/chartering-broking#gallery',
-  'Freight Forwarding': '/services/freight-forwarding#gallery',
-  'Total Logistics': '/services/total-logistics#gallery'
+const serviceGalleryUrls: Record<number, string> = {
+  1: '/services/shipping-agency#gallery',
+  2: '/services/freight-forwarding#gallery',
+  3: '/services/chartering-broking#gallery',
+  4: '/services/total-logistics#gallery',
 }
 
 // Helper function to construct proper image URL
@@ -57,17 +55,19 @@ const getImageUrl = (url: string) => {
 
 export function FieldGallery() {
   const router = useRouter()
-  const [selectedService, setSelectedService] = useState('Shipping Agency')
+  const [selectedServiceId, setSelectedServiceId] = useState<number>(services[0].id)
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [loading, setLoading] = useState(true)
   const [ref, isInView] = useIntersectionObserver()
   
   // Fetch images from backend
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchGalleryImages = async () => {
       try {
         setLoading(true)
-        const data = await galleryService.getPublicImages()
+        const data = await galleryService.getPublicImages(selectedServiceId, undefined, 0, 12, controller.signal)
         setGalleryImages(
           data.map(image => ({
             id: image.id,
@@ -75,23 +75,26 @@ export function FieldGallery() {
             portName: image.portName,
             commodities: image.imageTypeName,
             province: image.provinceName,
-            serviceType: image.serviceTypeName,
+            serviceTypeId: image.serviceTypeId,
+            serviceTypeName: image.serviceTypeName,
           }))
         )
       } catch (error) {
+        if ((error as Error).name === 'AbortError') return
         console.error('Error loading gallery images:', error)
         setGalleryImages([])
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
 
     fetchGalleryImages()
-  }, [])
+    return () => controller.abort()
+  }, [selectedServiceId])
 
   // Filter and limit images
   const filteredData = galleryImages
-    .filter(item => item.serviceType === serviceNameMap[selectedService])
+    .filter(item => item.serviceTypeId === selectedServiceId)
     .slice(0, 6)
 
   return (
@@ -109,15 +112,15 @@ export function FieldGallery() {
         <div className={`mb-8 ${isInView ? 'fade-rise stagger-1' : 'opacity-0'}`}>
           
           <div className="flex flex-wrap justify-center gap-3">
-            {serviceOptions.map((service) => (
+            {services.map((service) => (
               <Button
-                key={service}
-                variant={selectedService === service ? "default" : "outline"}
+                key={service.id}
+                variant={selectedServiceId === service.id ? "default" : "outline"}
                 size="default"
-                className={`hover-lift text-base px-6 ${selectedService === service ? "hover:bg-primary" : ""}`}
-                onClick={() => setSelectedService(service)}
+                className={`hover-lift text-base px-6 ${selectedServiceId === service.id ? "hover:bg-primary" : ""}`}
+                onClick={() => setSelectedServiceId(service.id)}
               >
-                {service}
+                {service.label}
               </Button>
             ))}
           </div>
@@ -201,11 +204,11 @@ export function FieldGallery() {
               size="lg"
               onClick={() => {
                 NProgress.start()
-                router.push(serviceGalleryUrls[selectedService])
+                router.push(serviceGalleryUrls[selectedServiceId])
               }}
               className="group"
             >
-              View More {selectedService} Gallery
+              View More {services.find(s => s.id === selectedServiceId)?.label ?? 'Service'} Gallery
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>

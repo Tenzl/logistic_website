@@ -15,6 +15,7 @@ interface Port {
 interface ServiceType {
   id: number
   name: string
+  displayName?: string
 }
 
 interface ImageType {
@@ -34,20 +35,32 @@ interface GalleryImageRaw {
   uploadedAt: string
 }
 
+interface PublicGalleryImageRaw {
+  id: number
+  imageUrl: string
+  portName: string
+  provinceName: string
+  imageTypeName: string
+  serviceTypeId: number
+  serviceTypeKey?: string
+  serviceTypeDisplayName?: string
+  serviceTypeName?: string
+}
+
 interface GalleryImage {
   id: number
   fileName: string
   url: string
-  provinceId: number
+  provinceId?: number
   provinceName: string
-  portId: number
+  portId?: number
   portName: string
-  serviceTypeId: number
+  serviceTypeId?: number
   serviceTypeName: string
-  imageTypeId: number
+  imageTypeId?: number
   imageTypeName: string
   uploadedBy?: number
-  uploadedAt: string
+  uploadedAt?: string
 }
 
 interface UpdateImageRequest {
@@ -67,11 +80,22 @@ const transformGalleryImage = (raw: GalleryImageRaw): GalleryImage => ({
   portId: raw.port.id,
   portName: raw.port.name,
   serviceTypeId: raw.serviceType.id,
-  serviceTypeName: raw.serviceType.name,
+  serviceTypeName: raw.serviceType.displayName || raw.serviceType.name,
   imageTypeId: raw.imageType.id,
   imageTypeName: raw.imageType.displayName,
   uploadedBy: raw.uploadedBy,
   uploadedAt: raw.uploadedAt,
+})
+
+const transformPublicGalleryImage = (raw: PublicGalleryImageRaw): GalleryImage => ({
+  id: raw.id,
+  fileName: raw.imageUrl.split('/').pop() || '',
+  url: raw.imageUrl,
+  provinceName: raw.provinceName,
+  portName: raw.portName,
+  serviceTypeId: raw.serviceTypeId,
+  serviceTypeName: raw.serviceTypeDisplayName || raw.serviceTypeName || raw.serviceTypeKey || '',
+  imageTypeName: raw.imageTypeName,
 })
 
 export const galleryService = {
@@ -100,7 +124,7 @@ export const galleryService = {
     params.append('page', page.toString())
     params.append('size', size.toString())
 
-    const response = await apiClient.get<ApiResponse<PageResponse<GalleryImageRaw>>>(
+    const response = await apiClient.get<ApiResponse<PageResponse<PublicGalleryImageRaw>>>(
       `${API_CONFIG.GALLERY.PUBLIC_IMAGES}?${params.toString()}`,
       { signal, skipAuth: true }
     )
@@ -119,7 +143,7 @@ export const galleryService = {
       return []
     }
 
-    return content.map(transformGalleryImage)
+    return content.map(transformPublicGalleryImage)
   },
 
   // Admin endpoint - requires auth

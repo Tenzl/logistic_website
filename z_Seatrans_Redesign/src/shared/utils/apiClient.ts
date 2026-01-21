@@ -25,17 +25,22 @@ class ApiClient {
 
   private getToken(): string | null {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem(TOKEN_KEY)
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
   }
 
   private clearAuth(): void {
     if (typeof window === 'undefined') return
-    
+
+    // Clear both persistent and session storage to cover remember-me/session flows
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem('auth_user')
-    
-    // Redirect to login page
-    window.location.href = '/login?reason=session_expired'
+    sessionStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem('auth_user')
+
+    // Avoid redirect loops when already on login page
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login?reason=session_expired'
+    }
   }
 
   private buildUrl(endpoint: string): string {
