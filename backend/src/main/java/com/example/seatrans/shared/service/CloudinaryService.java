@@ -44,9 +44,9 @@ public class CloudinaryService {
             uploadParams.put("resource_type", "auto");
             uploadParams.put("overwrite", true);
             
-            // Generate unique filename
+            // Generate unique filename (folder is already set above)
             String uniqueFilename = generateUniqueFilename(file.getOriginalFilename());
-            uploadParams.put("public_id", folder + "/" + uniqueFilename);
+            uploadParams.put("public_id", uniqueFilename);
 
             Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
             
@@ -91,7 +91,10 @@ public class CloudinaryService {
      */
     public boolean deleteFile(String publicId) {
         try {
-            Map<String, Object> result = cloudinary.uploader().destroy(publicId, Map.of());
+            Map<String, Object> result = cloudinary.uploader().destroy(
+                publicId,
+                Map.of("invalidate", true) // xóa cache CDN
+            );
             String deleteResult = (String) result.get("result");
             
             log.info("Delete result for {}: {}", publicId, deleteResult);
@@ -104,43 +107,44 @@ public class CloudinaryService {
     }
 
     /**
-     * Delete multiple files from Cloudinary
+     * Delete multiple files from Cloudinary (Bulk delete)
      */
     public Map<String, Boolean> deleteMultipleFiles(List<String> publicIds) {
-        Map<String, Boolean> results = new HashMap<>();
-        
-        for (String publicId : publicIds) {
-            results.put(publicId, deleteFile(publicId));
+        if (publicIds == null || publicIds.isEmpty()) {
+            return Map.of();
         }
-        
-        return results;
-    }
 
-    /**
-     * Rename/move a file in Cloudinary
-     */
-    public boolean renameFile(String fromPublicId, String toPublicId) {
         try {
-            Map<String, Object> options = new HashMap<>();
-            options.put("invalidate", true);
+            // Sử dụng API deleteResources cho bulk delete
+            Map<?, ?> result = cloudinary.api().deleteResources(
+                publicIds,
+                Map.of("invalidate", true) // xóa cache CDN
+            );
             
-            Map<String, Object> result = cloudinary.uploader().rename(fromPublicId, toPublicId, options);
-            String renameResult = (String) result.get("public_id");
+            log.info("Bulk delete result: {}", result);
             
-            log.info("Rename result: {} -> {}", fromPublicId, renameResult);
-            return toPublicId.equals(renameResult);
+            // Parse kết quả từ deleted map
+            Map<String, Boolean> results = new HashMap<>();
+            @SuppressWarnings("unchecked")
+            Map<String, String> deleted = (Map<String, String>) result.get("deleted");
+            
+            if (deleted != null) {
+                for (String publicId : publicIds) {
+                    results.put(publicId, deleted.containsKey(publicId) && "deleted".equals(deleted.get(publicId)));
+                }
+            } else {
+                // Nếu không có deleted map, đánh dấu tất cả là false
+                publicIds.forEach(id -> results.put(id, false));
+            }
+            
+            return results;
             
         } catch (Exception e) {
-            log.error("Failed to rename file in Cloudinary: {}", e.getMessage(), e);
-            return false;
+            log.error("Failed to bulk delete files from Cloudinary: {}", e.getMessage(), e);
+            Map<String, Boolean> results = new HashMap<>();
+            publicIds.forEach(id -> results.put(id, false));
+            return results;
         }
-    }
-
-    /**
-     * Get URL by public ID
-     */
-    public String getUrlByPublicId(String publicId) {
-        return cloudinary.url().generate(publicId);
     }
 
     /**

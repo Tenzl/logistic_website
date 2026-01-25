@@ -1,9 +1,7 @@
 package com.example.seatrans.features.gallery.controller;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -71,7 +69,7 @@ public class GalleryImageAdminController {
             }
 
             // Upload all files to Cloudinary
-            String folder = "seatrans/gallery/" + serviceTypeId + "/" + imageTypeId;
+            String folder = "gallery";
             List<CloudinaryUploadResponse> cloudinaryResponses = cloudinaryService.uploadMultipleFiles(files, folder);
 
             // Save all image URLs to database
@@ -118,7 +116,7 @@ public class GalleryImageAdminController {
             }
 
             // Upload to Cloudinary
-            String folder = String.format("gallery/service-%d/type-%d", serviceTypeId, imageTypeId);
+            String folder = "gallery";
             CloudinaryUploadResponse cloudinaryResponse = cloudinaryService.uploadFile(file, folder);
             String imageUrl = cloudinaryResponse.getSecureUrl();
 
@@ -129,31 +127,6 @@ public class GalleryImageAdminController {
                     serviceTypeId,
                     imageTypeId,
                     userId);
-
-            // Move uploaded file to organized folder with gallery ID
-            if (imageDTO.getId() != null && cloudinaryResponse.getPublicId() != null) {
-                try {
-                    String newFolder = String.format("gallery/%d", imageDTO.getId());
-                    String oldPublicId = cloudinaryResponse.getPublicId();
-                    
-                    // Extract filename from old public_id
-                    String filename = oldPublicId.substring(oldPublicId.lastIndexOf('/') + 1);
-                    String newPublicId = newFolder + "/" + filename;
-                    
-                    // Rename/move in Cloudinary using the API
-                    Map<String, Object> renameParams = new HashMap<>();
-                    renameParams.put("invalidate", true);
-                    cloudinaryService.renameFile(oldPublicId, newPublicId);
-                    
-                    // Update database with new publicId and URL
-                    galleryImageService.updateCloudinaryInfo(imageDTO.getId(), 
-                        cloudinaryService.getUrlByPublicId(newPublicId), 
-                        newPublicId);
-                } catch (Exception e) {
-                    log.warn("Failed to reorganize file for gallery {}: {}", imageDTO.getId(), e.getMessage());
-                    // Continue - image is already uploaded and saved, just not in ideal folder
-                }
-            }
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Image uploaded successfully", imageDTO));

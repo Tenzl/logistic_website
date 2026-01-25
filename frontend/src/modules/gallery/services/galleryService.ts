@@ -182,40 +182,17 @@ export const galleryService = {
     serviceTypeId: number,
     imageTypeId: number
   ): Promise<GalleryImage> => {
-    // 1. Upload to Cloudinary
-    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/du1yxipjb/image/upload`
-    const UPLOAD_PRESET = 'ml_default'
-
+    // Upload via backend CloudinaryService endpoint
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('upload_preset', UPLOAD_PRESET)
-    // Optional: Add folder structure if needed, e.g. formData.append('folder', 'gallery')
-
-    const cloudinaryResponse = await fetch(CLOUDINARY_UPLOAD_URL, {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (!cloudinaryResponse.ok) {
-      const errorText = await cloudinaryResponse.text()
-      throw new Error(`Cloudinary upload failed: ${cloudinaryResponse.statusText} - ${errorText}`)
-    }
-
-    const cloudinaryResult = await cloudinaryResponse.json()
-    const imageUrl = cloudinaryResult.secure_url
-
-    // 2. Save URL to Backend
-    const backendPayload = {
-      imageUrl,
-      provinceId,
-      portId,
-      serviceTypeId,
-      imageTypeId
-    }
+    formData.append('province_id', provinceId.toString())
+    formData.append('port_id', portId.toString())
+    formData.append('service_type_id', serviceTypeId.toString())
+    formData.append('image_type_id', imageTypeId.toString())
 
     const response = await apiClient.post<ApiResponse<GalleryImageRaw>>(
-      `${API_CONFIG.GALLERY.ADMIN_IMAGES}/save-url`,
-      backendPayload
+      `${API_CONFIG.GALLERY.ADMIN_IMAGES}`,
+      formData
     )
 
     const result = await response.json()

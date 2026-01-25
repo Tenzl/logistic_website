@@ -205,12 +205,9 @@ export const postService = {
     return result.data
   },
 
-  uploadThumbnail: async (file: File, postId?: number): Promise<CloudinaryUploadResponse> => {
+  uploadThumbnail: async (file: File): Promise<CloudinaryUploadResponse> => {
     const formData = new FormData()
     formData.append('file', file)
-    if (postId) {
-      formData.append('postId', postId.toString())
-    }
 
     const response = await apiClient.post<ApiResponse<CloudinaryUploadResponse>>(
       API_CONFIG.POSTS.UPLOAD_THUMBNAIL,

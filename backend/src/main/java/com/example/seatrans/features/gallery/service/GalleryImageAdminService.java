@@ -118,20 +118,6 @@ public class GalleryImageAdminService {
     }
 
     /**
-     * Update Cloudinary info after file reorganization
-     */
-    public void updateCloudinaryInfo(Long imageId, String newUrl, String newPublicId) {
-        GalleryImage image = galleryImageRepository.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Gallery image not found: " + imageId));
-        
-        image.setImageUrl(newUrl);
-        image.setCloudinaryPublicId(newPublicId);
-        galleryImageRepository.save(image);
-        
-        log.info("Updated Cloudinary info for gallery {}: {}", imageId, newPublicId);
-    }
-
-    /**
      * Get all images with ID filters (paginated) - Admin version
      */
     public Page<GalleryImageDTO> getAllImages(Long provinceId, Long portId, Long serviceTypeId, Long imageTypeId,

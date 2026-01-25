@@ -376,11 +376,6 @@ public class PostService {
         String url = request.getThumbnailUrl();
         String publicId = request.getThumbnailPublicId();
 
-        // Allow both to be null (no thumbnail)
-        if (url == null && publicId == null) {
-            return;
-        }
-
         // If either is provided, both must be provided
         if ((url == null) != (publicId == null)) {
             throw new RuntimeException("Thumbnail URL và publicId phải được cung cấp cùng nhau");

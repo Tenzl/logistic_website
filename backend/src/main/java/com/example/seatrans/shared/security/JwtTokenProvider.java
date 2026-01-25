@@ -32,7 +32,7 @@ public class JwtTokenProvider implements TokenProvider {
 
     private static final String CLAIM_ROLES = "roles";
     
-    @Value("${app.jwt.secret:seatrans-secret-key-change-in-production-please-make-it-very-long-and-secure}")
+    @Value("${app.jwt.secret:}")
     private String jwtSecret;
     
     @Value("${app.jwt.expiration:86400000}") // 24 hours default
@@ -45,7 +45,11 @@ public class JwtTokenProvider implements TokenProvider {
     
     @PostConstruct
     public void init() {
-        // Ensure secret is at least 256 bits (32 bytes)
+        // Ensure secret is configured and at least 256 bits (32 bytes)
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            throw new IllegalStateException("JWT secret is not configured. Set APP_JWT_SECRET or app.jwt.secret.");
+        }
+
         if (jwtSecret.length() < 32) {
             String paddedSecret = String.format("%-32s", jwtSecret).replace(' ', 'x');
             this.secretKey = paddedSecret.getBytes();

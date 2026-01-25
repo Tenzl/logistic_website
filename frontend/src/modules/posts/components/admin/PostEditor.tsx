@@ -58,8 +58,8 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
 
     try {
       setLoading(true)
-      console.log('Uploading thumbnail to:', API_CONFIG.POSTS.UPLOAD_THUMBNAIL, 'postId:', postId)
-      const response = await postService.uploadThumbnail(file, postId)
+      console.log('Uploading thumbnail to:', API_CONFIG.POSTS.UPLOAD_THUMBNAIL)
+      const response = await postService.uploadThumbnail(file)
       console.log('Upload response:', response)
       setUploadedImageUrl(response.secureUrl)
       setFormData(prev => ({
@@ -163,12 +163,6 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
           isPublished: false // Force draft on creation
         })
         toast.success("Post created successfully! Returning to posts...")
-        
-        // Redirect to edit page to allow uploads with proper folder structure
-        setTimeout(() => {
-          router.push(`/admin/posts/edit/${newPost.id}`)
-        }, 600)
-        return
       }
 
       setTimeout(() => {
@@ -366,10 +360,6 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                     branding: false,
                     promotion: false,
                     images_upload_handler: handleImageUpload,
-                    paste_data_images: true,
-                    automatic_uploads: true,
-                    file_picker_types: 'image',
-                    images_reuse_filename: false,
                     image_caption: true,
                     image_title: true,
                     image_description: false

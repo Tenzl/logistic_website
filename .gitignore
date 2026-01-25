@@ -7,6 +7,19 @@ target/
 # Environment variables
 .env
 .env.*.local
+.env.local
+.env.local.*
+.env.*.backend
+.env.local.backend
+
+# SSL/TLS Certificates
+*.pem
+*.crt
+*.key
+*.p12
+*.jks
+ca.pem
+truststore.jks
 
 # Logs
 *.log

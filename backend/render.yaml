@@ -14,34 +14,18 @@ services:
     
     # Environment variables
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: production
-      
       - key: SERVER_PORT
         value: 8080
       
-      # Database configuration (from Render MySQL)
-      - key: SPRING_DATASOURCE_URL
-        fromDatabase:
-          name: seatrans-db
-          property: connectionString
+      # Database configuration (from Render MySQL or Aiven)
+      - key: DB_URL
+        sync: false
       
-      - key: SPRING_DATASOURCE_USERNAME
-        fromDatabase:
-          name: seatrans-db
-          property: user
+      - key: DB_USERNAME
+        sync: false
       
-      - key: SPRING_DATASOURCE_PASSWORD
-        fromDatabase:
-          name: seatrans-db
-          property: password
-      
-      # JPA/Hibernate
-      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
-        value: update
-      
-      - key: SPRING_JPA_SHOW_SQL
-        value: false
+      - key: DB_PASSWORD
+        sync: false
       
       # Cloudinary credentials (set in Render dashboard)
       - key: CLOUDINARY_CLOUD_NAME
@@ -53,11 +37,11 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       
-      # JWT secret (set in Render dashboard)
-      - key: JWT_SECRET
+      # JWT Configuration
+      - key: APP_JWT_SECRET
         generateValue: true
       
-      - key: JWT_EXPIRATION_MS
+      - key: APP_JWT_EXPIRATION
         value: 86400000
       
       # Google OAuth (set in Render dashboard)
@@ -74,14 +58,20 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         value: https://seatrans.vercel.app,http://localhost:3000
       
-      # Logging
-      - key: LOGGING_LEVEL_ROOT
-        value: INFO
+      # Upload directories
+      - key: APP_UPLOAD_DIR
+        value: uploads/gallery
       
-      - key: LOGGING_LEVEL_COM_EXAMPLE_SEATRANS
-        value: INFO
+      - key: APP_UPLOAD_INQUIRY_DIR
+        value: uploads/inquiry-documents
+      
+      - key: APP_UPLOAD_MAX_FILE_SIZE
+        value: 5242880
+      
+      - key: APP_UPLOAD_ALLOWED_EXTENSIONS
+        value: jpg,jpeg,png,webp
 
-# Database
+# Database (optional - nếu dùng Render DB thay vì Aiven)
 databases:
   - name: seatrans-db
     databaseName: seatrans

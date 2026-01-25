@@ -142,11 +142,8 @@ public class PostController {
             if (error != null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(error));
             }
-            // Upload to Cloudinary with organized folder structure
-            String folder = postId != null 
-                ? String.format("posts/%d/content", postId)
-                : "posts/content";
-            CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadFile(file, folder);
+            // Upload to Cloudinary and persist metadata
+            CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadFile(file, "post/content");
             postService.savePostImage(postId, uploadResponse.getSecureUrl(), uploadResponse.getPublicId());
             
             return ResponseEntity.ok(ApiResponse.success("Image uploaded successfully", uploadResponse.getSecureUrl()));
@@ -162,18 +159,14 @@ public class PostController {
      */
     @PostMapping("/upload-thumbnail")
     public ResponseEntity<ApiResponse<CloudinaryUploadResponse>> uploadThumbnail(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "postId", required = false) Long postId) {
+            @RequestParam("file") MultipartFile file) {
         try {
             String error = fileUploadUtil.validateFile(file);
             if (error != null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(error));
             }
 
-            String folder = postId != null 
-                ? String.format("posts/%d/thumbnail", postId)
-                : "posts/thumbnails";
-            CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadFile(file, folder);
+            CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadFile(file, "post/thumbnail");
             return ResponseEntity.ok(ApiResponse.success("Thumbnail uploaded successfully", uploadResponse));
         } catch (Exception e) {
             log.error("Error uploading thumbnail", e);
