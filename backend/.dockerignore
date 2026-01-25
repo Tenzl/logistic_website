@@ -1,0 +1,39 @@
+# Maven build output
+target/
+!target/*.jar
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local uploads (use cloud storage in production)
+uploads/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+*.env
+application-local.properties
+
+# Node modules (if any)
+node_modules/
+
+# Test files
+src/test/

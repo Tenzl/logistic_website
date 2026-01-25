@@ -1,0 +1,90 @@
+services:
+  # Backend API Service
+  - type: web
+    name: seatrans-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: free
+    branch: main
+    
+    # Health check endpoint
+    healthCheckPath: /actuator/health
+    
+    # Environment variables
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      
+      - key: SERVER_PORT
+        value: 8080
+      
+      # Database configuration (from Render MySQL)
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: seatrans-db
+          property: connectionString
+      
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: seatrans-db
+          property: user
+      
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: seatrans-db
+          property: password
+      
+      # JPA/Hibernate
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      
+      - key: SPRING_JPA_SHOW_SQL
+        value: false
+      
+      # Cloudinary credentials (set in Render dashboard)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      
+      # JWT secret (set in Render dashboard)
+      - key: JWT_SECRET
+        generateValue: true
+      
+      - key: JWT_EXPIRATION_MS
+        value: 86400000
+      
+      # Google OAuth (set in Render dashboard)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      
+      - key: GOOGLE_REDIRECT_URI
+        value: https://seatrans-backend.onrender.com/api/v1/auth/oauth2/callback
+      
+      # CORS origins
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://seatrans.vercel.app,http://localhost:3000
+      
+      # Logging
+      - key: LOGGING_LEVEL_ROOT
+        value: INFO
+      
+      - key: LOGGING_LEVEL_COM_EXAMPLE_SEATRANS
+        value: INFO
+
+# Database
+databases:
+  - name: seatrans-db
+    databaseName: seatrans
+    user: seatrans_user
+    plan: free
+    region: singapore
