@@ -27,4 +27,5 @@ public class GalleryImageDTO {
     private LocalDateTime uploadedAt;
     private Long uploadedById;
     private String imageUrl;
+    private String cloudinaryPublicId;
 }

@@ -1,5 +1,10 @@
 package com.example.seatrans.features.gallery.controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +27,8 @@ import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.dto.UpdateImageRequest;
 import com.example.seatrans.features.gallery.service.GalleryImageAdminService;
 import com.example.seatrans.shared.dto.ApiResponse;
-import com.example.seatrans.shared.util.FileUploadUtil;
+import com.example.seatrans.shared.dto.CloudinaryUploadResponse;
+import com.example.seatrans.shared.service.CloudinaryService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -42,18 +48,52 @@ import lombok.extern.slf4j.Slf4j;
 public class GalleryImageAdminController {
 
     private final GalleryImageAdminService galleryImageService;
-    private final FileUploadUtil fileUploadUtil;
+    private final CloudinaryService cloudinaryService;
 
     /**
-     * Check if file already exists in database
-     * GET /api/v1/admin/gallery-images/check-duplicate
+     * Upload multiple images to Cloudinary
+     * POST /api/v1/admin/gallery-images/upload-multiple
      */
-    @GetMapping("/check-duplicate")
-    public ResponseEntity<ApiResponse<Boolean>> checkDuplicate(
-            @RequestParam String fileHash) {
-        boolean exists = galleryImageService.checkFileExists(fileHash);
-        return ResponseEntity.ok(
-                ApiResponse.success(exists ? "File exists" : "File does not exist", exists));
+    @PostMapping(value = "/upload-multiple", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<List<GalleryImageDTO>>> uploadMultipleImages(
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("province_id") Long provinceId,
+            @RequestParam("port_id") Long portId,
+            @RequestParam("service_type_id") Long serviceTypeId,
+            @RequestParam("image_type_id") Long imageTypeId,
+            HttpServletRequest request) {
+
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("User not authenticated"));
+            }
+
+            // Upload all files to Cloudinary
+            String folder = "seatrans/gallery/" + serviceTypeId + "/" + imageTypeId;
+            List<CloudinaryUploadResponse> cloudinaryResponses = cloudinaryService.uploadMultipleFiles(files, folder);
+
+            // Save all image URLs to database
+            List<GalleryImageDTO> savedImages = new ArrayList<>();
+            for (CloudinaryUploadResponse response : cloudinaryResponses) {
+                GalleryImageDTO imageDTO = galleryImageService.uploadImage(
+                        response.getSecureUrl(),                        response.getPublicId(),                        provinceId,
+                        portId,
+                        serviceTypeId,
+                        imageTypeId,
+                        userId);
+                savedImages.add(imageDTO);
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Successfully uploaded " + savedImages.size() + " images", savedImages));
+
+        } catch (Exception e) {
+            log.error("Error uploading multiple images", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to upload images: " + e.getMessage()));
+        }
     }
 
     /**
@@ -77,33 +117,43 @@ public class GalleryImageAdminController {
                         .body(ApiResponse.error("User not authenticated"));
             }
 
-            // Validate file
-            String errorMsg = fileUploadUtil.validateFile(file);
-            if (errorMsg != null) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error(errorMsg));
-            }
-
-            // Check for duplicate using file hash + location (province, port, service_type,
-            // image_type)
-            String fileHash = fileUploadUtil.getFileHash(file);
-            if (galleryImageService.checkDuplicateImage(fileHash, provinceId, portId, serviceTypeId, imageTypeId)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(ApiResponse
-                                .error("Image with same content already exists for this location, service and type"));
-            }
-
-            // Save file and get URL
-            String imageUrl = fileUploadUtil.saveFile(file, "gallery", String.valueOf(imageTypeId));
+            // Upload to Cloudinary
+            String folder = String.format("gallery/service-%d/type-%d", serviceTypeId, imageTypeId);
+            CloudinaryUploadResponse cloudinaryResponse = cloudinaryService.uploadFile(file, folder);
+            String imageUrl = cloudinaryResponse.getSecureUrl();
 
             // Upload image
             GalleryImageDTO imageDTO = galleryImageService.uploadImage(
-                    imageUrl,
-                    provinceId,
+                    imageUrl,                    cloudinaryResponse.getPublicId(),                    provinceId,
                     portId,
                     serviceTypeId,
                     imageTypeId,
                     userId);
+
+            // Move uploaded file to organized folder with gallery ID
+            if (imageDTO.getId() != null && cloudinaryResponse.getPublicId() != null) {
+                try {
+                    String newFolder = String.format("gallery/%d", imageDTO.getId());
+                    String oldPublicId = cloudinaryResponse.getPublicId();
+                    
+                    // Extract filename from old public_id
+                    String filename = oldPublicId.substring(oldPublicId.lastIndexOf('/') + 1);
+                    String newPublicId = newFolder + "/" + filename;
+                    
+                    // Rename/move in Cloudinary using the API
+                    Map<String, Object> renameParams = new HashMap<>();
+                    renameParams.put("invalidate", true);
+                    cloudinaryService.renameFile(oldPublicId, newPublicId);
+                    
+                    // Update database with new publicId and URL
+                    galleryImageService.updateCloudinaryInfo(imageDTO.getId(), 
+                        cloudinaryService.getUrlByPublicId(newPublicId), 
+                        newPublicId);
+                } catch (Exception e) {
+                    log.warn("Failed to reorganize file for gallery {}: {}", imageDTO.getId(), e.getMessage());
+                    // Continue - image is already uploaded and saved, just not in ideal folder
+                }
+            }
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Image uploaded successfully", imageDTO));

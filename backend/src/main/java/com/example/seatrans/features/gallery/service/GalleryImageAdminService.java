@@ -16,13 +16,14 @@ import com.example.seatrans.features.gallery.model.GalleryImage;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 import com.example.seatrans.features.gallery.repository.GalleryImageRepository;
 import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
-import com.example.seatrans.features.ports.model.Port;
-import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
-import com.example.seatrans.features.ports.repository.PortRepository;
-import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.ports.repository.PortRepository;
+import com.example.seatrans.features.provinces.model.Province;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 import com.example.seatrans.shared.mapper.EntityMapper;
+import com.example.seatrans.shared.service.CloudinaryService;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class GalleryImageAdminService {
     private final ProvinceRepository provinceRepository;
     private final PortRepository portRepository;
     private final EntityMapper entityMapper;
+    private final CloudinaryService cloudinaryService;
 
     /**
      * Check if image with same hash AND location already exists
@@ -72,10 +74,10 @@ public class GalleryImageAdminService {
     }
 
     /**
-     * Upload new gallery image
+     * Upload new gallery image with Cloudinary public ID
      */
     @SuppressWarnings("null")
-    public GalleryImageDTO uploadImage(String imageUrl, Long provinceId, Long portId,
+    public GalleryImageDTO uploadImage(String imageUrl, String cloudinaryPublicId, Long provinceId, Long portId,
             Long serviceTypeId, Long imageTypeId, Long uploadedById) {
         ServiceTypeEntity serviceType = serviceTypeRepository.findById(serviceTypeId)
                 .orElseThrow(() -> new RuntimeException("Service type not found: " + serviceTypeId));
@@ -96,13 +98,37 @@ public class GalleryImageAdminService {
                 .port(port)
                 .uploadedById(uploadedById)
                 .imageUrl(imageUrl)
+                .cloudinaryPublicId(cloudinaryPublicId)
                 .build();
 
         GalleryImage saved = galleryImageRepository.save(galleryImage);
-        log.info("Image uploaded successfully. ID: {}, Service: {}, Type: {}", saved.getId(), serviceType.getName(),
-                imageType.getName());
+        log.info("Image uploaded successfully. ID: {}, Service: {}, Type: {}, Cloudinary ID: {}", 
+                saved.getId(), serviceType.getName(), imageType.getName(), cloudinaryPublicId);
 
         return entityMapper.toGalleryImageDTO(saved);
+    }
+
+    /**
+     * Upload new gallery image (legacy method for URL-only saves)
+     */
+    @SuppressWarnings("null")
+    public GalleryImageDTO uploadImage(String imageUrl, Long provinceId, Long portId,
+            Long serviceTypeId, Long imageTypeId, Long uploadedById) {
+        return uploadImage(imageUrl, null, provinceId, portId, serviceTypeId, imageTypeId, uploadedById);
+    }
+
+    /**
+     * Update Cloudinary info after file reorganization
+     */
+    public void updateCloudinaryInfo(Long imageId, String newUrl, String newPublicId) {
+        GalleryImage image = galleryImageRepository.findById(imageId)
+                .orElseThrow(() -> new RuntimeException("Gallery image not found: " + imageId));
+        
+        image.setImageUrl(newUrl);
+        image.setCloudinaryPublicId(newPublicId);
+        galleryImageRepository.save(image);
+        
+        log.info("Updated Cloudinary info for gallery {}: {}", imageId, newPublicId);
     }
 
     /**
@@ -192,13 +218,23 @@ public class GalleryImageAdminService {
     }
 
     /**
-     * Delete image
+     * Delete image (also deletes from Cloudinary if public ID exists)
      */
     public void deleteImage(Long id) {
         GalleryImage image = galleryImageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Image not found with ID: " + id));
 
+        // Delete from Cloudinary if public ID exists
+        if (image.getCloudinaryPublicId() != null && !image.getCloudinaryPublicId().isEmpty()) {
+            boolean deleted = cloudinaryService.deleteFile(image.getCloudinaryPublicId());
+            if (deleted) {
+                log.info("Deleted image from Cloudinary: {}", image.getCloudinaryPublicId());
+            } else {
+                log.warn("Failed to delete image from Cloudinary: {}", image.getCloudinaryPublicId());
+            }
+        }
+
         galleryImageRepository.delete(image);
-        log.info("Image deleted successfully. ID: {}", id);
+        log.info("Image deleted successfully from database. ID: {}", id);
     }
 }

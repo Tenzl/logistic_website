@@ -28,6 +28,7 @@ public class PostRequest {
     private List<Long> categoryIds;
     
     private String thumbnailUrl;
+    private String thumbnailPublicId;
     
     private Boolean isPublished;
 }

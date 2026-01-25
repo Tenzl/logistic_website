@@ -33,6 +33,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
     content: '',
     categoryIds: [],
     thumbnailUrl: '',
+    thumbnailPublicId: '',
     isPublished: false,
   })
   const [uploadedImageUrl, setUploadedImageUrl] = useState('')
@@ -57,10 +58,18 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
 
     try {
       setLoading(true)
-      const url = await postService.uploadImage(file, postId)
-      setUploadedImageUrl(url)
-      toast.success("Image uploaded successfully!")
+      console.log('Uploading thumbnail to:', API_CONFIG.POSTS.UPLOAD_THUMBNAIL, 'postId:', postId)
+      const response = await postService.uploadThumbnail(file, postId)
+      console.log('Upload response:', response)
+      setUploadedImageUrl(response.secureUrl)
+      setFormData(prev => ({
+        ...prev,
+        thumbnailUrl: response.secureUrl,
+        thumbnailPublicId: response.publicId
+      }))
+      toast.success("Thumbnail uploaded successfully!")
     } catch (error: any) {
+      console.error('Upload error:', error)
       toast.error(error.message)
     } finally {
       setLoading(false)
@@ -106,6 +115,7 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
         content: post.content,
         categoryIds: post.categories?.map(cat => cat.id) || [],
         thumbnailUrl: post.thumbnailUrl || '',
+        thumbnailPublicId: post.thumbnailPublicId || '',
         isPublished: post.isPublished,
       })
     } catch (error) {
@@ -143,11 +153,22 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
     
     try {
       if (postId) {
+        // Update existing post
         await postService.updatePost(postId, formData)
         toast.success("Post updated successfully! Returning to posts...")
       } else {
-        await postService.createPost(formData)
+        // Create new post as draft first to get ID
+        const newPost = await postService.createPost({
+          ...formData,
+          isPublished: false // Force draft on creation
+        })
         toast.success("Post created successfully! Returning to posts...")
+        
+        // Redirect to edit page to allow uploads with proper folder structure
+        setTimeout(() => {
+          router.push(`/admin/posts/edit/${newPost.id}`)
+        }, 600)
+        return
       }
 
       setTimeout(() => {
@@ -293,19 +314,8 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                     </div>
                   </div>
                   {uploadedImageUrl && (
-                    <div className="mt-2 text-sm text-green-600 break-all flex items-center flex-wrap">
-                        <span className="mr-2">Uploaded: <strong>{uploadedImageUrl}</strong></span>
-                        <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 text-xs border border-gray-200 cursor-pointer"
-                            onClick={() => {
-                                setFormData({...formData, thumbnailUrl: uploadedImageUrl})
-                            }}
-                        >
-                            Use as Thumbnail
-                        </Button>
+                    <div className="mt-2 text-sm text-green-600 break-all">
+                        <span className="mr-2">✓ Uploaded to Cloudinary</span>
                     </div>
                   )}
                   {formData.thumbnailUrl && (
@@ -356,6 +366,10 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                     branding: false,
                     promotion: false,
                     images_upload_handler: handleImageUpload,
+                    paste_data_images: true,
+                    automatic_uploads: true,
+                    file_picker_types: 'image',
+                    images_reuse_filename: false,
                     image_caption: true,
                     image_title: true,
                     image_description: false

@@ -69,6 +69,9 @@ public class GalleryImage {
     @Column(name = "image_url", nullable = false, columnDefinition = "LONGTEXT")
     private String imageUrl;
     
+    @Column(name = "cloudinary_public_id", columnDefinition = "TEXT")
+    private String cloudinaryPublicId;
+    
     @PrePersist
     protected void onCreate() {
         this.uploadedAt = LocalDateTime.now();

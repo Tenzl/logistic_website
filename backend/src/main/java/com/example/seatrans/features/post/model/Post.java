@@ -65,6 +65,9 @@ public class Post {
     
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
+
+    @Column(name = "thumbnail_public_id", length = 255)
+    private String thumbnailPublicId;
     
     @Column(name = "published_at")
     private LocalDateTime publishedAt;

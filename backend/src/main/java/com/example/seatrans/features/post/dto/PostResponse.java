@@ -23,6 +23,7 @@ public class PostResponse {
     private String authorName;
     private List<CategoryResponse> categories;
     private String thumbnailUrl;
+    private String thumbnailPublicId;
     private LocalDateTime publishedAt;
     private Boolean isPublished;
     private Integer viewCount;

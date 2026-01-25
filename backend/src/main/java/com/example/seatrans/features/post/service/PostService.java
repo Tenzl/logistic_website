@@ -2,6 +2,7 @@ package com.example.seatrans.features.post.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ import com.example.seatrans.features.post.model.PostImage;
 import com.example.seatrans.features.post.repository.CategoryRepository;
 import com.example.seatrans.features.post.repository.PostImageRepository;
 import com.example.seatrans.features.post.repository.PostRepository;
+import com.example.seatrans.shared.service.CloudinaryService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +43,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostImageRepository postImageRepository;
     private final CategoryRepository categoryRepository;
+    private final CloudinaryService cloudinaryService;
     
     /**
      * Create a new post
@@ -48,6 +51,8 @@ public class PostService {
     public PostResponse createPost(PostRequest request, String email) {
         log.info("Creating post with title: {}", request.getTitle());
         
+        validateThumbnail(request);
+
         User author = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Author not found"));
         
@@ -56,6 +61,7 @@ public class PostService {
             .content(request.getContent())
             .author(author)
             .thumbnailUrl(request.getThumbnailUrl())
+            .thumbnailPublicId(request.getThumbnailPublicId())
             .isPublished(Boolean.TRUE.equals(request.getIsPublished()))
             .build();
         
@@ -92,10 +98,28 @@ public class PostService {
         
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
+
+        validateThumbnail(request);
         
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        post.setThumbnailUrl(request.getThumbnailUrl());
+
+        // Replace thumbnail only when a new one is provided
+        if (request.getThumbnailUrl() != null || request.getThumbnailPublicId() != null) {
+            String oldPublicId = post.getThumbnailPublicId();
+            String newPublicId = request.getThumbnailPublicId();
+
+            if (newPublicId != null && !Objects.equals(oldPublicId, newPublicId) && oldPublicId != null) {
+                cloudinaryService.deleteFile(oldPublicId);
+            }
+
+            if (request.getThumbnailUrl() != null) {
+                post.setThumbnailUrl(request.getThumbnailUrl());
+            }
+            if (request.getThumbnailPublicId() != null) {
+                post.setThumbnailPublicId(request.getThumbnailPublicId());
+            }
+        }
         
         // Handle publish status change
         if (request.getIsPublished() != null && !request.getIsPublished().equals(post.getIsPublished())) {
@@ -135,11 +159,23 @@ public class PostService {
     public void deletePost(Long id) {
         log.info("Deleting post with ID: {}", id);
         
-        if (!postRepository.existsById(id)) {
-            throw new RuntimeException("Post not found with id: " + id);
+        Post post = postRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
+
+        // Remove thumbnail from Cloudinary if present
+        if (post.getThumbnailPublicId() != null) {
+            cloudinaryService.deleteFile(post.getThumbnailPublicId());
         }
-        
-        postRepository.deleteById(id);
+
+        // Remove post images from Cloudinary if present
+        if (post.getImages() != null) {
+            post.getImages().stream()
+                .map(PostImage::getCloudinaryPublicId)
+                .filter(Objects::nonNull)
+                .forEach(cloudinaryService::deleteFile);
+        }
+
+        postRepository.delete(post);
         log.info("Post deleted: {}", id);
     }
     
@@ -273,7 +309,16 @@ public class PostService {
     /**
      * Save post image
      */
-    public void savePostImage(Long postId, String url) {
+    public void savePostImage(Long postId, String url, String cloudinaryPublicId) {
+        // Validate Cloudinary URL and publicId
+        if (url == null || cloudinaryPublicId == null) {
+            throw new RuntimeException("Ảnh post phải có URL và publicId từ Cloudinary");
+        }
+        
+        if (!isCloudinaryUrl(url)) {
+            throw new RuntimeException("Ảnh post phải được upload qua Cloudinary");
+        }
+
         if (postId != null) {
             Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + postId));
@@ -281,14 +326,15 @@ public class PostService {
             PostImage postImage = PostImage.builder()
                 .post(post)
                 .url(url)
+                .cloudinaryPublicId(cloudinaryPublicId)
                 .build();
             
             postImageRepository.save(postImage);
         } else {
             // If no post ID, we just save the image record without a post link for now
-            // Or we could just skip saving to DB if we only care about linked images
             PostImage postImage = PostImage.builder()
                 .url(url)
+                .cloudinaryPublicId(cloudinaryPublicId)
                 .build();
             postImageRepository.save(postImage);
         }
@@ -314,12 +360,40 @@ public class PostService {
             .authorName(post.getAuthor().getFullName() != null ? post.getAuthor().getFullName() : post.getAuthor().getEmail())
             .categories(categories)
             .thumbnailUrl(post.getThumbnailUrl())
+            .thumbnailPublicId(post.getThumbnailPublicId())
             .publishedAt(post.getPublishedAt())
             .isPublished(post.getIsPublished())
             .viewCount(post.getViewCount())
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * Ensure thumbnail info is Cloudinary-only and consistent
+     */
+    private void validateThumbnail(PostRequest request) {
+        String url = request.getThumbnailUrl();
+        String publicId = request.getThumbnailPublicId();
+
+        // Allow both to be null (no thumbnail)
+        if (url == null && publicId == null) {
+            return;
+        }
+
+        // If either is provided, both must be provided
+        if ((url == null) != (publicId == null)) {
+            throw new RuntimeException("Thumbnail URL và publicId phải được cung cấp cùng nhau");
+        }
+
+        if (url != null && !isCloudinaryUrl(url)) {
+            throw new RuntimeException("Thumbnail phải được upload qua Cloudinary");
+        }
+    }
+
+    private boolean isCloudinaryUrl(String url) {
+        String lower = url.toLowerCase();
+        return lower.contains("cloudinary.com");
     }
 }
 

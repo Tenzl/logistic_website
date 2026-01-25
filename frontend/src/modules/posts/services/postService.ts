@@ -21,6 +21,7 @@ export interface Post {
   tags?: string[]
   readingTime?: number
   thumbnailUrl?: string
+  thumbnailPublicId?: string
   publishedAt?: string
   isPublished: boolean
   viewCount: number
@@ -33,7 +34,20 @@ export interface PostRequest {
   content: string
   categoryIds?: number[]
   thumbnailUrl?: string
+  thumbnailPublicId?: string
   isPublished?: boolean
+}
+
+export interface CloudinaryUploadResponse {
+  secureUrl: string
+  publicId: string
+  url: string
+  format: string
+  bytes: number
+  width: number
+  height: number
+  resourceType: string
+  originalFilename: string
 }
 
 const mapPost = (raw: any): Post => {
@@ -188,6 +202,27 @@ export const postService = {
     }
 
     const result: ApiResponse<string> = await response.json()
-    return `${API_CONFIG.ASSET_BASE_URL}${result.data}`
+    return result.data
+  },
+
+  uploadThumbnail: async (file: File, postId?: number): Promise<CloudinaryUploadResponse> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (postId) {
+      formData.append('postId', postId.toString())
+    }
+
+    const response = await apiClient.post<ApiResponse<CloudinaryUploadResponse>>(
+      API_CONFIG.POSTS.UPLOAD_THUMBNAIL,
+      formData
+    )
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to upload thumbnail')
+    }
+
+    const result: ApiResponse<CloudinaryUploadResponse> = await response.json()
+    return result.data
   },
 }

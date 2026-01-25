@@ -22,6 +22,8 @@ import com.example.seatrans.features.post.dto.PostRequest;
 import com.example.seatrans.features.post.dto.PostResponse;
 import com.example.seatrans.features.post.service.PostService;
 import com.example.seatrans.shared.dto.ApiResponse;
+import com.example.seatrans.shared.dto.CloudinaryUploadResponse;
+import com.example.seatrans.shared.service.CloudinaryService;
 import com.example.seatrans.shared.util.FileUploadUtil;
 
 import jakarta.validation.Valid;
@@ -42,6 +44,7 @@ public class PostController {
     
     private final PostService postService;
     private final FileUploadUtil fileUploadUtil;
+    private final CloudinaryService cloudinaryService;
     
     /**
      * Get all posts (admin view - includes unpublished)
@@ -128,7 +131,7 @@ public class PostController {
 
     /**
      * Upload image for post content
-     * POST /api/admin/posts/upload-image
+         * POST /api/admin/posts/upload-image
      */
     @PostMapping("/upload-image")
     public ResponseEntity<ApiResponse<String>> uploadImage(
@@ -139,20 +142,42 @@ public class PostController {
             if (error != null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(error));
             }
+            // Upload to Cloudinary with organized folder structure
+            String folder = postId != null 
+                ? String.format("posts/%d/content", postId)
+                : "posts/content";
+            CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadFile(file, folder);
+            postService.savePostImage(postId, uploadResponse.getSecureUrl(), uploadResponse.getPublicId());
             
-            String path = fileUploadUtil.saveFile(file, "posts", "content");
-            // Ensure path starts with / for web access
-            if (!path.startsWith("/")) {
-                path = "/" + path;
-            }
-            
-            // Save to database
-            postService.savePostImage(postId, path);
-            
-            return ResponseEntity.ok(ApiResponse.success("Image uploaded successfully", path));
+            return ResponseEntity.ok(ApiResponse.success("Image uploaded successfully", uploadResponse.getSecureUrl()));
         } catch (Exception e) {
             log.error("Error uploading image", e);
             return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to upload image"));
+        }
+    }
+
+    /**
+     * Upload thumbnail for a post
+     * POST /api/admin/posts/upload-thumbnail
+     */
+    @PostMapping("/upload-thumbnail")
+    public ResponseEntity<ApiResponse<CloudinaryUploadResponse>> uploadThumbnail(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "postId", required = false) Long postId) {
+        try {
+            String error = fileUploadUtil.validateFile(file);
+            if (error != null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(error));
+            }
+
+            String folder = postId != null 
+                ? String.format("posts/%d/thumbnail", postId)
+                : "posts/thumbnails";
+            CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadFile(file, folder);
+            return ResponseEntity.ok(ApiResponse.success("Thumbnail uploaded successfully", uploadResponse));
+        } catch (Exception e) {
+            log.error("Error uploading thumbnail", e);
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to upload thumbnail"));
         }
     }
 }

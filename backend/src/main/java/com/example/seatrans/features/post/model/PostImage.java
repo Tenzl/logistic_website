@@ -34,6 +34,9 @@ public class PostImage {
     
     @Column(nullable = false)
     private String url;
+
+    @Column(name = "cloudinary_public_id")
+    private String cloudinaryPublicId;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")

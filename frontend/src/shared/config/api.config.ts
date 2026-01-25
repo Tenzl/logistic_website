@@ -108,6 +108,7 @@ export const API_CONFIG = {
     PUBLISH: (id: number) => `/admin/posts/${id}/publish`,
     UNPUBLISH: (id: number) => `/admin/posts/${id}/unpublish`,
     UPLOAD_IMAGE: '/admin/posts/upload-image',
+    UPLOAD_THUMBNAIL: '/admin/posts/upload-thumbnail',
   },
 
   CATEGORIES: {
