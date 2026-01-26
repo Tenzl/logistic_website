@@ -83,3 +83,6 @@ frontend/node_modules
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+
+# Application config (sensitive)
+backend/.gitignore
