@@ -49,14 +49,15 @@ function AuthCallbackContent() {
             if (data.success && data.data) {
               localStorage.setItem('auth_user', JSON.stringify(data.data))
             }
-            router.push('/')
+            // Force page reload to trigger AuthContext re-initialization
+            window.location.href = '/'
           })
           .catch(() => {
-            router.push('/')
+            window.location.href = '/'
           })
       } catch (err) {
         console.error('Failed to handle auth callback', err)
-        router.push('/')
+        window.location.href = '/'
       }
     } else {
       router.push('/login')

@@ -52,7 +52,7 @@ services:
         sync: false
       
       - key: GOOGLE_REDIRECT_URI
-        value: https://logistic-website-h0kv.onrender.com/api/auth/oauth2/callback/google
+        value: https://logistic-website-h0kv.onrender.com/api/v1/auth/oauth2/callback/google
       
       # CORS origins
       - key: CORS_ALLOWED_ORIGINS

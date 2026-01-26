@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { authService } from '@/modules/auth/services/authService'
-import { ChevronsUpDown } from 'lucide-react'
+import { ChevronsUpDown, AlertCircle } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -133,7 +133,7 @@ export function FormSection({
   const [submitting, setSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, profileComplete } = useAuth()
   // User fields we may want to preserve on reset
   const userFieldIds = ['fullName', 'company', 'email', 'phone']
   
@@ -513,6 +513,20 @@ export function FormSection({
                 </Alert>
               )}
 
+              {isAuthenticated && !profileComplete && (
+                <Alert variant="destructive" className="mb-6">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 mt-0.5" />
+                    <AlertDescription className="flex-1">
+                      Please complete your profile before submitting an inquiry.
+                      <Link href="/dashboard" className="ml-1 underline font-semibold">
+                        Complete Profile
+                      </Link>
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              )}
+
               {submitMessage && (
                 <Alert className="mb-4">
                   <AlertTitle>Success</AlertTitle>
@@ -614,9 +628,9 @@ export function FormSection({
                   type="submit"
                   className="w-full hover-lift"
                   size="lg"
-                  disabled={submitting || !isAuthenticated || !form.serviceTypeId || hasNegativeNumbers}
+                  disabled={submitting || !isAuthenticated || !profileComplete || !form.serviceTypeId || hasNegativeNumbers}
                 >
-                  {submitting ? 'Đang gửi...' : form.submitButtonText}
+                  {submitting ? 'Đang gửi...' : (!profileComplete && isAuthenticated) ? 'Complete Profile First' : form.submitButtonText}
                 </Button>
               </form>
             </CardContent>

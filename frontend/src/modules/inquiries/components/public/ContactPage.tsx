@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowUp, Upload, X } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowUp, Upload, X, AlertCircle } from 'lucide-react'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -11,6 +11,8 @@ import { useAuth } from '@/modules/auth/context/AuthContext'
 import { toast } from 'sonner'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
+import Link from 'next/link'
 import {
   FileUpload,
   FileUploadDropzone,
@@ -60,7 +62,7 @@ interface Department {
 }
 
 export function ContactPage({ onNavigateHome }: ContactPageProps) {
-  const { user } = useAuth()
+  const { user, profileComplete } = useAuth()
   const [heroRef, heroVisible] = useIntersectionObserver({ threshold: 0.1 })
   const [mapRef, mapVisible] = useIntersectionObserver({ threshold: 0.1 })
   const [departmentsRef, departmentsVisible] = useIntersectionObserver({ threshold: 0.1 })
@@ -741,6 +743,21 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
               </div>
             ) : (
               <div className="bg-card border rounded-lg p-8 shadow-sm">
+                {/* Profile Incomplete Warning */}
+                {user && !profileComplete && (
+                  <Alert variant="destructive" className="mb-6">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 mt-0.5" />
+                      <AlertDescription className="flex-1">
+                        Please complete your profile before submitting a request.
+                        <Link href="/dashboard" className="ml-1 underline font-medium">
+                          Complete Profile
+                        </Link>
+                      </AlertDescription>
+                    </div>
+                  </Alert>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Contact Information - Only show when not authenticated */}
                   {!user && (
@@ -937,9 +954,14 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     </FileUpload>
                   </div>
 
-                  <Button type="submit" className="w-full hover-lift" size="lg">
+                  <Button 
+                    type="submit" 
+                    className="w-full hover-lift" 
+                    size="lg"
+                    disabled={user ? !profileComplete : false}
+                  >
                     <Send className="mr-2 h-5 w-5" />
-                    Submit Request
+                    {user && !profileComplete ? 'Complete Profile First' : 'Submit Request'}
                   </Button>
 
                   <p className="text-sm text-muted-foreground text-center">

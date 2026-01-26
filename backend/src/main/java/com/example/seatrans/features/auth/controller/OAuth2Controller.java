@@ -123,8 +123,10 @@ public class OAuth2Controller {
             UserDTO userDTO = entityMapper.toUserDTO(user);
             
             // Redirect to frontend with tokens
+            String frontendBase = System.getenv().getOrDefault("FRONTEND_BASE_URL", "http://localhost:3000");
             String frontendUrl = String.format(
-                "http://localhost:3000/auth/callback?token=%s&refreshToken=%s",
+                "%s/auth/callback?token=%s&refreshToken=%s",
+                frontendBase,
                 jwtToken,
                 refreshToken
             );
