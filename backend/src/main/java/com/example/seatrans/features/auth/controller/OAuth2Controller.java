@@ -55,7 +55,7 @@ public class OAuth2Controller {
         String authUrl = String.format(
             "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=profile email",
             googleClientId,
-            redirectUri.replace("{baseUrl}", "http://localhost:8080")
+            redirectUri
         );
         
         return ResponseEntity.ok(Map.of("authUrl", authUrl));
@@ -75,7 +75,7 @@ public class OAuth2Controller {
                 "code", code,
                 "client_id", googleClientId,
                 "client_secret", googleClientSecret,
-                "redirect_uri", redirectUri.replace("{baseUrl}", "http://localhost:8080"),
+                "redirect_uri", redirectUri,
                 "grant_type", "authorization_code"
             );
             

@@ -216,10 +216,10 @@ export function GallerySection({
                             <div className="absolute bottom-4 left-4 right-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                               <div className="space-y-2">
                                 <div className="flex gap-2 flex-wrap">
-                                  <Badge variant="secondary" className="bg-white/90 text-black text-xs">
+                                  <Badge variant="secondary" className="bg-white/90 text-primary text-xs font-semibold">
                                     {image.imageTypeName}
                                   </Badge>
-                                  <Badge variant="secondary" className="bg-white/90 text-black text-xs">
+                                  <Badge variant="secondary" className="bg-white/90 text-primary text-xs font-semibold">
                                     {image.provinceName}
                                   </Badge>
                                 </div>
