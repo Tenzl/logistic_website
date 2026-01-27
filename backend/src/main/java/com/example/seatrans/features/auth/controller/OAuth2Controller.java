@@ -138,9 +138,10 @@ public class OAuth2Controller {
                 
         } catch (Exception e) {
             log.error("OAuth2 callback error", e);
+            String frontendBase = System.getenv().getOrDefault("FRONTEND_BASE_URL", "http://localhost:3000");
             return ResponseEntity
                 .status(HttpStatus.FOUND)
-                .header("Location", "http://localhost:3000/login?error=oauth_failed")
+                .header("Location", frontendBase + "/login?error=oauth_failed")
                 .body("Authentication failed");
         }
     }

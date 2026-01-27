@@ -54,9 +54,13 @@ services:
       - key: GOOGLE_REDIRECT_URI
         value: https://logistic-website-h0kv.onrender.com/api/v1/auth/oauth2/callback/google
       
+      # Frontend base URL for OAuth redirect
+      - key: FRONTEND_BASE_URL
+        value: https://logistic-website-3dyz.vercel.app
+      
       # CORS origins
       - key: CORS_ALLOWED_ORIGINS
-        value: https://seatrans.vercel.app,http://localhost:3000
+        value: https://logistic-website-3dyz.vercel.app,http://localhost:3000
       
       # Upload directories
       - key: APP_UPLOAD_DIR
