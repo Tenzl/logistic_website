@@ -14,7 +14,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
@@ -30,9 +29,7 @@ import lombok.NoArgsConstructor;
  * Contains specific fields for port disbursement account inquiries
  */
 @Entity
-@Table(name = "shipping_agency_inquiries", indexes = {
-    @Index(name = "idx_shipping_port", columnList = "port_id")
-})
+@Table(name = "shipping_agency_inquiries")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
