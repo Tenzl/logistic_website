@@ -8,7 +8,6 @@
             "@dnd-kit/sortable": "^10.0.0",
             "@dnd-kit/utilities": "^3.2.2",
             "@hookform/resolvers": "^5.2.2",
-            "@mertdeveci55/univer-import-export": "^0.1.51",
             "@radix-ui/react-accordion": "^1.2.12",
             "@radix-ui/react-alert-dialog": "^1.1.15",
             "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -46,10 +45,6 @@
             "@types/react": "^19.2.7",
             "@types/react-dom": "^19.2.3",
             "@types/react-simple-maps": "^3.0.6",
-            "@univerjs/preset-sheets-advanced": "^0.14.0",
-            "@univerjs/preset-sheets-core": "^0.14.0",
-            "@univerjs/preset-sheets-drawing": "^0.14.0",
-            "@univerjs/presets": "^0.14.0",
             "axios": "^1.13.2",
             "class-variance-authority": "^0.7.1",
             "clsx": "^2.1.1",
@@ -83,7 +78,6 @@
             "tailwindcss-animate": "^1.0.7",
             "tinymce": "^8.2.2",
             "vaul": "^1.1.2",
-            "xlsx": "^0.18.5",
             "zod": "^4.2.1"
       },
       "devDependencies": {
