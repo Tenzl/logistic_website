@@ -66,9 +66,8 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
       )
 
       if (result.success) {
-        // Redirect to login page for email verification
-        // In the future, this will require email verification before login
-        onNavigateLogin()
+        // User is automatically logged in after registration
+        window.location.href = '/'
       } else {
         setError(result.message || 'Registration failed. Please try again.')
       }
@@ -96,13 +95,14 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
             <CardDescription>Fill in your details to create your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-md text-sm">
-                {error}
-              </div>
-            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
 
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
@@ -227,12 +227,13 @@ export function Signup({ onNavigateHome, onNavigateLogin, onSignupSuccess }: Sig
               </Label>
             </div>
 
-            <Pending isPending={isLoading} disabled={!agreeToTerms}>
-              <Button type="submit" className="w-full">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </Button>
-            </Pending>
+              <Pending isPending={isLoading} disabled={!agreeToTerms}>
+                <Button type="submit" className="w-full">
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                </Button>
+              </Pending>
+            </form>
           </CardContent>
           <CardFooter className="flex flex-col gap-3 border-t pt-4">
             <p className="text-center text-sm text-muted-foreground">

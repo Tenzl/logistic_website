@@ -91,6 +91,22 @@ public class InquiryDocumentController {
     }
 
     /**
+     * Convert stored Cloudinary URL to raw delivery (needed for PDFs uploaded as raw).
+     * If url is null/blank, returns null.
+     */
+    private String buildCloudinaryPdfUrl(String storedUrl) {
+        if (storedUrl == null || storedUrl.isBlank()) {
+            return null;
+        }
+        // If already raw delivery, keep as-is
+        if (storedUrl.contains("/raw/upload/")) {
+            return storedUrl;
+        }
+        // If it was uploaded as image/upload but actually is a PDF, switch to raw/upload path
+        return storedUrl.replace("/image/upload/", "/raw/upload/");
+    }
+
+    /**
      * Get all documents for a service-specific inquiry
      * GET /api/inquiries/{serviceSlug}/{targetId}/documents
      * 
@@ -146,6 +162,9 @@ public class InquiryDocumentController {
     /**
      * Preview document file (Bypass IDM interception by not using 'download' keyword)
      * GET /api/inquiries/{serviceSlug}/{targetId}/documents/view/{documentId}
+     * 
+     * This endpoint proxies the file content to avoid CORS issues with Cloudinary
+     * and to support PDF.js which cannot follow 302 redirects properly.
      */
     @GetMapping("/{serviceSlug}/{targetId}/documents/view/{documentId}")
     public ResponseEntity<?> previewDocument(
@@ -161,6 +180,41 @@ public class InquiryDocumentController {
                     .body(ApiResponse.error("Document does not belong to the specified inquiry"));
             }
             
+            // If stored on Cloudinary, proxy the file content instead of redirecting
+            // This avoids CORS issues and allows PDF.js to properly load the file
+            String cloudinaryUrl = document.getCloudinaryUrl();
+            if (cloudinaryUrl != null && !cloudinaryUrl.isBlank()) {
+                try {
+                    // Fetch the file from Cloudinary and proxy it
+                    java.net.URL url = new java.net.URL(cloudinaryUrl);
+                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(10000);
+                    conn.setReadTimeout(30000);
+                    
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode == 200) {
+                        byte[] fileContent = conn.getInputStream().readAllBytes();
+                        conn.disconnect();
+                        
+                        return ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                            .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileContent.length))
+                            .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400") // Cache for 1 day
+                            .body(fileContent);
+                    } else {
+                        conn.disconnect();
+                        log.warn("Cloudinary returned {} for document {}", responseCode, documentId);
+                        return ResponseEntity.status(responseCode)
+                            .body(ApiResponse.error("Failed to fetch document from storage"));
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to proxy document from Cloudinary: {}", documentId, e);
+                    return ResponseEntity.status(500)
+                        .body(ApiResponse.error("Failed to fetch document from storage"));
+                }
+            }
+            
             Path filePath = Paths.get(document.getFilePath());
             if (!Files.exists(filePath)) {
                 return ResponseEntity.notFound().build();
@@ -169,8 +223,7 @@ public class InquiryDocumentController {
             byte[] fileContent = Files.readAllBytes(filePath);
 
             return ResponseEntity.ok()
-                // Use generic type to avoid IDM detection (react-pdf can still parse it)
-                .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileContent.length))
                 .body(fileContent);
             
@@ -191,6 +244,14 @@ public class InquiryDocumentController {
             if (!document.getServiceSlug().equals(serviceSlug) || !document.getTargetId().equals(targetId)) {
                 return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Document does not belong to the specified inquiry"));
+            }
+            
+            // If stored on Cloudinary, redirect to raw delivery URL (PDFs require raw resource type)
+            String cloudinaryUrl = buildCloudinaryPdfUrl(document.getCloudinaryUrl());
+            if (cloudinaryUrl != null) {
+                return ResponseEntity.status(302)
+                    .header(HttpHeaders.LOCATION, cloudinaryUrl)
+                    .build();
             }
             
             Path filePath = Paths.get(document.getFilePath());

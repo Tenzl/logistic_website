@@ -1,12 +1,8 @@
 package com.example.seatrans.features.inquiry.service;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +18,8 @@ import com.example.seatrans.features.inquiry.dto.InquiryDocumentDTO;
 import com.example.seatrans.features.inquiry.model.InquiryDocument;
 import com.example.seatrans.features.inquiry.model.InquiryDocument.DocumentType;
 import com.example.seatrans.features.inquiry.repository.InquiryDocumentRepository;
+import com.example.seatrans.shared.dto.CloudinaryUploadResponse;
+import com.example.seatrans.shared.service.CloudinaryService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,18 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class InquiryDocumentService {
 
-    @Value("${app.upload.dir:uploads/inquiries}")
-    private String uploadDir;
-
     @Value("${app.upload.max-file-size:10485760}") // 10 MB default
     private Long maxFileSize;
 
-    private static final String[] ALLOWED_EXTENSIONS = {".pdf"};
     private static final String[] ALLOWED_MIME_TYPES = {"application/pdf"};
-    private static final Long BUFFER_SIZE = 1024L * 1024L; // 1 MB
 
     private final InquiryDocumentRepository documentRepository;
     private final UserService userService;
+    private final CloudinaryService cloudinaryService;
 
     /**
      * Tải lên tài liệu cho inquiry
@@ -62,42 +56,37 @@ public class InquiryDocumentService {
         // 1. Validation
         validateFile(file);
         
-        // 2. Generate secure file name
-        String secureFileName = generateSecureFileName(file.getOriginalFilename());
-        String filePath = buildFilePath(serviceSlug, targetId, secureFileName);
+        // 2. Upload to Cloudinary
+        String cloudinaryFolder = "pdf";
+        CloudinaryUploadResponse cloudinaryResponse = cloudinaryService.uploadFile(file, cloudinaryFolder);
         
-        // 4. Calculate checksum
+        // 3. Calculate checksum
         String checksum = calculateChecksum(file.getBytes());
-
-        // 5. Create directory if not exists
-        Path targetPath = Paths.get(filePath);
-        Files.createDirectories(targetPath.getParent());
-
-        // 6. Save file
-        Files.write(targetPath, file.getBytes());
         
-        // 3. Create document entity
+        // 4. Create document entity
         User uploadedBy = userService.getUserById(userId);
         InquiryDocument document = InquiryDocument.builder()
             .serviceSlug(serviceSlug)
             .targetId(targetId)
             .documentType(documentType)
-            .fileName(secureFileName)
+            .fileName(cloudinaryResponse.getPublicId())
             .originalFileName(file.getOriginalFilename())
-            .filePath(filePath)
+            .filePath(cloudinaryResponse.getSecureUrl()) // Store Cloudinary URL
             .fileSize(file.getSize())
             .mimeType(file.getContentType())
             .description(description)
             .uploadedBy(uploadedBy)
             .checksum(checksum)
+            .cloudinaryUrl(cloudinaryResponse.getSecureUrl())
+            .cloudinaryPublicId(cloudinaryResponse.getPublicId())
             .version(1)
             .isActive(true)
             .build();
         
         InquiryDocument saved = documentRepository.save(document);
 
-        log.info("Document uploaded successfully: id={}, service={}, target={}, type={}, file={}", 
-                 saved.getId(), serviceSlug, targetId, documentType, secureFileName);
+        log.info("Document uploaded to Cloudinary: id={}, service={}, target={}, type={}, publicId={}", 
+                 saved.getId(), serviceSlug, targetId, documentType, cloudinaryResponse.getPublicId());
 
         return mapToDTO(saved);
     }
@@ -145,16 +134,19 @@ public class InquiryDocumentService {
     }
 
     /**
-     * Hard delete tài liệu (xóa từ hệ thống tệp)
+     * Hard delete tài liệu (xóa từ Cloudinary và database)
      */
     public void hardDeleteDocument(Long documentId) throws IOException {
         InquiryDocument document = getDocumentById(documentId);
         
-        // Delete file from filesystem
-        Path filePath = Paths.get(document.getFilePath());
-        if (Files.exists(filePath)) {
-            Files.delete(filePath);
-            log.info("File deleted from filesystem: {}", document.getFilePath());
+        // Delete file from Cloudinary if public ID exists
+        if (document.getCloudinaryPublicId() != null && !document.getCloudinaryPublicId().isEmpty()) {
+            boolean deleted = cloudinaryService.deleteFile(document.getCloudinaryPublicId());
+            if (deleted) {
+                log.info("File deleted from Cloudinary: {}", document.getCloudinaryPublicId());
+            } else {
+                log.warn("Failed to delete file from Cloudinary: {}", document.getCloudinaryPublicId());
+            }
         }
         
         // Delete from database
@@ -201,42 +193,6 @@ public class InquiryDocumentService {
     }
 
     /**
-     * Tạo tên tệp an toàn (ngăn chặn directory traversal)
-     */
-    private String generateSecureFileName(String originalFileName) {
-        if (originalFileName == null) {
-            originalFileName = "document.pdf";
-        }
-        
-        // Remove path components
-        String fileName = Paths.get(originalFileName).getFileName().toString();
-        
-        // Generate random prefix
-        String randomId = generateRandomId();
-        
-        // Remove special characters, keep only alphanumeric and dots
-        String sanitized = fileName.replaceAll("[^a-zA-Z0-9.-]", "_");
-        
-        return randomId + "_" + sanitized;
-    }
-
-    /**
-     * Tạo random ID cho tệp
-     */
-    private String generateRandomId() {
-        byte[] randomBytes = new byte[8];
-        new SecureRandom().nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-    }
-
-    /**
-     * Tạo đường dẫn tệp
-     */
-    private String buildFilePath(String serviceSlug, Long targetId, String fileName) {
-        return Paths.get(uploadDir, serviceSlug + "_" + targetId, fileName).toString();
-    }
-
-    /**
      * Tính toán checksum SHA-256
      */
     private String calculateChecksum(byte[] fileContent) {
@@ -270,6 +226,8 @@ public class InquiryDocumentService {
             .version(document.getVersion())
             .checksum(document.getChecksum())
             .isActive(document.getIsActive())
+            .cloudinaryUrl(document.getCloudinaryUrl())
+            .cloudinaryPublicId(document.getCloudinaryPublicId())
             .build();
     }
 }

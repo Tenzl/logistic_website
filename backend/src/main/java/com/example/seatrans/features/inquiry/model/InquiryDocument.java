@@ -92,6 +92,12 @@ public class InquiryDocument {
     @Column(name = "checksum", length = 64)
     private String checksum;
 
+    @Column(name = "cloudinary_url", columnDefinition = "TEXT")
+    private String cloudinaryUrl;
+
+    @Column(name = "cloudinary_public_id", columnDefinition = "TEXT")
+    private String cloudinaryPublicId;
+
     @PrePersist
     protected void onCreate() {
         uploadedAt = LocalDateTime.now();

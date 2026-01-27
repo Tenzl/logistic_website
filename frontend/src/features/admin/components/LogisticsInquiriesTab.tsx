@@ -71,7 +71,7 @@ export function LogisticsInquiriesTab() {
   const [selected, setSelected] = useState<LogisticsInquiry | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  const SERVICE_SLUG = 'logistics'
+  const SERVICE_SLUG = 'total-logistics'
   const ADMIN_BASE = `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${SERVICE_SLUG}`
 
   const fetchData = async () => {

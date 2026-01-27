@@ -102,9 +102,9 @@ public class Post {
             isPublished = false;
         }
         if (viewCount == null) {
-            // Random initial view count between 10000 and 15000
+            // Random initial view count between 5000 and 9000
             Random random = new Random();
-            viewCount = 10000 + random.nextInt(5001); // 10000 + [0-5000] = [10000-15000]
+            viewCount = 5000 + random.nextInt(4001); // 5000 + [0-4000] = [5000-9000]
         }
     }
     

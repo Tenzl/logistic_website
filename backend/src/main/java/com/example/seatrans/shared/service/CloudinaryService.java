@@ -26,8 +26,9 @@ public class CloudinaryService {
 
     private final Cloudinary cloudinary;
 
-    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
-        "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
+    private static final Set<String> ALLOWED_FILE_TYPES = Set.of(
+        "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+        "application/pdf"
     );
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -41,7 +42,10 @@ public class CloudinaryService {
         try {
             Map<String, Object> uploadParams = new HashMap<>();
             uploadParams.put("folder", folder);
-            uploadParams.put("resource_type", "auto");
+            String contentType = file.getContentType() != null ? file.getContentType().toLowerCase() : "";
+            boolean isPdf = contentType.contains("pdf");
+            // Force PDF to use raw delivery to avoid image-specific delivery restrictions
+            uploadParams.put("resource_type", isPdf ? "raw" : "auto");
             uploadParams.put("overwrite", true);
             
             // Generate unique filename (folder is already set above)
@@ -162,9 +166,9 @@ public class CloudinaryService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+        if (contentType == null || !ALLOWED_FILE_TYPES.contains(contentType.toLowerCase())) {
             throw new FileUploadException(
-                "Invalid file type. Allowed types: " + String.join(", ", ALLOWED_IMAGE_TYPES)
+                "Invalid file type. Allowed types: " + String.join(", ", ALLOWED_FILE_TYPES)
             );
         }
     }

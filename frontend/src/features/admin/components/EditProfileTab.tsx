@@ -232,16 +232,18 @@ export function EditProfileTab() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="w-5 h-5" />
-            Change Password
-          </CardTitle>
-          <CardDescription>
-            Update your password to keep your account secure
-          </CardDescription>
-        </CardHeader>
+      {/* Only show Change Password section for non-OAuth users */}
+      {!user?.oauthProvider && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5" />
+              Change Password
+            </CardTitle>
+            <CardDescription>
+              Update your password to keep your account secure
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="flex justify-end mb-4">
             {!editingPassword ? (
@@ -313,6 +315,7 @@ export function EditProfileTab() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }

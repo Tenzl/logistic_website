@@ -74,10 +74,6 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const [departments, setDepartments] = useState<Department[]>([])
   const [provincesWithPorts, setProvincesWithPorts] = useState<Province[]>([])
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    company: '',
     subject: '',
     office: '',
     department: '',
@@ -259,6 +255,14 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Require authentication
+    if (!user) {
+      toast.error('Authentication Required', {
+        description: 'Please log in to submit a request.'
+      })
+      return
+    }
+    
     try {
       // Create FormData for file upload
       const submitData = new FormData()
@@ -266,10 +270,6 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       // Add inquiry data as JSON
       const inquiryData = {
         serviceTypeSlug: 'special-request',
-        fullName: user ? user.fullName : formData.fullName,
-        email: user ? user.email : formData.email,
-        phone: user ? (user.phone || '') : formData.phone,
-        company: user ? (user.company || '') : formData.company,
         subject: formData.subject,
         preferredProvinceId: formData.office ? parseInt(formData.office) : null,
         relatedDepartmentId: formData.department ? parseInt(formData.department) : null,
@@ -293,34 +293,32 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       console.log('FormData Files Count:', submitData.getAll('files').length)
       
       // Submit to backend
-      const response = await apiClient.post(API_CONFIG.INQUIRIES.SUBMIT, submitData, {
-        skipAuth: true,
-      })
+      const response = await apiClient.post(API_CONFIG.INQUIRIES.SUBMIT, submitData)
       
       if (response.ok) {
-        console.log('Special request submitted successfully')
-        setFormSubmitted(true)
+        toast.success('Request Sent Successfully', {
+          description: 'Your inquiry has been submitted. We will contact you shortly.'
+        })
         
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          setFormSubmitted(false)
-          setFormData({
-            fullName: '',
-            email: '',
-            phone: '',
-            company: '',
-            subject: '',
-            office: '',
-            department: '',
-            message: ''
-          })
-          setFiles([])
-        }, 3000)
+        // Reset form
+        setFormData({
+          subject: '',
+          office: '',
+          department: '',
+          message: ''
+        })
+        setFiles([])
       } else {
-        console.error('Failed to submit special request')
+        const errorData = await response.json().catch(() => ({}))
+        toast.error('Submission Failed', {
+          description: errorData?.message || 'Failed to submit your request. Please try again.'
+        })
       }
     } catch (error) {
       console.error('Error submitting special request:', error)
+      toast.error('Submission Error', {
+        description: 'An unexpected error occurred. Please try again.'
+      })
     }
   }
 
@@ -759,73 +757,6 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Contact Information - Only show when not authenticated */}
-                  {!user && (
-                    <>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        {/* Full Name */}
-                        <div>
-                          <Label htmlFor="fullName">Full Name *</Label>
-                          <Input
-                            type="text"
-                            id="fullName"
-                            name="fullName"
-                            placeholder="Your full name"
-                            value={formData.fullName}
-                            onChange={handleInputChange}
-                            required
-                            className="mt-2"
-                          />
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                          <Label htmlFor="email">Email *</Label>
-                          <Input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="your.email@company.com"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            required
-                            className="mt-2"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-6">
-                        {/* Phone */}
-                        <div>
-                          <Label htmlFor="phone">Phone (Optional)</Label>
-                          <Input
-                            type="tel"
-                            id="phone"
-                            name="phone"
-                            placeholder="+84 ..."
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            className="mt-2"
-                          />
-                        </div>
-
-                        {/* Company */}
-                        <div>
-                          <Label htmlFor="company">Company (Optional)</Label>
-                          <Input
-                            type="text"
-                            id="company"
-                            name="company"
-                            placeholder="Your company name"
-                            value={formData.company}
-                            onChange={handleInputChange}
-                            className="mt-2"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
                   {/* Subject */}
                   <div>
                     <Label htmlFor="subject">Subject *</Label>

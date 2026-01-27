@@ -69,7 +69,7 @@ export function CharteringInquiriesTab() {
   const [selected, setSelected] = useState<CharteringInquiry | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  const SERVICE_SLUG = 'chartering'
+  const SERVICE_SLUG = 'chartering-ship-broking'
   const ADMIN_BASE = `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${SERVICE_SLUG}`
 
   const fetchData = async () => {

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { authService } from '@/modules/auth/services/authService'
 import { ChevronsUpDown, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -174,13 +175,21 @@ export function FormSection({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!isAuthenticated) {
-      setSubmitError('Please log in to submit an inquiry.')
+      const errorMsg = 'Please log in to submit an inquiry.'
+      toast.error('Authentication Required', {
+        description: errorMsg
+      })
+      setSubmitError(errorMsg)
       setSubmitMessage(null)
       return
     }
 
     if (!form.serviceTypeId) {
-      setSubmitError('Missing service identifier. Please try again later.')
+      const errorMsg = 'Missing service identifier. Please try again later.'
+      toast.error('Configuration Error', {
+        description: errorMsg
+      })
+      setSubmitError(errorMsg)
       setSubmitMessage(null)
       return
     }
@@ -190,7 +199,11 @@ export function FormSection({
     for (const field of numberFields) {
       const value = formData[field.id]
       if (value && Number(value) < 0) {
-        setSubmitError(`${field.label} cannot be negative. Please enter a value >= 0.`)
+        const errorMsg = `${field.label} cannot be negative. Please enter a value >= 0.`
+        toast.error('Validation Error', {
+          description: errorMsg
+        })
+        setSubmitError(errorMsg)
         setSubmitMessage(null)
         return
       }
@@ -329,11 +342,16 @@ export function FormSection({
 
         if (!response.ok) {
           const message = result?.message || 'Request could not be sent. Please try again.'
+          toast.error('Submission Failed', {
+            description: message
+          })
           setSubmitError(message)
           return
         }
 
-        setSubmitMessage('Your request was sent successfully. We will contact you shortly.')
+        toast.success('Request Sent Successfully', {
+          description: 'Your request was sent successfully. We will contact you shortly.'
+        })
         if (form.onSubmit) {
           form.onSubmit(body)
         }
@@ -347,7 +365,11 @@ export function FormSection({
           return cleared
         })
       } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'
+        toast.error('Submission Error', {
+          description: errorMessage
+        })
+        setSubmitError(errorMessage)
       } finally {
         setSubmitting(false)
       }

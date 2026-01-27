@@ -148,7 +148,7 @@ export default function ShippingAgencyPdfPage() {
     setError(null)
     try {
       const token = authService.getToken()
-      const res = await axios.get<ShippingAgencyInquiry>(`${API_BASE}/admin/inquiries/shipping-agency/${id}`, {
+      const res = await axios.get<ShippingAgencyInquiry>(`${API_BASE}/api/v1/admin/inquiries/shipping-agency/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       setInquiry(res.data)
@@ -241,7 +241,7 @@ export default function ShippingAgencyPdfPage() {
     if (!inquiryId) return
     const token = authService.getToken()
     await axios.patch(
-      `${API_BASE}/admin/inquiries/shipping-agency/${inquiryId}/form`,
+      `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/form`,
       { form },
       { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
     )
@@ -254,7 +254,7 @@ export default function ShippingAgencyPdfPage() {
       // Update status to QUOTED
       const token = authService.getToken()
       await axios.patch(
-        `${API_BASE}/admin/inquiries/shipping-agency/${inquiryId}/status`,
+        `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/status`,
         { status: 'QUOTED' },
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )
@@ -330,7 +330,7 @@ export default function ShippingAgencyPdfPage() {
     try {
       const token = authService.getToken()
       await axios.patch(
-        `${API_BASE}/admin/inquiries/shipping-agency/${inquiryId}/hours`,
+        `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/hours`,
         {
           berthHours: validBerth ? nextBerth : berthHours,
           anchorageHours: validAnchorage ? nextAnchorage : anchorageHours,
@@ -370,7 +370,7 @@ export default function ShippingAgencyPdfPage() {
       try {
         const token = authService.getToken()
         await axios.patch(
-          `${API_BASE}/admin/inquiries/shipping-agency/${inquiryId}/status`,
+          `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/status`,
           { status: 'PROCESSING' },
           { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
         )
@@ -418,7 +418,7 @@ export default function ShippingAgencyPdfPage() {
     try {
       const token = authService.getToken()
       await axios.patch(
-        `${API_BASE}/admin/inquiries/shipping-agency/${inquiryId}/status`,
+        `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/status`,
         { status: 'QUOTED' },
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )

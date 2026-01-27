@@ -12,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,9 +44,9 @@ import com.example.seatrans.features.inquiry.repository.ShippingAgencyInquiryRep
 import com.example.seatrans.features.inquiry.repository.SpecialRequestInquiryRepository;
 import com.example.seatrans.features.inquiry.repository.TotalLogisticInquiryRepository;
 import com.example.seatrans.features.inquiry.service.InquiryDocumentService;
+import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
 import com.example.seatrans.features.ports.repository.PortRepository;
 import com.example.seatrans.features.provinces.repository.ProvinceRepository;
-import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -243,8 +242,7 @@ public class PublicInquiryController {
         var serviceType = request.getServiceTypeId() != null
             ? serviceTypeRepository.findById(request.getServiceTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid service type ID"))
-            : serviceTypeRepository.findByName(request.getServiceTypeSlug())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid service type: " + request.getServiceTypeSlug()));
+            : resolveServiceTypeBySlug(request.getServiceTypeSlug());
 
         // Get authenticated user
         com.example.seatrans.features.auth.model.User currentUser;
@@ -318,6 +316,48 @@ public class PublicInquiryController {
             "serviceSlug", serviceType.getName(),
             "targetId", targetId
         ));
+    }
+
+    /**
+     * Resolve service type by slug-style input (e.g., "special-request") by
+     * attempting exact name match, then title-cased name with spaces.
+     */
+    private com.example.seatrans.features.logistics.model.ServiceTypeEntity resolveServiceTypeBySlug(String slug) {
+        if (slug == null || slug.isBlank()) {
+            throw new IllegalArgumentException("Service type slug is required");
+        }
+
+        // First try exact name match (in case the frontend already sends the proper name)
+        var byName = serviceTypeRepository.findByName(slug);
+        if (byName.isPresent()) {
+            return byName.get();
+        }
+
+        // Then try converting slug to title case name ("special-request" -> "Special Request")
+        String titleCaseName = toTitleCase(slug.replace('-', ' '));
+        var byTitle = serviceTypeRepository.findByName(titleCaseName);
+        if (byTitle.isPresent()) {
+            return byTitle.get();
+        }
+
+        throw new IllegalArgumentException("Invalid service type: " + slug);
+    }
+
+    private String toTitleCase(String input) {
+        if (input == null || input.isBlank()) {
+            return input;
+        }
+        String[] parts = input.trim().toLowerCase().split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].isEmpty()) continue;
+            sb.append(Character.toUpperCase(parts[i].charAt(0)));
+            if (parts[i].length() > 1) {
+                sb.append(parts[i].substring(1));
+            }
+            if (i < parts.length - 1) sb.append(' ');
+        }
+        return sb.toString();
     }
 
     private void saveAttachments(String serviceSlug, Long targetId, MultipartFile[] files, Long uploaderId) throws IOException {
@@ -523,8 +563,32 @@ public class PublicInquiryController {
         return fetchOne(serviceSlug, id);
     }
 
+    /**
+     * Normalize and resolve service slug aliases to canonical slugs.
+     * Supports short aliases for convenience:
+     * - "chartering" -> "chartering-ship-broking"
+     * - "logistics" -> "total-logistics"
+     * - "freight" -> "freight-forwarding"
+     * - "shipping" -> "shipping-agency"
+     * - "special" -> "special-request"
+     */
+    private String normalizeSlug(String value) {
+        if (value == null) return "";
+        String normalized = value.trim().toLowerCase();
+        
+        // Map short aliases to canonical slugs
+        return switch (normalized) {
+            case "chartering" -> "chartering-ship-broking";
+            case "logistics" -> "total-logistics";
+            case "freight" -> "freight-forwarding";
+            case "shipping" -> "shipping-agency";
+            case "special" -> "special-request";
+            default -> normalized;
+        };
+    }
+
     private ResponseEntity<?> fetchPage(String serviceSlug, Pageable pageable) {
-        String normalized = serviceSlug == null ? "" : serviceSlug.trim().toLowerCase();
+        String normalized = normalizeSlug(serviceSlug);
         return switch (normalized) {
             case "shipping-agency" -> ResponseEntity.ok(shippingAgencyInquiryRepository.findAll(pageable));
             case "chartering-ship-broking" -> ResponseEntity.ok(charteringBrokingInquiryRepository.findAll(pageable));
@@ -536,7 +600,7 @@ public class PublicInquiryController {
     }
 
     private ResponseEntity<?> fetchOne(String serviceSlug, Long id) {
-        String normalized = serviceSlug == null ? "" : serviceSlug.trim().toLowerCase();
+        String normalized = normalizeSlug(serviceSlug);
         return switch (normalized) {
             case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
                 .map(ResponseEntity::ok)

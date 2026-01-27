@@ -29,4 +29,6 @@ public class InquiryDocumentDTO {
     private Integer version;
     private String checksum;
     private Boolean isActive;
+    private String cloudinaryUrl;
+    private String cloudinaryPublicId;
 }

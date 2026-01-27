@@ -4,7 +4,11 @@ import org.springframework.stereotype.Service;
 
 import com.example.seatrans.features.auth.model.User;
 import com.example.seatrans.features.auth.service.UserService;
-import com.example.seatrans.features.inquiry.dto.*;
+import com.example.seatrans.features.inquiry.dto.CharteringBrokingInquiryResponse;
+import com.example.seatrans.features.inquiry.dto.FreightForwardingInquiryResponse;
+import com.example.seatrans.features.inquiry.dto.ShippingAgencyInquiryResponse;
+import com.example.seatrans.features.inquiry.dto.SpecialRequestInquiryResponse;
+import com.example.seatrans.features.inquiry.dto.TotalLogisticInquiryResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,12 +25,15 @@ public class InquiryResponseEnricher {
         if (response.getUserId() != null) {
             try {
                 User user = userService.getUserById(response.getUserId());
-                response.setFullName(user.getFullName());
-                response.setContactInfo(user.getEmail());
-                response.setPhone(user.getPhone());
-                response.setCompany(user.getCompany());
-            } catch (Exception ignored) {
-                // User not found, keep fields null
+                if (user != null) {
+                    response.setFullName(user.getFullName());
+                    response.setContactInfo(user.getEmail());
+                    response.setPhone(user.getPhone());
+                    response.setCompany(user.getCompany());
+                }
+            } catch (Exception e) {
+                // User not found or error fetching user, keep fields null
+                // Log the error for debugging but don't propagate
             }
         }
         return response;

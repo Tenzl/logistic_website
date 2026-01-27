@@ -246,34 +246,41 @@ public class AdminInquiryController {
 
     private ResponseEntity<?> fetchOne(String serviceSlug, Long id) {
         String normalized = normalize(serviceSlug);
-        return switch (normalized) {
-            case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
-                .map(ShippingAgencyInquiryResponse::from)
-                .map(enricher::enrichShippingAgency)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-            case "chartering-ship-broking" -> charteringBrokingInquiryRepository.findById(id)
-                .map(CharteringBrokingInquiryResponse::from)
-                .map(enricher::enrichChartering)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-            case "freight-forwarding" -> freightForwardingInquiryRepository.findById(id)
-                .map(FreightForwardingInquiryResponse::from)
-                .map(enricher::enrichFreightForwarding)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-            case "total-logistics" -> totalLogisticInquiryRepository.findById(id)
-                .map(TotalLogisticInquiryResponse::from)
-                .map(enricher::enrichLogistics)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-            case "special-request" -> specialRequestInquiryRepository.findById(id)
-                .map(SpecialRequestInquiryResponse::from)
-                .map(enricher::enrichSpecialRequest)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-            default -> ResponseEntity.notFound().build();
-        };
+        try {
+            return switch (normalized) {
+                case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
+                    .map(ShippingAgencyInquiryResponse::from)
+                    .map(enricher::enrichShippingAgency)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+                case "chartering-ship-broking" -> charteringBrokingInquiryRepository.findById(id)
+                    .map(CharteringBrokingInquiryResponse::from)
+                    .map(enricher::enrichChartering)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+                case "freight-forwarding" -> freightForwardingInquiryRepository.findById(id)
+                    .map(FreightForwardingInquiryResponse::from)
+                    .map(enricher::enrichFreightForwarding)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+                case "total-logistics" -> totalLogisticInquiryRepository.findById(id)
+                    .map(TotalLogisticInquiryResponse::from)
+                    .map(enricher::enrichLogistics)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+                case "special-request" -> specialRequestInquiryRepository.findById(id)
+                    .map(SpecialRequestInquiryResponse::from)
+                    .map(enricher::enrichSpecialRequest)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+                default -> ResponseEntity.notFound().build();
+            };
+        } catch (Exception e) {
+            // Log the error for debugging
+            System.err.println("Error fetching inquiry: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Internal server error", "message", e.getMessage()));
+        }
     }
 
     private ResponseEntity<?> updateStatusByService(String serviceSlug, Long id, InquiryStatus status) {
@@ -331,7 +338,27 @@ public class AdminInquiryController {
         return true;
     }
 
+    /**
+     * Normalize and resolve service slug aliases to canonical slugs.
+     * Supports short aliases for convenience:
+     * - "chartering" -> "chartering-ship-broking"
+     * - "logistics" -> "total-logistics"
+     * - "freight" -> "freight-forwarding"
+     * - "shipping" -> "shipping-agency"
+     * - "special" -> "special-request"
+     */
     private String normalize(String value) {
-        return value == null ? "" : value.trim().toLowerCase();
+        if (value == null) return "";
+        String normalized = value.trim().toLowerCase();
+        
+        // Map short aliases to canonical slugs
+        return switch (normalized) {
+            case "chartering" -> "chartering-ship-broking";
+            case "logistics" -> "total-logistics";
+            case "freight" -> "freight-forwarding";
+            case "shipping" -> "shipping-agency";
+            case "special" -> "special-request";
+            default -> normalized;
+        };
     }
 }

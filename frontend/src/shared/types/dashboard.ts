@@ -37,4 +37,5 @@ export interface User {
   role?: string
   roleId?: number
   roleGroup?: RoleGroup
+  oauthProvider?: string
 }
