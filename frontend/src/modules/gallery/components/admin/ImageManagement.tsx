@@ -481,7 +481,9 @@ export function ManageImagesTab() {
                           <div className="text-xs text-muted-foreground">{count}/18</div>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {new Date(image.uploadedAt).toLocaleDateString('vi-VN')}
+                          {image.uploadedAt
+                            ? new Date(image.uploadedAt).toLocaleDateString('vi-VN')
+                            : '—'}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -558,21 +560,34 @@ export function ManageImagesTab() {
                   }
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {getDeleteWarningType(deleteModalImage) === 'over' ? (
-                    <>
-                      This type has <strong>{imageTypeCounts[deleteModalImage.imageTypeId]}/18 images</strong>. 
-                      You MUST delete this image to meet the requirement.
-                    </>
-                  ) : getDeleteWarningType(deleteModalImage) === 'below' ? (
-                    <>
-                      Deleting this image will bring the count below 18. 
-                      After deletion: <strong>{(imageTypeCounts[deleteModalImage.imageTypeId] || 18) - 1}/18</strong>
-                    </>
-                  ) : (
-                    <>
-                      Are you sure you want to delete <strong>{deleteModalImage.fileName}</strong>?
-                    </>
-                  )}
+                  {(() => {
+                    const modalKey = `${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.imageTypeId}`
+                    const modalCount = imageTypeCounts[modalKey] ?? 0
+
+                    if (getDeleteWarningType(deleteModalImage) === 'over') {
+                      return (
+                        <>
+                          This type has <strong>{modalCount}/18 images</strong>. 
+                          You MUST delete this image to meet the requirement.
+                        </>
+                      )
+                    }
+
+                    if (getDeleteWarningType(deleteModalImage) === 'below') {
+                      return (
+                        <>
+                          Deleting this image will bring the count below 18. 
+                          After deletion: <strong>{Math.max(modalCount - 1, 0)}/18</strong>
+                        </>
+                      )
+                    }
+
+                    return (
+                      <>
+                        Are you sure you want to delete <strong>{deleteModalImage.fileName}</strong>?
+                      </>
+                    )
+                  })()}
                 </p>
               </div>
             </div>
