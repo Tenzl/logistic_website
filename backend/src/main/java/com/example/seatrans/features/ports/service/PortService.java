@@ -1,17 +1,19 @@
 package com.example.seatrans.features.ports.service;
 
-import com.example.seatrans.features.ports.dto.PortDTO;
-import com.example.seatrans.features.ports.dto.CreatePortRequest;
-import com.example.seatrans.features.ports.model.Port;
-import com.example.seatrans.features.provinces.model.Province;
-import com.example.seatrans.features.ports.repository.PortRepository;
-import com.example.seatrans.features.provinces.repository.ProvinceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.seatrans.features.ports.dto.CreatePortRequest;
+import com.example.seatrans.features.ports.dto.PortDTO;
+import com.example.seatrans.features.ports.model.Port;
+import com.example.seatrans.features.ports.repository.PortRepository;
+import com.example.seatrans.features.provinces.model.Province;
+import com.example.seatrans.features.provinces.repository.ProvinceRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 
 @Service
 public class PortService {
@@ -22,24 +24,27 @@ public class PortService {
     @Autowired
     private ProvinceRepository provinceRepository;
 
+    @Autowired
+    private EntityMapper entityMapper;
+
     public List<PortDTO> getAllPorts() {
         return portRepository.findAll()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toPortDTO)
                 .collect(Collectors.toList());
     }
 
     public List<PortDTO> getActivePorts() {
         return portRepository.findByIsActiveTrue()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toPortDTO)
                 .collect(Collectors.toList());
     }
 
     public List<PortDTO> getPortsByProvince(Long provinceId) {
         return portRepository.findByProvinceIdAndIsActiveTrue(provinceId)
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toPortDTO)
                 .collect(Collectors.toList());
     }
 
@@ -50,7 +55,7 @@ public class PortService {
         return portRepository.findByNameContainingIgnoreCase(searchQuery)
                 .stream()
                 .filter(port -> Boolean.TRUE.equals(port.getIsActive()))
-                .map(this::convertToDTO)
+                .map(entityMapper::toPortDTO)
                 .collect(Collectors.toList());
     }
 
@@ -65,13 +70,13 @@ public class PortService {
                     .collect(Collectors.toList());
         }
         return ports.stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toPortDTO)
                 .collect(Collectors.toList());
     }
 
     public PortDTO getPortById(Long id) {
         return portRepository.findById(id)
-                .map(this::convertToDTO)
+                .map(entityMapper::toPortDTO)
                 .orElse(null);
     }
 
@@ -88,7 +93,7 @@ public class PortService {
                 request.getProvinceId()
         );
         if (existing.isPresent()) {
-            return convertToDTO(existing.get());
+            return entityMapper.toPortDTO(existing.get());
         }
 
         Port port = new Port();
@@ -97,7 +102,7 @@ public class PortService {
         port.setIsActive(true);
 
         Port savedPort = portRepository.save(port);
-        return convertToDTO(savedPort);
+        return entityMapper.toPortDTO(savedPort);
     }
 
     public PortDTO updatePort(Long id, CreatePortRequest request) {
@@ -116,7 +121,7 @@ public class PortService {
         port.setProvince(provinceOpt.get());
 
         Port updatedPort = portRepository.save(port);
-        return convertToDTO(updatedPort);
+        return entityMapper.toPortDTO(updatedPort);
     }
 
     public void deletePort(Long id) {
@@ -125,16 +130,5 @@ public class PortService {
 
     public long getPortCount() {
         return portRepository.count();
-    }
-
-    private PortDTO convertToDTO(Port port) {
-        String provinceName = port.getProvince() != null ? port.getProvince().getName() : "";
-        return new PortDTO(
-                port.getId(),
-                port.getName(),
-                port.getProvince() != null ? port.getProvince().getId() : null,
-                provinceName,
-                port.getIsActive()
-        );
     }
 }

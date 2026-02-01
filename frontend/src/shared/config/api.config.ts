@@ -119,6 +119,7 @@ export const API_CONFIG = {
 
   INQUIRIES: {
     SUBMIT: '/inquiries',
+    BASE: '/inquiries',
     USER_HISTORY: (userId: number) => `/inquiries/user/${userId}`,
     ADMIN_BASE: '/admin/inquiries',
     ADMIN_BY_ID: (id: number) => `/admin/inquiries/${id}`,

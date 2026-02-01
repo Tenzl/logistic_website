@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { ColumnDef } from '@tanstack/react-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Badge } from '@/shared/components/ui/badge'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { Loader2, AlertCircle, Clock, Eye, Download, FileText, RefreshCw } from 'lucide-react'
+import { Loader2, AlertCircle, Clock, Eye, FileText, RefreshCw, MoreHorizontal, ArrowUpDown } from 'lucide-react'
 import { authService } from '@/modules/auth/services/authService'
 import { documentService } from '@/modules/inquiries/services/documentService'
 import { Button } from '@/shared/components/ui/button'
@@ -15,6 +15,19 @@ import { renderQuoteHtml as renderQuoteHtmlQn } from '@/modules/inquiries/compon
 import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { InquiryDataTable } from './history/InquiryDataTable'
+import {
+  getSchemaForService,
+  getServiceSlugFromInquiry,
+  getFieldValue,
+  InquiryFieldSchema,
+} from './history/serviceInquirySchemas'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 
 interface Inquiry {
   id: number
@@ -294,40 +307,135 @@ export function UserInquiryHistoryTab() {
 
   const formatDate = (value: string) => new Date(value).toLocaleString()
 
-  const renderDetails = (inquiry: Inquiry) => {
-    const formatKey = (key: string) =>
-      key
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/_/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-        .trim()
+  const handleDeleteInquiries = async (ids: number[]) => {
+    try {
+      // Call API to delete inquiries
+      const response = await apiClient.delete(`${API_CONFIG.INQUIRIES.BASE}/batch`, {
+        body: JSON.stringify({ ids }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete inquiries')
+      }
+      
+      // Remove deleted inquiries from state
+      setInquiries(prev => prev.filter(inq => !ids.includes(inq.id)))
+      setMessage('Successfully deleted selected inquiries')
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error('Error deleting inquiries:', error)
+      setMessage('Failed to delete inquiries. Please try again.')
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
 
-    const allFields = [
-      ['MV', inquiry.mv],
-      ['DWT', inquiry.dwt],
-      ['GRT', inquiry.grt],
-      ['LOA', inquiry.loa],
-      ['ETA', inquiry.eta || 'TBN'],
-      ['Cargo Type', inquiry.cargoType],
-      ['Cargo Name', inquiry.cargoName],
-      ['Cargo Quantity', inquiry.cargoQuantity],
-      ['Port of Call', inquiry.portOfCall],
-      ['Loading Port', inquiry.loadingPort],
-      ['Discharging Port', inquiry.dischargingPort],
-      ['Discharge/Loading Location', inquiry.dischargeLoadingLocation],
-      ['Delivery Term', inquiry.deliveryTerm],
-      ['20ft Containers', inquiry.container20ft],
-      ['40ft Containers', inquiry.container40ft],
-      ['Subject', inquiry.subject],
-      ['Message', inquiry.message],
-    ]
+  // Define columns for DataTable (following table-09 pattern)
+  const columns: ColumnDef<Inquiry>[] = [
+    {
+      accessorKey: 'serviceType',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Service
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => renderService(row.original),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Status
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      accessorKey: 'submittedAt',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm whitespace-nowrap">
+          {formatDate(row.original.submittedAt)}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
+        const inq = row.original
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setDetailInquiry(inq)}>
+                <FileText className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              {(inq.status === 'QUOTED' || inq.status === 'COMPLETED') && (
+                <DropdownMenuItem onClick={() => handleViewQuote(inq)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Invoice
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
+
+  const renderDetails = (inquiry: Inquiry) => {
+    // Get service-specific schema
+    const serviceSlug = getServiceSlugFromInquiry(inquiry)
+    const schema = getSchemaForService(serviceSlug || '')
+
+    // Build field list from schema
+    const fields: Array<[string, string]> = []
     
-    const fields = allFields.filter((field): field is [string, string | number] => {
-      const [, value] = field
-      return value !== undefined && value !== null && value !== ''
-    })
+    for (const fieldDef of schema) {
+      const value = getFieldValue(inquiry, fieldDef.key)
+      
+      // Skip if value is undefined, null, or empty string
+      if (value === undefined || value === null || value === '') {
+        continue
+      }
+      
+      // Format value using schema formatter
+      const formattedValue = fieldDef.format ? fieldDef.format(value) : String(value)
+      
+      // Skip if formatted value is empty
+      if (!formattedValue) {
+        continue
+      }
+      
+      fields.push([fieldDef.label, formattedValue])
+    }
 
     if (fields.length === 0) return <span className="text-muted-foreground">No details provided</span>
 
@@ -336,7 +444,7 @@ export function UserInquiryHistoryTab() {
         {fields.map(([key, value]) => (
           <div key={key} className="rounded-md border p-3 bg-muted/30">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">{key}</p>
-            <p className="text-sm mt-1 break-words">{String(value)}</p>
+            <p className="text-sm mt-1 break-words">{value}</p>
           </div>
         ))}
       </div>
@@ -385,51 +493,13 @@ export function UserInquiryHistoryTab() {
             No inquiries yet.
           </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {inquiries.map((inq) => (
-                  <TableRow key={inq.id}>
-                    <TableCell className="whitespace-nowrap">{renderService(inq)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{getStatusBadge(inq.status)}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">{formatDate(inq.submittedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setDetailInquiry(inq)}
-                          className="gap-2"
-                        >
-                          <FileText className="h-4 w-4" />
-                          Details
-                        </Button>
-                        {(inq.status === 'QUOTED' || inq.status === 'COMPLETED') && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleViewQuote(inq)}
-                            className="gap-2"
-                          >
-                            <Eye className="h-4 w-4" />
-                            View Invoice
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <InquiryDataTable
+            columns={columns}
+            data={inquiries}
+            searchKey="fullName"
+            searchPlaceholder="Search by name..."
+            onDelete={handleDeleteInquiries}
+          />
         )}
       </CardContent>
     </Card>

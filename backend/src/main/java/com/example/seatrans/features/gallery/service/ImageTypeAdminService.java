@@ -13,6 +13,7 @@ import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,17 +28,18 @@ public class ImageTypeAdminService {
 
     private final ImageTypeRepository imageTypeRepository;
     private final ServiceTypeRepository serviceTypeRepository;
+    private final EntityMapper entityMapper;
 
     public List<ImageTypeDTO> getAllImageTypes() {
         return imageTypeRepository.findAll()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toImageTypeDTO)
                 .collect(Collectors.toList());
     }
 
     public ImageTypeDTO getImageTypeById(Long id) {
         return imageTypeRepository.findById(id)
-                .map(this::convertToDTO)
+                .map(entityMapper::toImageTypeDTO)
                 .orElse(null);
     }
 
@@ -52,7 +54,7 @@ public class ImageTypeAdminService {
                 request.getServiceTypeId()
         );
         if (existing.isPresent()) {
-            return convertToDTO(existing.get());
+            return entityMapper.toImageTypeDTO(existing.get());
         }
 
         ImageTypeEntity imageType = new ImageTypeEntity();
@@ -64,7 +66,7 @@ public class ImageTypeAdminService {
         imageType.setIsActive(true);
 
         ImageTypeEntity savedImageType = imageTypeRepository.save(imageType);
-        return convertToDTO(savedImageType);
+        return entityMapper.toImageTypeDTO(savedImageType);
     }
 
     public ImageTypeDTO updateImageType(Long id, CreateImageTypeRequest request) {
@@ -88,7 +90,7 @@ public class ImageTypeAdminService {
         }
 
         ImageTypeEntity updatedImageType = imageTypeRepository.save(imageType);
-        return convertToDTO(updatedImageType);
+        return entityMapper.toImageTypeDTO(updatedImageType);
     }
 
     public void deleteImageType(Long id) {
@@ -97,19 +99,5 @@ public class ImageTypeAdminService {
 
     public long getImageTypeCount() {
         return imageTypeRepository.count();
-    }
-
-    private ImageTypeDTO convertToDTO(ImageTypeEntity imageType) {
-        String serviceTypeName = imageType.getServiceType() != null ? imageType.getServiceType().getName() : "";
-        return new ImageTypeDTO(
-                imageType.getId(),
-                imageType.getServiceType() != null ? imageType.getServiceType().getId() : null,
-                serviceTypeName,
-                imageType.getName(),
-                imageType.getDisplayName(),
-                imageType.getDescription(),
-                imageType.getRequiredImageCount(),
-                imageType.getIsActive()
-        );
     }
 }

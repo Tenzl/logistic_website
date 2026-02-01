@@ -67,7 +67,7 @@ const ManageImageTypes = lazy(() => import("@/modules/gallery/components/admin/I
 const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
 const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
 
-const UserInquiryHistoryTab = lazy(() => import("@/modules/users/components/UserInquiryHistoryTab").then(m => ({ default: m.UserInquiryHistoryTab })))
+const UserInquiriesPage = lazy(() => import("@/features/user/component/UserInquiriesPage").then(m => ({ default: m.UserInquiriesPage })))
 
 export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
   profile: {
@@ -222,13 +222,13 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
   },
   inquiry: {
     id: "inquiry",
-    label: "Inquiry History",
+    label: "My Inquiries",
     icon: FileText,
-    component: UserInquiryHistoryTab,
+    component: UserInquiriesPage,
     roles: ["CUSTOMER"],
     roleGroups: ["EXTERNAL"],
     category: "Inquiries",
-    title: "Inquiry History",
+    title: "My Inquiries",
   },
 }
 

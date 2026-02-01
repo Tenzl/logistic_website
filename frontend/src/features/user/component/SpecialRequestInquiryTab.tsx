@@ -2,14 +2,14 @@
 
 import { BaseInquiryHistoryLayout } from '@/modules/users/components/history/BaseInquiryHistoryLayout'
 
-export function SpecialRequestInquiriesTab() {
+export function SpecialRequestInquiryTab() {
   return (
     <BaseInquiryHistoryLayout
       serviceType="special-request"
       serviceLabel="Special Request"
-      isAdmin={true}
+      isAdmin={false}
       title="Special Request Inquiries"
-      description="Manage all special request inquiries"
+      description="View your special request inquiries"
     />
   )
 }

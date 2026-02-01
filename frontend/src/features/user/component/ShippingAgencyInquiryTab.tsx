@@ -2,14 +2,14 @@
 
 import { BaseInquiryHistoryLayout } from '@/modules/users/components/history/BaseInquiryHistoryLayout'
 
-export function ShippingAgencyInquiriesTab() {
+export function ShippingAgencyInquiryTab() {
   return (
     <BaseInquiryHistoryLayout
       serviceType="shipping-agency"
       serviceLabel="Shipping Agency"
-      isAdmin={true}
+      isAdmin={false}
       title="Shipping Agency Inquiries"
-      description="Manage all shipping agency service inquiries"
+      description="View your shipping agency service inquiries"
     />
   )
 }

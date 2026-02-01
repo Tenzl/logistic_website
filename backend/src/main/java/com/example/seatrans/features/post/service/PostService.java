@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.seatrans.features.auth.model.User;
 import com.example.seatrans.features.auth.repository.UserRepository;
-import com.example.seatrans.features.post.dto.CategoryResponse;
 import com.example.seatrans.features.post.dto.PostRequest;
 import com.example.seatrans.features.post.dto.PostResponse;
 import com.example.seatrans.features.post.model.Category;
@@ -25,7 +24,9 @@ import com.example.seatrans.features.post.model.PostImage;
 import com.example.seatrans.features.post.repository.CategoryRepository;
 import com.example.seatrans.features.post.repository.PostImageRepository;
 import com.example.seatrans.features.post.repository.PostRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 import com.example.seatrans.shared.service.CloudinaryService;
+import com.example.seatrans.shared.util.HtmlSanitizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,8 @@ public class PostService {
     private final PostImageRepository postImageRepository;
     private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
+    private final EntityMapper entityMapper;
+    private final HtmlSanitizer htmlSanitizer;
     
     /**
      * Create a new post
@@ -56,9 +59,13 @@ public class PostService {
         User author = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Author not found"));
         
+        // Sanitize HTML content to prevent XSS
+        String sanitizedContent = htmlSanitizer.sanitizeRichText(request.getContent());
+        String sanitizedTitle = htmlSanitizer.toPlainText(request.getTitle());
+        
         Post post = Post.builder()
-            .title(request.getTitle())
-            .content(request.getContent())
+            .title(sanitizedTitle)
+            .content(sanitizedContent)
             .author(author)
             .thumbnailUrl(request.getThumbnailUrl())
             .thumbnailPublicId(request.getThumbnailPublicId())
@@ -87,7 +94,7 @@ public class PostService {
         
         log.info("Post created with ID: {}", savedPost.getId());
         
-        return toResponse(savedPost);
+        return entityMapper.toPostResponse(savedPost);
     }
     
     /**
@@ -101,8 +108,12 @@ public class PostService {
 
         validateThumbnail(request);
         
-        post.setTitle(request.getTitle());
-        post.setContent(request.getContent());
+        // Sanitize HTML content to prevent XSS
+        String sanitizedTitle = htmlSanitizer.toPlainText(request.getTitle());
+        String sanitizedContent = htmlSanitizer.sanitizeRichText(request.getContent());
+        
+        post.setTitle(sanitizedTitle);
+        post.setContent(sanitizedContent);
 
         // Replace thumbnail only when a new one is provided
         if (request.getThumbnailUrl() != null || request.getThumbnailPublicId() != null) {
@@ -150,7 +161,7 @@ public class PostService {
         Post updatedPost = postRepository.save(post);
         log.info("Post updated: {}", updatedPost.getId());
         
-        return toResponse(updatedPost);
+        return entityMapper.toPostResponse(updatedPost);
     }
     
     /**
@@ -187,7 +198,7 @@ public class PostService {
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
         
-        return toResponse(post);
+        return entityMapper.toPostResponse(post);
     }
     
     /**
@@ -206,7 +217,7 @@ public class PostService {
         postRepository.flush();
         post = postRepository.findById(id).orElseThrow();
         
-        return toResponse(post);
+        return entityMapper.toPostResponse(post);
     }
     
     /**
@@ -216,7 +227,7 @@ public class PostService {
     public List<PostResponse> getAllPosts() {
         List<Post> posts = postRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         return posts.stream()
-            .map(this::toResponse)
+            .map(entityMapper::toPostResponse)
             .collect(Collectors.toList());
     }
     
@@ -227,7 +238,7 @@ public class PostService {
     public List<PostResponse> getAllPublishedPosts() {
         List<Post> posts = postRepository.findByIsPublishedTrueOrderByPublishedAtDesc();
         return posts.stream()
-            .map(this::toResponse)
+            .map(entityMapper::toPostResponse)
             .collect(Collectors.toList());
     }
     
@@ -239,7 +250,7 @@ public class PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"));
         Page<Post> posts = postRepository.findByIsPublishedTrue(pageable);
         List<PostResponse> content = posts.getContent().stream()
-            .map(this::toResponse)
+            .map(entityMapper::toPostResponse)
             .collect(Collectors.toList());
         return new PageImpl<>(content, pageable, posts.getTotalElements());
     }
@@ -251,7 +262,7 @@ public class PostService {
     public List<PostResponse> getPostsByCategory(String category) {
         List<Post> posts = postRepository.findByIsPublishedTrueAndCategoryOrderByPublishedAtDesc(category);
         return posts.stream()
-            .map(this::toResponse)
+            .map(entityMapper::toPostResponse)
             .collect(Collectors.toList());
     }
     
@@ -262,7 +273,7 @@ public class PostService {
     public List<PostResponse> searchPosts(String keyword) {
         List<Post> posts = postRepository.searchPublishedByKeyword(keyword);
         return posts.stream()
-            .map(this::toResponse)
+            .map(entityMapper::toPostResponse)
             .collect(Collectors.toList());
     }
     
@@ -274,7 +285,7 @@ public class PostService {
         Pageable pageable = PageRequest.of(0, limit);
         List<Post> posts = postRepository.findLatestPublished(pageable);
         return posts.stream()
-            .map(this::toResponse)
+            .map(entityMapper::toPostResponse)
             .collect(Collectors.toList());
     }
     
@@ -289,7 +300,7 @@ public class PostService {
         Post publishedPost = postRepository.save(post);
         log.info("Post published: {}", publishedPost.getId());
         
-        return toResponse(publishedPost);
+        return entityMapper.toPostResponse(publishedPost);
     }
     
     /**
@@ -303,7 +314,7 @@ public class PostService {
         Post unpublishedPost = postRepository.save(post);
         log.info("Post unpublished: {}", unpublishedPost.getId());
         
-        return toResponse(unpublishedPost);
+        return entityMapper.toPostResponse(unpublishedPost);
     }
 
     /**
@@ -340,35 +351,6 @@ public class PostService {
         }
     }
     
-    /**
-     * Convert Post entity to PostResponse DTO
-     */
-    private PostResponse toResponse(Post post) {
-        List<CategoryResponse> categories = post.getPostCategories().stream()
-            .map(pc -> CategoryResponse.builder()
-                .id(pc.getCategory().getId())
-                .name(pc.getCategory().getName())
-                .description(pc.getCategory().getDescription())
-                .build())
-            .collect(Collectors.toList());
-        
-        return PostResponse.builder()
-            .id(post.getId())
-            .title(post.getTitle())
-            .content(post.getContent())
-            .authorId(post.getAuthor().getId())
-            .authorName(post.getAuthor().getFullName() != null ? post.getAuthor().getFullName() : post.getAuthor().getEmail())
-            .categories(categories)
-            .thumbnailUrl(post.getThumbnailUrl())
-            .thumbnailPublicId(post.getThumbnailPublicId())
-            .publishedAt(post.getPublishedAt())
-            .isPublished(post.getIsPublished())
-            .viewCount(post.getViewCount())
-            .createdAt(post.getCreatedAt())
-            .updatedAt(post.getUpdatedAt())
-            .build();
-    }
-
     /**
      * Ensure thumbnail info is Cloudinary-only and consistent
      */

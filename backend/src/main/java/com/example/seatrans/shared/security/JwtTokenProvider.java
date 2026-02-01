@@ -1,8 +1,6 @@
 package com.example.seatrans.shared.security;
 
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,32 +71,32 @@ public class JwtTokenProvider implements TokenProvider {
     }
 
     /**
-     * Generate JWT token embedding role names for authorization.
+     * Generate JWT token embedding role name for authorization.
      */
     @Override
     public String generateToken(User user) {
-        List<String> roleNames = user.getRole() != null
-            ? List.of(user.getRole().getName())
-            : List.of();
-        return generateToken(user.getId(), user.getEmail(), jwtExpirationMs, roleNames);
+        String roleName = user.getRole() != null
+            ? user.getRole().getName()
+            : null;
+        return generateToken(user.getId(), user.getEmail(), jwtExpirationMs, roleName);
     }
 
     @Override
     public String generateRefreshToken(User user) {
-        List<String> roleNames = user.getRole() != null
-            ? List.of(user.getRole().getName())
-            : List.of();
-        return generateToken(user.getId(), user.getEmail(), refreshExpirationMs, roleNames);
+        String roleName = user.getRole() != null
+            ? user.getRole().getName()
+            : null;
+        return generateToken(user.getId(), user.getEmail(), refreshExpirationMs, roleName);
     }
 
-        private String generateToken(Long userId, String email, long expirationMs, List<String> roleNames) {
+        private String generateToken(Long userId, String email, long expirationMs, String roleName) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
         
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
-            .claim(CLAIM_ROLES, roleNames)
+            .claim(CLAIM_ROLES, roleName)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(Keys.hmacShaKeyFor(secretKey), SignatureAlgorithm.HS512)
@@ -124,23 +122,12 @@ public class JwtTokenProvider implements TokenProvider {
     }
 
     /**
-     * Extract role names embedded in JWT (may be null/empty for legacy tokens).
+     * Extract role name embedded in JWT (may be null for legacy tokens).
      */
     @Override
-    @SuppressWarnings("unchecked")
-    public List<String> getRolesFromToken(String token) {
+    public String getRoleFromToken(String token) {
         Claims claims = getAllClaimsFromToken(token);
-        Object roles = claims.get(CLAIM_ROLES);
-        if (roles == null) {
-            return List.of();
-        }
-        if (roles instanceof List<?> list) {
-            return list.stream()
-                    .filter(String.class::isInstance)
-                    .map(String.class::cast)
-                    .collect(Collectors.toList());
-        }
-        return List.of();
+        return claims.get(CLAIM_ROLES, String.class);
     }
     
     /**

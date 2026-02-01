@@ -12,6 +12,7 @@ import com.example.seatrans.features.gallery.dto.ImageTypeDTO;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 import com.example.seatrans.features.gallery.repository.GalleryImageRepository;
 import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,18 +27,19 @@ public class ImageTypePublicService {
 
     private final ImageTypeRepository imageTypeRepository;
     private final GalleryImageRepository galleryImageRepository;
+    private final EntityMapper entityMapper;
 
     public List<ImageTypeDTO> getActiveImageTypes() {
         return imageTypeRepository.findByIsActiveTrue()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toImageTypeDTO)
                 .collect(Collectors.toList());
     }
 
     public List<ImageTypeDTO> getImageTypesByServiceType(Long serviceTypeId) {
         return imageTypeRepository.findByServiceTypeIdAndIsActiveTrue(serviceTypeId)
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toImageTypeDTO)
                 .collect(Collectors.toList());
     }
 
@@ -48,7 +50,7 @@ public class ImageTypePublicService {
         return imageTypeRepository.findByNameContainingIgnoreCase(searchQuery)
                 .stream()
                 .filter(ImageTypeEntity::getIsActive)
-                .map(this::convertToDTO)
+                .map(entityMapper::toImageTypeDTO)
                 .collect(Collectors.toList());
     }
 
@@ -63,7 +65,7 @@ public class ImageTypePublicService {
                     .collect(Collectors.toList());
         }
         return imageTypes.stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toImageTypeDTO)
                 .collect(Collectors.toList());
     }
 
@@ -114,19 +116,5 @@ public class ImageTypePublicService {
                 .isExceeded((int) count > required)
                 .isBelow((int) count < required)
                 .build();
-    }
-
-    private ImageTypeDTO convertToDTO(ImageTypeEntity imageType) {
-        String serviceTypeName = imageType.getServiceType() != null ? imageType.getServiceType().getName() : "";
-        return new ImageTypeDTO(
-                imageType.getId(),
-                imageType.getServiceType() != null ? imageType.getServiceType().getId() : null,
-                serviceTypeName,
-                imageType.getName(),
-                imageType.getDisplayName(),
-                imageType.getDescription(),
-                imageType.getRequiredImageCount(),
-                imageType.getIsActive()
-        );
     }
 }

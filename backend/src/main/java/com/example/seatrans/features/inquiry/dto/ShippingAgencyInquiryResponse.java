@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 public class ShippingAgencyInquiryResponse {
     private Long id;
     private String fullName;
-    private String contactInfo;
+    private String email;
     private String phone;
     private String company;
     private Long userId;

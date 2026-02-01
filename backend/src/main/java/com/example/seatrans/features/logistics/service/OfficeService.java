@@ -11,9 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.seatrans.features.logistics.dto.CreateOfficeRequest;
 import com.example.seatrans.features.logistics.dto.OfficeDTO;
 import com.example.seatrans.features.logistics.model.Office;
-import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.logistics.repository.OfficeRepository;
+import com.example.seatrans.features.provinces.model.Province;
 import com.example.seatrans.features.provinces.repository.ProvinceRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,38 +26,14 @@ public class OfficeService {
     @Autowired
     private ProvinceRepository provinceRepository;
     
+    @Autowired
+    private EntityMapper entityMapper;
+    
     public List<OfficeDTO> getAllActiveOffices() {
         return officeRepository.findAllActiveOffices()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toOfficeDTO)
                 .collect(Collectors.toList());
-    }
-
-    private OfficeDTO convertToDTO(Office office) {
-        String provinceName = office.getProvince() != null ? office.getProvince().getName() : "";
-        String region = ""; // No region mapping required
-        
-        return OfficeDTO.builder()
-                .id(office.getId())
-                .name(office.getName())
-                .city(provinceName)
-                .region(region)
-                .address(office.getAddress())
-                .latitude(office.getLatitude())
-                .longitude(office.getLongitude())
-                .manager(OfficeDTO.ManagerDTO.builder()
-                        .name(office.getManagerName())
-                        .title(office.getManagerTitle())
-                        .mobile(office.getManagerMobile())
-                        .email(office.getManagerEmail())
-                        .build())
-                .coordinates(OfficeDTO.CoordinatesDTO.builder()
-                        .lat(office.getLatitude())
-                        .lng(office.getLongitude())
-                        .build())
-                .isHeadquarter(office.getIsHeadquarter())
-                .isActive(office.getIsActive())
-                .build();
     }
 
     @Transactional
@@ -79,7 +56,7 @@ public class OfficeService {
                 .build();
         
         office = officeRepository.save(office);
-        return convertToDTO(office);
+        return entityMapper.toOfficeDTO(office);
     }
 
     @Transactional
@@ -110,7 +87,7 @@ public class OfficeService {
         office.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
         
         office = officeRepository.save(office);
-        return convertToDTO(office);
+        return entityMapper.toOfficeDTO(office);
     }
 
     @Transactional

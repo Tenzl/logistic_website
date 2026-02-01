@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Clock, Eye, Tag, User } from 'lucide-react'
+import DOMPurify from 'dompurify'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
@@ -88,6 +89,30 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
   }, [articleId])
 
   const decoratedHtml = useMemo(() => decorateContent(post?.content || ''), [post?.content])
+  
+  // Sanitize HTML to prevent XSS attacks
+  const sanitizedHtml = useMemo(() => {
+    return DOMPurify.sanitize(decoratedHtml, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'span', 'div',
+        'b', 'i', 'u', 'strong', 'em', 'mark', 'small', 'del', 'ins', 'sub', 'sup',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li',
+        'a', 'img', 'picture', 'figure', 'figcaption',
+        'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
+        'pre', 'code', 'kbd', 'samp',
+        'blockquote', 'cite', 'q',
+        'hr'
+      ],
+      ALLOWED_ATTR: [
+        'href', 'title', 'target', 'rel',
+        'src', 'alt', 'width', 'height', 'loading', 'srcset', 'sizes',
+        'class', 'id', 'colspan', 'rowspan'
+      ],
+      ALLOW_DATA_ATTR: false,
+      ALLOW_UNKNOWN_PROTOCOLS: false
+    })
+  }, [decoratedHtml])
 
   if (loading) {
     return (
@@ -214,7 +239,7 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
             // Blockquotes
             'prose-blockquote:border-l-border prose-blockquote:text-muted-foreground',
           ].join(' ')}
-          dangerouslySetInnerHTML={{ __html: decoratedHtml }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
 
         {post.tags && post.tags.length > 0 && (

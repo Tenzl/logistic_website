@@ -1,6 +1,7 @@
 package com.example.seatrans.features.inquiry.controller;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -120,34 +121,61 @@ public class AdminInquiryController {
 
     @GetMapping
     public ResponseEntity<?> getInquiries(
-            @RequestParam(value = "serviceSlug") String serviceSlug,
+            @RequestParam(value = "serviceSlug", required = false) String serviceSlug,
+            @RequestParam(value = "serviceType", required = false) String serviceType,
             @RequestParam(value = "status", required = false) InquiryStatus status,
+            @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
+        String resolvedSlug = serviceSlug != null && !serviceSlug.isBlank() ? serviceSlug : serviceType;
+        if (resolvedSlug == null || resolvedSlug.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "serviceSlug (or serviceType) is required"));
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        return fetchPage(serviceSlug, status, pageable);
+        return fetchPage(resolvedSlug, status, userId, pageable);
     }
 
     @GetMapping("/{serviceSlug}")
     public ResponseEntity<?> getInquiriesBySlug(
             @PathVariable String serviceSlug,
             @RequestParam(value = "status", required = false) InquiryStatus status,
+            @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        return fetchPage(serviceSlug, status, pageable);
+        return fetchPage(serviceSlug, status, userId, pageable);
     }
 
     @GetMapping("/recent")
     public ResponseEntity<?> getRecent(@RequestParam("serviceSlug") String serviceSlug) {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        return fetchPage(serviceSlug, null, pageable);
+        return fetchPage(serviceSlug, null, null, pageable);
     }
 
     @DeleteMapping("/{serviceSlug}/{id}")
     public ResponseEntity<Void> deleteInquiry(@PathVariable String serviceSlug, @PathVariable Long id) {
         boolean deleted = deleteByService(serviceSlug, id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/batch")
+    public ResponseEntity<?> deleteInquiries(@RequestBody BatchDeleteRequest request) {
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "ids are required"));
+        }
+
+        int deletedCount = 0;
+        for (Long id : request.ids()) {
+            if (deleteByAnyService(id)) {
+                deletedCount++;
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "deleted", deletedCount,
+            "requested", request.ids().size()
+        ));
     }
 
     @GetMapping("/{serviceSlug}/{id}")
@@ -206,42 +234,98 @@ public class AdminInquiryController {
     public record UpdateStatusRequest(InquiryStatus status) {}
     public record UpdateFormRequest(String form) {}
     public record UpdateHoursRequest(BigDecimal berthHours, BigDecimal anchorageHours, BigDecimal pilotage3rdMiles) {}
+    public record BatchDeleteRequest(List<Long> ids) {}
 
-    private ResponseEntity<?> fetchPage(String serviceSlug, InquiryStatus status, Pageable pageable) {
+    private ResponseEntity<?> fetchPage(String serviceSlug, InquiryStatus status, Long userId, Pageable pageable) {
         String normalized = normalize(serviceSlug);
         return switch (normalized) {
             case "shipping-agency" -> {
-                Page<ShippingAgencyInquiry> result = status != null
-                    ? shippingAgencyInquiryRepository.findByStatus(status, pageable)
-                    : shippingAgencyInquiryRepository.findAll(pageable);
+                Page<ShippingAgencyInquiry> result = resolveShippingAgencyPage(status, userId, pageable);
                 yield ResponseEntity.ok(result.map(ShippingAgencyInquiryResponse::from).map(enricher::enrichShippingAgency));
             }
             case "chartering-ship-broking" -> {
-                Page<CharteringBrokingInquiry> result = status != null
-                    ? charteringBrokingInquiryRepository.findByStatus(status, pageable)
-                    : charteringBrokingInquiryRepository.findAll(pageable);
+                Page<CharteringBrokingInquiry> result = resolveCharteringPage(status, userId, pageable);
                 yield ResponseEntity.ok(result.map(CharteringBrokingInquiryResponse::from).map(enricher::enrichChartering));
             }
             case "freight-forwarding" -> {
-                Page<FreightForwardingInquiry> result = status != null
-                    ? freightForwardingInquiryRepository.findByStatus(status, pageable)
-                    : freightForwardingInquiryRepository.findAll(pageable);
+                Page<FreightForwardingInquiry> result = resolveFreightPage(status, userId, pageable);
                 yield ResponseEntity.ok(result.map(FreightForwardingInquiryResponse::from).map(enricher::enrichFreightForwarding));
             }
             case "total-logistics" -> {
-                Page<TotalLogisticInquiry> result = status != null
-                    ? totalLogisticInquiryRepository.findByStatus(status, pageable)
-                    : totalLogisticInquiryRepository.findAll(pageable);
+                Page<TotalLogisticInquiry> result = resolveLogisticsPage(status, userId, pageable);
                 yield ResponseEntity.ok(result.map(TotalLogisticInquiryResponse::from).map(enricher::enrichLogistics));
             }
             case "special-request" -> {
-                Page<SpecialRequestInquiry> result = status != null
-                    ? specialRequestInquiryRepository.findByStatus(status, pageable)
-                    : specialRequestInquiryRepository.findAll(pageable);
+                Page<SpecialRequestInquiry> result = resolveSpecialRequestPage(status, userId, pageable);
                 yield ResponseEntity.ok(result.map(SpecialRequestInquiryResponse::from).map(enricher::enrichSpecialRequest));
             }
             default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
         };
+    }
+
+    private Page<ShippingAgencyInquiry> resolveShippingAgencyPage(InquiryStatus status, Long userId, Pageable pageable) {
+        if (userId != null && status != null) {
+            return shippingAgencyInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
+        }
+        if (userId != null) {
+            return shippingAgencyInquiryRepository.findByUserId(userId, pageable);
+        }
+        if (status != null) {
+            return shippingAgencyInquiryRepository.findByStatus(status, pageable);
+        }
+        return shippingAgencyInquiryRepository.findAll(pageable);
+    }
+
+    private Page<CharteringBrokingInquiry> resolveCharteringPage(InquiryStatus status, Long userId, Pageable pageable) {
+        if (userId != null && status != null) {
+            return charteringBrokingInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
+        }
+        if (userId != null) {
+            return charteringBrokingInquiryRepository.findByUserId(userId, pageable);
+        }
+        if (status != null) {
+            return charteringBrokingInquiryRepository.findByStatus(status, pageable);
+        }
+        return charteringBrokingInquiryRepository.findAll(pageable);
+    }
+
+    private Page<FreightForwardingInquiry> resolveFreightPage(InquiryStatus status, Long userId, Pageable pageable) {
+        if (userId != null && status != null) {
+            return freightForwardingInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
+        }
+        if (userId != null) {
+            return freightForwardingInquiryRepository.findByUserId(userId, pageable);
+        }
+        if (status != null) {
+            return freightForwardingInquiryRepository.findByStatus(status, pageable);
+        }
+        return freightForwardingInquiryRepository.findAll(pageable);
+    }
+
+    private Page<TotalLogisticInquiry> resolveLogisticsPage(InquiryStatus status, Long userId, Pageable pageable) {
+        if (userId != null && status != null) {
+            return totalLogisticInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
+        }
+        if (userId != null) {
+            return totalLogisticInquiryRepository.findByUserId(userId, pageable);
+        }
+        if (status != null) {
+            return totalLogisticInquiryRepository.findByStatus(status, pageable);
+        }
+        return totalLogisticInquiryRepository.findAll(pageable);
+    }
+
+    private Page<SpecialRequestInquiry> resolveSpecialRequestPage(InquiryStatus status, Long userId, Pageable pageable) {
+        if (userId != null && status != null) {
+            return specialRequestInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
+        }
+        if (userId != null) {
+            return specialRequestInquiryRepository.findByUserId(userId, pageable);
+        }
+        if (status != null) {
+            return specialRequestInquiryRepository.findByStatus(status, pageable);
+        }
+        return specialRequestInquiryRepository.findAll(pageable);
     }
 
     private ResponseEntity<?> fetchOne(String serviceSlug, Long id) {
@@ -330,6 +414,15 @@ public class AdminInquiryController {
         };
     }
 
+    private boolean deleteByAnyService(Long id) {
+        boolean deleted = deleteIfExists(shippingAgencyInquiryRepository, id);
+        deleted = deleteIfExists(charteringBrokingInquiryRepository, id) || deleted;
+        deleted = deleteIfExists(freightForwardingInquiryRepository, id) || deleted;
+        deleted = deleteIfExists(totalLogisticInquiryRepository, id) || deleted;
+        deleted = deleteIfExists(specialRequestInquiryRepository, id) || deleted;
+        return deleted;
+    }
+
     private <T, R extends org.springframework.data.jpa.repository.JpaRepository<T, Long>> boolean deleteIfExists(R repository, Long id) {
         if (!repository.existsById(id)) {
             return false;
@@ -355,6 +448,7 @@ public class AdminInquiryController {
         return switch (normalized) {
             case "chartering" -> "chartering-ship-broking";
             case "logistics" -> "total-logistics";
+            case "total-logistic" -> "total-logistics";
             case "freight" -> "freight-forwarding";
             case "shipping" -> "shipping-agency";
             case "special" -> "special-request";

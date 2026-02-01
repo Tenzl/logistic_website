@@ -40,6 +40,7 @@ export function ManageOffices() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<number | null>(null)
   const [adding, setAdding] = useState(false)
+  const [useManualCoordinates, setUseManualCoordinates] = useState(false)
   const [formData, setFormData] = useState({
     provinceId: '',
     name: '',
@@ -83,6 +84,7 @@ export function ManageOffices() {
   const handleAdd = () => {
     setAdding(true)
     setEditing(null)
+    setUseManualCoordinates(false)
     setFormData({
       provinceId: '',
       name: '',
@@ -103,6 +105,12 @@ export function ManageOffices() {
     const normalize = (value?: string) => (value || '').toLowerCase().trim()
     const matchedProvinceId = office.provinceId
       ?? provinces.find(p => normalize(p.name) === normalize(office.city) || normalize(p.name) === normalize(office.region))?.id
+    
+    // Set manual coordinates mode if office has coordinates
+    const hasCoordinates = office.latitude != null && office.longitude != null && 
+                          (office.latitude !== 0 || office.longitude !== 0)
+    setUseManualCoordinates(hasCoordinates)
+    
     setFormData({
       provinceId: matchedProvinceId ? matchedProvinceId.toString() : '',
       name: office.name,
@@ -118,9 +126,15 @@ export function ManageOffices() {
   }
 
   const handleSave = async () => {
-    // Validate required fields (lat/lon now optional)
+    // Validate required fields
     if (!formData.provinceId || !formData.name || !formData.address) {
       alert('Please fill in required fields (Province, Name, Address)')
+      return
+    }
+
+    // Validate coordinates if manual mode is enabled
+    if (useManualCoordinates && (!formData.latitude || !formData.longitude)) {
+      alert('Please enter both Latitude and Longitude when using manual coordinates mode')
       return
     }
 
@@ -137,8 +151,14 @@ export function ManageOffices() {
         isActive: true
       }
 
-      if (formData.latitude) payload.latitude = parseFloat(formData.latitude)
-      if (formData.longitude) payload.longitude = parseFloat(formData.longitude)
+      // If manual coordinates enabled, send coordinates; otherwise send 0
+      if (useManualCoordinates) {
+        payload.latitude = formData.latitude ? parseFloat(formData.latitude) : 0
+        payload.longitude = formData.longitude ? parseFloat(formData.longitude) : 0
+      } else {
+        payload.latitude = 0
+        payload.longitude = 0
+      }
 
       console.log('Saving office:', payload)
 
@@ -263,8 +283,28 @@ export function ManageOffices() {
               />
             </div>
 
+            <div className="md:col-span-2 flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <input
+                type="checkbox"
+                id="useManualCoordinates"
+                name="useManualCoordinates"
+                aria-label="Use manual coordinates instead of address"
+                checked={useManualCoordinates}
+                onChange={(e) => {
+                  setUseManualCoordinates(e.target.checked)
+                  if (!e.target.checked) {
+                    setFormData({ ...formData, latitude: '', longitude: '' })
+                  }
+                }}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="useManualCoordinates" className="!mb-0 cursor-pointer">
+                Nhập tọa độ thủ công (Latitude/Longitude) thay vì dùng địa chỉ để hiển thị trên bản đồ Google
+              </Label>
+            </div>
+
             <div>
-              <Label htmlFor="latitude">Latitude (optional)</Label>
+              <Label htmlFor="latitude">Latitude {useManualCoordinates && '*'}</Label>
               <Input
                 id="latitude"
                 type="number"
@@ -272,11 +312,13 @@ export function ManageOffices() {
                 value={formData.latitude}
                 onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                 placeholder="e.g., 10.7769"
+                disabled={!useManualCoordinates}
+                required={useManualCoordinates}
               />
             </div>
 
             <div>
-              <Label htmlFor="longitude">Longitude (optional)</Label>
+              <Label htmlFor="longitude">Longitude {useManualCoordinates && '*'}</Label>
               <Input
                 id="longitude"
                 type="number"
@@ -284,6 +326,8 @@ export function ManageOffices() {
                 value={formData.longitude}
                 onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
                 placeholder="e.g., 106.7009"
+                disabled={!useManualCoordinates}
+                required={useManualCoordinates}
               />
             </div>
 

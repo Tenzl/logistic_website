@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowUp, Upload, X, AlertCircle } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, Ship, Anchor, Truck, FileText, ArrowRight, User, Building2, Send, Paperclip, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowUp, Upload, X, AlertCircle, Loader2 } from 'lucide-react'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -83,6 +83,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Hardcoded department contacts with full information
   const departmentContacts = [
@@ -263,6 +264,7 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       return
     }
     
+    setIsSubmitting(true)
     try {
       // Create FormData for file upload
       const submitData = new FormData()
@@ -319,6 +321,8 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
       toast.error('Submission Error', {
         description: 'An unexpected error occurred. Please try again.'
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -889,10 +893,19 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
                     type="submit" 
                     className="w-full hover-lift" 
                     size="lg"
-                    disabled={user ? !profileComplete : false}
+                    disabled={isSubmitting || (user ? !profileComplete : false)}
                   >
-                    <Send className="mr-2 h-5 w-5" />
-                    {user && !profileComplete ? 'Complete Profile First' : 'Submit Request'}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Đang gửi...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-5 w-5" />
+                        {user && !profileComplete ? 'Complete Profile First' : 'Submit Request'}
+                      </>
+                    )}
                   </Button>
 
                   <p className="text-sm text-muted-foreground text-center">

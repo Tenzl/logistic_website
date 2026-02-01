@@ -27,7 +27,7 @@ public class InquiryResponseEnricher {
                 User user = userService.getUserById(response.getUserId());
                 if (user != null) {
                     response.setFullName(user.getFullName());
-                    response.setContactInfo(user.getEmail());
+                    response.setEmail(user.getEmail());
                     response.setPhone(user.getPhone());
                     response.setCompany(user.getCompany());
                 }
@@ -89,7 +89,7 @@ public class InquiryResponseEnricher {
             try {
                 User user = userService.getUserById(response.getUserId());
                 response.setFullName(user.getFullName());
-                response.setContactInfo(user.getEmail());
+                response.setEmail(user.getEmail());
                 response.setPhone(user.getPhone());
                 response.setCompany(user.getCompany());
             } catch (Exception ignored) {

@@ -19,6 +19,7 @@ import com.example.seatrans.features.inquiry.model.InquiryDocument;
 import com.example.seatrans.features.inquiry.model.InquiryDocument.DocumentType;
 import com.example.seatrans.features.inquiry.repository.InquiryDocumentRepository;
 import com.example.seatrans.shared.dto.CloudinaryUploadResponse;
+import com.example.seatrans.shared.mapper.EntityMapper;
 import com.example.seatrans.shared.service.CloudinaryService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class InquiryDocumentService {
     private final InquiryDocumentRepository documentRepository;
     private final UserService userService;
     private final CloudinaryService cloudinaryService;
+    private final EntityMapper entityMapper;
 
     /**
      * Tải lên tài liệu cho inquiry
@@ -88,7 +90,7 @@ public class InquiryDocumentService {
         log.info("Document uploaded to Cloudinary: id={}, service={}, target={}, type={}, publicId={}", 
                  saved.getId(), serviceSlug, targetId, documentType, cloudinaryResponse.getPublicId());
 
-        return mapToDTO(saved);
+        return entityMapper.toInquiryDocumentDTO(saved);
     }
 
     /**
@@ -98,7 +100,7 @@ public class InquiryDocumentService {
     public List<InquiryDocumentDTO> getDocuments(String serviceSlug, Long targetId) {
         return documentRepository.findByServiceSlugAndTargetIdAndIsActiveTrue(serviceSlug, targetId)
             .stream()
-            .map(this::mapToDTO)
+            .map(entityMapper::toInquiryDocumentDTO)
             .collect(Collectors.toList());
     }
 
@@ -109,7 +111,7 @@ public class InquiryDocumentService {
     public List<InquiryDocumentDTO> getDocumentsByType(String serviceSlug, Long targetId, DocumentType documentType) {
         return documentRepository.findByServiceSlugAndTargetIdAndDocumentType(serviceSlug, targetId, documentType)
             .stream()
-            .map(this::mapToDTO)
+            .map(entityMapper::toInquiryDocumentDTO)
             .collect(Collectors.toList());
     }
 
@@ -204,30 +206,5 @@ public class InquiryDocumentService {
             log.warn("Failed to calculate checksum", e);
             return null;
         }
-    }
-
-    /**
-     * Map entity to DTO
-     */
-    private InquiryDocumentDTO mapToDTO(InquiryDocument document) {
-        return InquiryDocumentDTO.builder()
-            .id(document.getId())
-            .serviceSlug(document.getServiceSlug())
-            .targetId(document.getTargetId())
-            .documentType(document.getDocumentType())
-            .fileName(document.getFileName())
-            .originalFileName(document.getOriginalFileName())
-            .fileSize(document.getFileSize())
-            .mimeType(document.getMimeType())
-            .description(document.getDescription())
-            .uploadedAt(document.getUploadedAt())
-            .uploadedByName(document.getUploadedBy().getFullName())
-            .uploadedByEmail(document.getUploadedBy().getEmail())
-            .version(document.getVersion())
-            .checksum(document.getChecksum())
-            .isActive(document.getIsActive())
-            .cloudinaryUrl(document.getCloudinaryUrl())
-            .cloudinaryPublicId(document.getCloudinaryPublicId())
-            .build();
     }
 }

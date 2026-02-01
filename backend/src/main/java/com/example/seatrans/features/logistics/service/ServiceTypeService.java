@@ -12,6 +12,7 @@ import com.example.seatrans.features.logistics.dto.CreateServiceTypeRequest;
 import com.example.seatrans.features.logistics.dto.ServiceTypeDTO;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
+import com.example.seatrans.shared.mapper.EntityMapper;
 
 @Service
 public class ServiceTypeService {
@@ -22,17 +23,20 @@ public class ServiceTypeService {
     @Autowired
     private GalleryImageRepository galleryImageRepository;
 
+    @Autowired
+    private EntityMapper entityMapper;
+
     public List<ServiceTypeDTO> getAllServiceTypes() {
         return serviceTypeRepository.findAll()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toServiceTypeDTO)
                 .collect(Collectors.toList());
     }
 
     public List<ServiceTypeDTO> getActiveServiceTypes() {
         return serviceTypeRepository.findByIsActiveTrue()
                 .stream()
-                .map(this::convertToDTO)
+                .map(entityMapper::toServiceTypeDTO)
                 .collect(Collectors.toList());
     }
 
@@ -43,19 +47,19 @@ public class ServiceTypeService {
         return serviceTypeRepository.findByNameContainingIgnoreCase(searchQuery)
                 .stream()
                 .filter(ServiceTypeEntity::getIsActive)
-                .map(this::convertToDTO)
+                .map(entityMapper::toServiceTypeDTO)
                 .collect(Collectors.toList());
     }
 
     public ServiceTypeDTO getServiceTypeById(Long id) {
         return serviceTypeRepository.findById(id)
-                .map(this::convertToDTO)
+                .map(entityMapper::toServiceTypeDTO)
                 .orElse(null);
     }
 
     public ServiceTypeDTO getServiceTypeByName(String name) {
         return serviceTypeRepository.findByName(name)
-                .map(this::convertToDTO)
+                .map(entityMapper::toServiceTypeDTO)
                 .orElse(null);
     }
 
@@ -63,7 +67,7 @@ public class ServiceTypeService {
         // Check if service type already exists
         Optional<ServiceTypeEntity> existing = serviceTypeRepository.findByName(request.getName());
         if (existing.isPresent()) {
-            return convertToDTO(existing.get());
+            return entityMapper.toServiceTypeDTO(existing.get());
         }
 
         ServiceTypeEntity serviceType = new ServiceTypeEntity();
@@ -73,7 +77,7 @@ public class ServiceTypeService {
         serviceType.setIsActive(true);
 
         ServiceTypeEntity savedServiceType = serviceTypeRepository.save(serviceType);
-        return convertToDTO(savedServiceType);
+        return entityMapper.toServiceTypeDTO(savedServiceType);
     }
 
     public ServiceTypeDTO updateServiceType(Long id, CreateServiceTypeRequest request) {
@@ -88,7 +92,7 @@ public class ServiceTypeService {
         serviceType.setDescription(request.getDescription());
 
         ServiceTypeEntity updatedServiceType = serviceTypeRepository.save(serviceType);
-        return convertToDTO(updatedServiceType);
+        return entityMapper.toServiceTypeDTO(updatedServiceType);
     }
 
     public void deleteServiceType(Long id) {
@@ -101,15 +105,5 @@ public class ServiceTypeService {
 
     public long getServiceTypeCount() {
         return serviceTypeRepository.count();
-    }
-
-    private ServiceTypeDTO convertToDTO(ServiceTypeEntity serviceType) {
-        return new ServiceTypeDTO(
-                serviceType.getId(),
-                serviceType.getName(),
-                serviceType.getDisplayName(),
-                serviceType.getDescription(),
-                serviceType.getIsActive()
-        );
     }
 }

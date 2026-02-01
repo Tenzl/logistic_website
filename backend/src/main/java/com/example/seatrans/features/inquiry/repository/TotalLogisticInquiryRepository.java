@@ -12,4 +12,5 @@ import com.example.seatrans.features.inquiry.model.TotalLogisticInquiry;
 public interface TotalLogisticInquiryRepository extends JpaRepository<TotalLogisticInquiry, Long> {
     Page<TotalLogisticInquiry> findByStatus(InquiryStatus status, Pageable pageable);
     Page<TotalLogisticInquiry> findByUserId(Long userId, Pageable pageable);
+    Page<TotalLogisticInquiry> findByUserIdAndStatus(Long userId, InquiryStatus status, Pageable pageable);
 }

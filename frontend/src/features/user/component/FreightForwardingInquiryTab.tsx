@@ -2,14 +2,14 @@
 
 import { BaseInquiryHistoryLayout } from '@/modules/users/components/history/BaseInquiryHistoryLayout'
 
-export function FreightForwardingInquiriesTab() {
+export function FreightForwardingInquiryTab() {
   return (
     <BaseInquiryHistoryLayout
       serviceType="freight-forwarding"
       serviceLabel="Freight Forwarding"
-      isAdmin={true}
+      isAdmin={false}
       title="Freight Forwarding Inquiries"
-      description="Manage all freight forwarding service inquiries"
+      description="View your freight forwarding service inquiries"
     />
   )
 }

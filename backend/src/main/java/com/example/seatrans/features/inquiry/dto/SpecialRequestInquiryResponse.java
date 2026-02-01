@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class SpecialRequestInquiryResponse {
     private Long id;
     private String fullName;
-    private String contactInfo;
+    private String email;
     private String phone;
     private String company;
     private Long userId;
@@ -50,6 +50,8 @@ public class SpecialRequestInquiryResponse {
             .relatedDepartmentName(inquiry.getRelatedDepartmentName())
             .message(inquiry.getMessage())
             .otherInfo(inquiry.getOtherInfo())
+            // Use subject as display name (will be enriched with user info separately)
+            .fullName(inquiry.getSubject())
             .build();
     }
 }

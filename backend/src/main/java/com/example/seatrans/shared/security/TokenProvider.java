@@ -1,7 +1,5 @@
 package com.example.seatrans.shared.security;
 
-import java.util.List;
-
 import com.example.seatrans.features.auth.model.User;
 
 /**
@@ -47,9 +45,9 @@ public interface TokenProvider {
     Long getUserIdFromToken(String token);
     
     /**
-     * Extract roles from token
+     * Extract role from token
      * @param token Token string
-     * @return List of role names
+     * @return Role name (single role per user)
      */
-    List<String> getRolesFromToken(String token);
+    String getRoleFromToken(String token);
 }

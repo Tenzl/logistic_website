@@ -2,14 +2,14 @@
 
 import { BaseInquiryHistoryLayout } from '@/modules/users/components/history/BaseInquiryHistoryLayout'
 
-export function LogisticsInquiriesTab() {
+export function LogisticsInquiryTab() {
   return (
     <BaseInquiryHistoryLayout
       serviceType="total-logistic"
       serviceLabel="Total Logistics"
-      isAdmin={true}
+      isAdmin={false}
       title="Total Logistics Inquiries"
-      description="Manage all total logistics service inquiries"
+      description="View your total logistics service inquiries"
     />
   )
 }

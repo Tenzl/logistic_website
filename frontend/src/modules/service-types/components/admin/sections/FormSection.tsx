@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/modules/auth/context/AuthContext'
 import { authService } from '@/modules/auth/services/authService'
-import { ChevronsUpDown, AlertCircle } from 'lucide-react'
+import { ChevronsUpDown, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -476,17 +476,47 @@ export function FormSection({
     }
     
     const isNumber = field.type === 'number'
+    const numberRegex = /^\d*(\.\d{0,2})?$/
+
+    const allowNumber = (next: string) => next === '' || numberRegex.test(next)
+
+    const handleNumberChange = (next: string) => {
+      if (allowNumber(next)) {
+        onChange(field.id, next)
+      }
+    }
+
+    const handleNumberKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+      const allowedNavigation = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End', 'Enter']
+      const isShortcut = (e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())
+      if (allowedNavigation.includes(e.key) || isShortcut) return
+
+      if (e.key === '.' && value.includes('.')) {
+        e.preventDefault()
+        return
+      }
+
+      if (!/\d/.test(e.key) && e.key !== '.') {
+        e.preventDefault()
+      }
+    }
+
+    const handleNumberPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+      const pasted = e.clipboardData.getData('text')?.trim() || ''
+      if (!allowNumber(pasted)) {
+        e.preventDefault()
+      }
+    }
 
     return (
       <Input
         id={field.id}
-        type={field.type}
+        type={isNumber ? 'text' : field.type}
         inputMode={isNumber ? 'decimal' : undefined}
-        pattern={isNumber ? "^\\d+(\\.\\d{0,2})?$" : undefined}
-        step={isNumber ? '0.01' : undefined}
-        min={isNumber ? '0' : undefined}
         value={value}
-        onChange={e => onChange(field.id, e.target.value)}
+        onChange={isNumber ? e => handleNumberChange(e.target.value) : e => onChange(field.id, e.target.value)}
+        onKeyDown={isNumber ? handleNumberKeyDown : undefined}
+        onPaste={isNumber ? handleNumberPaste : undefined}
         required={field.required}
         placeholder={field.placeholder}
         disabled={disabled}
@@ -652,7 +682,14 @@ export function FormSection({
                   size="lg"
                   disabled={submitting || !isAuthenticated || !profileComplete || !form.serviceTypeId || hasNegativeNumbers}
                 >
-                  {submitting ? 'Đang gửi...' : (!profileComplete && isAuthenticated) ? 'Complete Profile First' : form.submitButtonText}
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Đang gửi...
+                    </>
+                  ) : (
+                    (!profileComplete && isAuthenticated) ? 'Complete Profile First' : form.submitButtonText
+                  )}
                 </Button>
               </form>
             </CardContent>

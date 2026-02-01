@@ -40,7 +40,6 @@ import { AddImageTab } from './AddImageTab'
 import { ManageImagesTab } from './ManageImagesTab'
 import { ManagePorts } from './ManagePorts'
 import { ManageImageTypes } from './ManageImageTypes'
-import { ManageInquiriesTab } from './ManageInquiriesTab'
 import { ManagePosts } from './ManagePosts'
 import { ManageCategories } from './ManageCategories'
 import { ManageServices } from './ManageServices'
@@ -201,7 +200,6 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           {activeSection === 'profile' && <EditProfileTab />}
           {activeSection === 'create-invoice' && <CreateInvoiceTab />}
-          {activeSection === 'inquiry' && <ManageInquiriesTab />}
           {activeSection === 'shipping-agency-inquiries' && <ShippingAgencyInquiriesTab />}
           {activeSection === 'freight-forwarding-inquiries' && <FreightForwardingInquiriesTab />}
           {activeSection === 'logistics-inquiries' && <LogisticsInquiriesTab />}

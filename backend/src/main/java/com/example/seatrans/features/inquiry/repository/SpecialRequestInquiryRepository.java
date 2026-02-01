@@ -12,4 +12,5 @@ import com.example.seatrans.features.inquiry.model.SpecialRequestInquiry;
 public interface SpecialRequestInquiryRepository extends JpaRepository<SpecialRequestInquiry, Long> {
     Page<SpecialRequestInquiry> findByStatus(InquiryStatus status, Pageable pageable);
     Page<SpecialRequestInquiry> findByUserId(Long userId, Pageable pageable);
+    Page<SpecialRequestInquiry> findByUserIdAndStatus(Long userId, InquiryStatus status, Pageable pageable);
 }

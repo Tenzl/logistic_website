@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +50,7 @@ import com.example.seatrans.features.ports.repository.PortRepository;
 import com.example.seatrans.features.provinces.repository.ProvinceRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -97,23 +99,68 @@ public class PublicInquiryController {
     /**
      * GET /api/inquiries/user/{userId}
      * Get all inquiries for a specific user (authenticated users only)
+     * SECURITY: Validates that the authenticated user matches the userId in path
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getInquiriesByUser(
             @PathVariable Long userId,
             @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size) {
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "serviceType", required = false) String serviceType,
+            HttpServletRequest request) {
+
+        // SECURITY CHECK: Verify authenticated user matches the requested userId
+        Long currentUserId = (Long) request.getAttribute("userId");
+        if (currentUserId == null || !currentUserId.equals(userId)) {
+            log.warn("Unauthorized access attempt: user {} tried to access inquiries of user {}", 
+                    currentUserId, userId);
+            return ResponseEntity.status(403).body(Map.of("error", "Forbidden", 
+                    "message", "You can only view your own inquiries"));
+        }
 
         Pageable pageable = Pageable.unpaged();
 
-        // Aggregate all inquiries of the user, newest first
-        var shippingAgency = shippingAgencyInquiryRepository.findByUserId(userId, pageable).getContent();
-        var chartering = charteringBrokingInquiryRepository.findByUserId(userId, pageable).getContent();
-        var freight = freightForwardingInquiryRepository.findByUserId(userId, pageable).getContent();
-        var logistics = totalLogisticInquiryRepository.findByUserId(userId, pageable).getContent();
-        var special = specialRequestInquiryRepository.findByUserId(userId, pageable).getContent();
+        // Filter by serviceType if provided
+        boolean filterService = serviceType != null && !serviceType.isBlank();
+        String serviceSlug = filterService ? serviceType.toLowerCase().trim() : null;
+
+        // Aggregate inquiries based on serviceType filter
+        var shippingAgency = (!filterService || "shipping-agency".equals(serviceSlug))
+                ? shippingAgencyInquiryRepository.findByUserId(userId, pageable).getContent()
+                : List.<ShippingAgencyInquiry>of();
+        var chartering = (!filterService || "chartering".equals(serviceSlug))
+                ? charteringBrokingInquiryRepository.findByUserId(userId, pageable).getContent()
+                : List.<CharteringBrokingInquiry>of();
+        var freight = (!filterService || "freight-forwarding".equals(serviceSlug))
+                ? freightForwardingInquiryRepository.findByUserId(userId, pageable).getContent()
+                : List.<FreightForwardingInquiry>of();
+        var logistics = (!filterService || "total-logistic".equals(serviceSlug) || "total-logistics".equals(serviceSlug))
+                ? totalLogisticInquiryRepository.findByUserId(userId, pageable).getContent()
+                : List.<TotalLogisticInquiry>of();
+        var special = (!filterService || "special-request".equals(serviceSlug))
+                ? specialRequestInquiryRepository.findByUserId(userId, pageable).getContent()
+                : List.<SpecialRequestInquiry>of();
 
         List<Map<String, Object>> all = new ArrayList<>();
+        
+        // Helper to enrich with user info
+        java.util.function.BiConsumer<Map<String, Object>, Long> enrichUserInfo = (item, uid) -> {
+            try {
+                var user = userService.getUserById(uid);
+                if (user != null) {
+                    item.put("email", user.getEmail());
+                    item.put("phone", user.getPhone());
+                    item.put("company", user.getCompany());
+                    // Also update fullName from user if not present
+                    if (!item.containsKey("fullName") || item.get("fullName") == null) {
+                        item.put("fullName", user.getFullName());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not enrich user info for userId {}: {}", uid, e.getMessage());
+            }
+        };
+        
         shippingAgency.forEach(i -> {
             ShippingAgencyInquiryResponse dto = ShippingAgencyInquiryResponse.from(i);
             Map<String, Object> item = objectMapper.convertValue(dto, Map.class);
@@ -122,6 +169,7 @@ public class PublicInquiryController {
                 "name", "shipping-agency",
                 "displayName", "Shipping Agency"
             ));
+            enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
         });
         chartering.forEach(i -> {
@@ -132,6 +180,7 @@ public class PublicInquiryController {
                 "name", "chartering",
                 "displayName", "Chartering & Broking"
             ));
+            enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
         });
         freight.forEach(i -> {
@@ -142,6 +191,7 @@ public class PublicInquiryController {
                 "name", "freight-forwarding",
                 "displayName", "Freight Forwarding"
             ));
+            enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
         });
         logistics.forEach(i -> {
@@ -152,6 +202,7 @@ public class PublicInquiryController {
                 "name", "total-logistics",
                 "displayName", "Total Logistics"
             ));
+            enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
         });
         special.forEach(i -> {
@@ -162,6 +213,7 @@ public class PublicInquiryController {
                 "name", "special-request",
                 "displayName", "Special Request"
             ));
+            enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
         });
 
@@ -598,6 +650,87 @@ public class PublicInquiryController {
             default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
         };
     }
+
+    /**
+     * DELETE /api/v1/inquiries/batch
+     * Delete multiple inquiries for authenticated user only
+     * SECURITY: Verifies ownership before deletion
+     */
+    @DeleteMapping("/batch")
+    public ResponseEntity<?> deleteUserInquiries(
+            @RequestBody BatchDeleteRequest request,
+            HttpServletRequest servletRequest) {
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "ids are required"));
+        }
+
+        // SECURITY CHECK: Get current authenticated user
+        Long userId = (Long) servletRequest.getAttribute("userId");
+        if (userId == null) {
+            log.warn("Unauthorized batch delete attempt: no authenticated user");
+            return ResponseEntity.status(403).body(Map.of("error", "Forbidden", 
+                    "message", "You must be authenticated to delete inquiries"));
+        }
+        int deletedCount = 0;
+        int forbiddenCount = 0;
+
+        for (Long id : request.ids()) {
+            // Verify ownership before deletion
+            boolean owned = checkOwnership(id, userId);
+            if (owned) {
+                if (deleteByAnyService(id)) {
+                    deletedCount++;
+                } else {
+                    log.warn("User {} tried to delete non-existent inquiry {}", userId, id);
+                }
+            } else {
+                forbiddenCount++;
+                log.warn("User {} tried to delete inquiry {} they don't own", userId, id);
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "deleted", deletedCount,
+            "forbidden", forbiddenCount,
+            "requested", request.ids().size()
+        ));
+    }
+
+    /**
+     * Check if inquiry belongs to user
+     */
+    private boolean checkOwnership(Long inquiryId, Long userId) {
+        return shippingAgencyInquiryRepository.findById(inquiryId).map(i -> i.getUserId().equals(userId)).orElse(false)
+            || charteringBrokingInquiryRepository.findById(inquiryId).map(i -> i.getUserId().equals(userId)).orElse(false)
+            || freightForwardingInquiryRepository.findById(inquiryId).map(i -> i.getUserId().equals(userId)).orElse(false)
+            || totalLogisticInquiryRepository.findById(inquiryId).map(i -> i.getUserId().equals(userId)).orElse(false)
+            || specialRequestInquiryRepository.findById(inquiryId).map(i -> i.getUserId().equals(userId)).orElse(false);
+    }
+
+    /**
+     * Delete inquiry from any service by ID
+     */
+    private boolean deleteByAnyService(Long id) {
+        boolean deleted = deleteIfExists(shippingAgencyInquiryRepository, id);
+        deleted = deleteIfExists(charteringBrokingInquiryRepository, id) || deleted;
+        deleted = deleteIfExists(freightForwardingInquiryRepository, id) || deleted;
+        deleted = deleteIfExists(totalLogisticInquiryRepository, id) || deleted;
+        deleted = deleteIfExists(specialRequestInquiryRepository, id) || deleted;
+        return deleted;
+    }
+
+    private <T, R extends org.springframework.data.jpa.repository.JpaRepository<T, Long>> boolean deleteIfExists(R repository, Long id) {
+        if (!repository.existsById(id)) {
+            return false;
+        }
+        repository.deleteById(id);
+        return true;
+    }
+
+    /**
+     * DTO for batch delete request
+     */
+    public record BatchDeleteRequest(List<Long> ids) {}
 
     private ResponseEntity<?> fetchOne(String serviceSlug, Long id) {
         String normalized = normalizeSlug(serviceSlug);

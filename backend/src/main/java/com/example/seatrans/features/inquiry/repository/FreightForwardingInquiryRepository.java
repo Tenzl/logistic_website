@@ -12,4 +12,5 @@ import com.example.seatrans.features.inquiry.model.InquiryStatus;
 public interface FreightForwardingInquiryRepository extends JpaRepository<FreightForwardingInquiry, Long> {
     Page<FreightForwardingInquiry> findByStatus(InquiryStatus status, Pageable pageable);
     Page<FreightForwardingInquiry> findByUserId(Long userId, Pageable pageable);
+    Page<FreightForwardingInquiry> findByUserIdAndStatus(Long userId, InquiryStatus status, Pageable pageable);
 }

@@ -2,7 +2,6 @@ package com.example.seatrans.shared.security;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,19 +44,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Extract user information from token
                     Long userId = tokenProvider.getUserIdFromToken(token);
                     String email = tokenProvider.getEmailFromToken(token);
-                    List<String> roles = tokenProvider.getRolesFromToken(token);
+                    String role = tokenProvider.getRoleFromToken(token);
                     
-                    log.debug("JWT token validated for user: {} (ID: {}) with roles: {}", email, userId, roles);
+                    log.debug("JWT token validated for user: {} (ID: {}) with role: {}", email, userId, role);
                     
                     // Store in request attributes for downstream use
                     request.setAttribute("userId", userId);
                     request.setAttribute("email", email);
-                    request.setAttribute("roles", roles);
+                    request.setAttribute("role", role);
                     
                     // Set Spring Security authentication context
-                    List<GrantedAuthority> authorities = roles.stream()
-                            .map(SimpleGrantedAuthority::new)
-                            .collect(Collectors.toList());
+                    List<GrantedAuthority> authorities = role != null 
+                            ? List.of(new SimpleGrantedAuthority(role))
+                            : List.of();
                     
                     UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(email, null, authorities);
