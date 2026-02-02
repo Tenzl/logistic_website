@@ -7,6 +7,7 @@ import { categoryService } from '@/modules/categories/services/categoryService'
 import pageStyles from './PostPage.module.css'
 import cardStyles from './PostCard.module.css'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { HeroBannerSection } from '@/modules/service-types/components/admin/sections/HeroBannerSection'
 
 // Helper to extract excerpt from post
 const extractExcerpt = (post: Post): string => {
@@ -54,12 +55,14 @@ interface PostsPageProps {
 }
 
 export function PostsPage({ onNavigateHome, onNavigateToPostDetail }: PostsPageProps) {
-  const [headerRef, headerInView] = useIntersectionObserver()
   const [posts, setPosts] = useState<Post[]>([])
   const [categories, setCategories] = useState<CategoryResponse[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [displayCount, setDisplayCount] = useState(6)
+
+  const heroImage =
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80'
 
   useEffect(() => {
     loadData()
@@ -113,17 +116,14 @@ export function PostsPage({ onNavigateHome, onNavigateToPostDetail }: PostsPageP
 
   return (
     <div className={`${pageStyles.page} bg-background`}>
-      {/* Page Header */}
-      <section className={`${pageStyles.header} bg-primary text-primary-foreground`}>
-        <div className="container">
-          <div ref={headerRef} className={`${pageStyles.headerInner} ${headerInView ? 'fade-rise' : 'opacity-0'}`}>
-            <h1 className={pageStyles.headerTitle}>Posts &amp; Insights</h1>
-            <p className={pageStyles.headerLead}>
-              Stay updated with the latest news, insights, and best practices in maritime logistics and shipping.
-            </p>
-          </div>
-        </div>
-      </section>
+      <HeroBannerSection
+        title="Posts & Insights"
+        subtitle="Knowledge Center"
+        description="Stay updated with the latest news, insights, and best practices in maritime logistics and shipping."
+        image={heroImage}
+        serviceName="Insights"
+        onNavigateHome={onNavigateHome}
+      />
 
       {/* Category Filter */}
       <section className={pageStyles.filterBar}>

@@ -217,6 +217,15 @@
     color: hsl(var(--muted-foreground));
   }
 
+/* Service Hero */
+.service-hero-bg {
+  min-height: 320px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: linear-gradient(90deg, rgba(10, 32, 64, 0.55), rgba(10, 32, 64, 0.35)), var(--hero-bg);
+}
+
   /* Article content: code blocks */
   .article-content :where(pre) {
     margin: 1.5rem 0;

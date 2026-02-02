@@ -1,9 +1,7 @@
 import { ReactNode } from 'react'
 import { LucideIcon } from 'lucide-react'
-import { Hero } from '@/modules/landing/components/public/Hero'
 
-import { BreadcrumbSection } from './sections/BreadcrumbSection'
-import { DescriptionSection } from './sections/DescriptionSection'
+import { HeroBannerSection } from './sections/HeroBannerSection'
 import { ContactSection, ContactTeam, StatItem } from './sections/ContactSection'
 import { ServicesSection, ServiceItem } from './sections/ServicesSection'
 import { FormSection, FormField, InquiryPayload } from './sections/FormSection'
@@ -24,6 +22,7 @@ export interface ServiceTemplateProps {
     title: string
     description: string
     image?: string
+    subtitle?: string
   }
 
   contacts?: {
@@ -72,7 +71,7 @@ export function ServiceTemplate({
   services,
   form,
   gallery,
-  customSections
+  customSections,
 }: ServiceTemplateProps) {
   const mergedForm = form
     ? {
@@ -89,32 +88,25 @@ export function ServiceTemplate({
 
   return (
     <div>
-      <Hero title={hero.title} subtitle={serviceName} image={hero.image} />
+      <HeroBannerSection
+        title={hero.title}
+        subtitle={hero.subtitle || 'Services'}
+        description={hero.description}
+        image={hero.image || ''}
+        serviceName={serviceName}
+        serviceIcon={ServiceIcon}
+        onNavigateHome={onNavigateHome}
+      />
 
       <div className="container pb-10">
-        <BreadcrumbSection
-          serviceName={serviceName}
-          onNavigateHome={() => onNavigateHome?.()}
-        />
-
-        <DescriptionSection
-          serviceIcon={ServiceIcon}
-          description={hero.description}
-        />
-
         {contacts && <ContactSection contacts={contacts} />}
 
         {services && <ServicesSection services={services} />}
 
-        {form && mergedForm && (
-          <FormSection form={mergedForm} />
-        )}
+        {form && mergedForm && <FormSection form={mergedForm} />}
 
         {gallery?.enabled && serviceTypeId && (
-          <GallerySection
-            serviceTypeId={serviceTypeId}
-            gallery={gallery}
-          />
+          <GallerySection serviceTypeId={serviceTypeId} gallery={gallery} />
         )}
 
         {customSections?.map((node, i) => (

@@ -25,6 +25,7 @@ import {
   type FileUploadProps,
   FileUploadTrigger,
 } from '@/shared/components/ui/file-upload'
+import { HeroBannerSection } from '@/modules/service-types/components/admin/sections/HeroBannerSection'
 
 interface ContactPageProps {
   onNavigateHome: () => void
@@ -63,7 +64,6 @@ interface Department {
 
 export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const { user, profileComplete } = useAuth()
-  const [heroRef, heroVisible] = useIntersectionObserver({ threshold: 0.1 })
   const [mapRef, mapVisible] = useIntersectionObserver({ threshold: 0.1 })
   const [departmentsRef, departmentsVisible] = useIntersectionObserver({ threshold: 0.1 })
   const [formRef, formVisible] = useIntersectionObserver({ threshold: 0.1 })
@@ -84,6 +84,9 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
   const [loading, setLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const heroImage =
+    'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80'
 
   // Hardcoded department contacts with full information
   const departmentContacts = [
@@ -328,17 +331,14 @@ export function ContactPage({ onNavigateHome }: ContactPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section - Compact */}
-      <section className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground py-16">
-        <div className="container">
-          <div ref={heroRef} className={`text-center max-w-3xl mx-auto ${heroVisible ? 'fade-rise' : 'opacity-0'}`}>
-            <h2 className="fade-rise text-3xl md:text-4xl font-bold mb-4">Contact SEATRANS</h2>
-            <p className="text-lg opacity-90">
-              Our nationwide network is ready to support your maritime logistics needs
-            </p>
-          </div>
-        </div>
-      </section>
+      <HeroBannerSection
+        title="Contact SEATRANS"
+        subtitle="Customer Support"
+        description="Our nationwide network is ready to support your maritime logistics needs."
+        image={heroImage}
+        serviceName="Contact"
+        onNavigateHome={onNavigateHome}
+      />
 
       {/* Company Contact - General Manager Hotline */}
       <section className="py-12 bg-muted/30">
