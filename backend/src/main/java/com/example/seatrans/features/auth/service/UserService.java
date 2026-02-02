@@ -46,7 +46,7 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // Validate role nếu có
+        // Validate role if present
         if (user.getRole() != null) {
             roleValidationService.validateUserRole(user);
         }
@@ -137,11 +137,11 @@ public class UserService {
     }
     
     /**
-     * Táº¡o user vá»›i role
+     * Create user with role
      * 
      * @param user User entity
-     * @param roleName role name (VD: "ROLE_ADMIN", "ROLE_EMPLOYEE")
-     * @return User Ä‘Ã£ lÆ°u
+     * @param roleName role name (e.g., "ROLE_ADMIN", "ROLE_EMPLOYEE")
+     * @return Saved User
      */
     public User createUserWithRole(User user, String roleName) {
         Role role = roleRepository.findByName(roleName)
@@ -156,7 +156,7 @@ public class UserService {
     // ==================== Read Operations ====================
     
     /**
-     * Lấy user theo ID
+     * Get user by ID
      */
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
@@ -165,7 +165,7 @@ public class UserService {
     }
 
     /**
-     * Lấy user theo email
+     * Get user by email
      */
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
@@ -174,7 +174,7 @@ public class UserService {
     }
     
     /**
-     * Láº¥y táº¥t cáº£ users
+     * Get all users
      */
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
@@ -182,7 +182,7 @@ public class UserService {
     }
     
     /**
-     * Láº¥y active users
+     * Get active users
      */
     @Transactional(readOnly = true)
     public List<User> getActiveUsers() {
@@ -190,7 +190,7 @@ public class UserService {
     }
     
     /**
-     * Láº¥y users theo role
+     * Get users by role
      */
     @Transactional(readOnly = true)
     public List<User> getUsersByRole(String roleName) {
@@ -198,7 +198,7 @@ public class UserService {
     }
     
     /**
-     * Láº¥y users theo role group
+     * Get users by role group
      */
     @Transactional(readOnly = true)
     public List<User> getUsersByRoleGroup(RoleGroup roleGroup) {
@@ -206,7 +206,7 @@ public class UserService {
     }
     
     /**
-     * TÃ¬m kiáº¿m users
+     * Search users
      */
     @Transactional(readOnly = true)
     public List<User> searchUsers(String keyword) {
@@ -216,8 +216,8 @@ public class UserService {
     // ==================== Update Operations ====================
     
     /**
-     * Cáº­p nháº­t user information
-     * KhÃ´ng update password vÃ  roles á»Ÿ Ä‘Ã¢y
+     * Update user information
+     * Does not update password and roles here
      */
     public User updateUser(Long userId, User updatedUser) {
         User existingUser = getUserById(userId);
@@ -234,7 +234,7 @@ public class UserService {
         }
 
         
-        // Check email duplicate náº¿u thay Ä‘á»•i
+        // Check email duplicate if changed
         if (updatedUser.getEmail() != null && !updatedUser.getEmail().equals(existingUser.getEmail())) {
             if (userRepository.existsByEmail(updatedUser.getEmail())) {
                 throw new DuplicateUserException("Email", updatedUser.getEmail());
@@ -246,7 +246,7 @@ public class UserService {
     }
     
     /**
-     * Äá»•i password
+     * Change password
      */
     public void changePassword(Long userId, String oldPassword, String newPassword) {
         User user = getUserById(userId);
@@ -282,7 +282,7 @@ public class UserService {
     // ==================== Role Management ====================
     
     /**
-     * GÃ¡n role cho user
+     * Assign role to user
      */
     public User assignRole(Long userId, String roleName) {
         User user = getUserById(userId);
@@ -318,7 +318,7 @@ public class UserService {
     // ==================== Delete Operations ====================
     
     /**
-     * XÃ³a user (hard delete)
+     * Delete user (hard delete)
      */
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
@@ -328,7 +328,7 @@ public class UserService {
     // ==================== Validation & Check ====================
     
     /**
-     * Kiá»ƒm tra email Ä‘Ã£ tá»“n táº¡i chÆ°a
+     * Check if email already exists
      */
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
@@ -360,7 +360,7 @@ public class UserService {
     }
     
     /**
-     * Kiá»ƒm tra user cÃ³ role khÃ´ng
+     * Check if user has role
      */
     @Transactional(readOnly = true)
     public boolean hasRole(Long userId, String roleName) {
@@ -410,7 +410,7 @@ public class UserService {
     // ==================== Statistics ====================
     
     /**
-     * Äáº¿m tá»•ng sá»‘ users
+     * Count total users
      */
     @Transactional(readOnly = true)
     public Long countTotalUsers() {
@@ -418,7 +418,7 @@ public class UserService {
     }
     
     /**
-     * Äáº¿m active users
+     * Count active users
      */
     @Transactional(readOnly = true)
     public Long countActiveUsers() {
@@ -426,7 +426,7 @@ public class UserService {
     }
     
     /**
-     * Äáº¿m users theo role group
+     * Count users by role group
      */
     @Transactional(readOnly = true)
     public Long countUsersByRoleGroup(RoleGroup roleGroup) {
