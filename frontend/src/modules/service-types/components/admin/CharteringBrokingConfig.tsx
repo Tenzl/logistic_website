@@ -15,8 +15,8 @@ export function CharteringBroking({ onNavigateHome }: CharteringBrokingProps) {
 
     hero: {
       title: 'Chartering & Broking Services',
-      description:
-        "Thanks to the support of shipowners community, Seatrans is always recommended to have suitable tonnage with competitive rates to fix our charterer's shipments on time.",
+      description:"",
+      // description: "Thanks to the support of shipowners community, Seatrans is always recommended to have suitable tonnage with competitive rates to fix our charterer's shipments on time.",
       image:
         'https://images.unsplash.com/photo-1645255315921-09c386465750?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMGZyZWlnaHQlMjBzaGlwJTIwY2hhcnRlcmluZ3xlbnwxfHx8fDE3NjUwNzQzMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
     },

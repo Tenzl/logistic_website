@@ -29,15 +29,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDTO login(LoginDTO loginDTO) {
-        boolean isValid = verifyCredentials(loginDTO.getEmail(), loginDTO.getPassword());
-        if (!isValid) {
-            return null;
-        }
         Optional<User> optUser = userRepository.findByEmail(loginDTO.getEmail());
         if (optUser.isEmpty()) {
             return null;
         }
+
         User user = optUser.get();
+
+        // Validate credentials once
+        if (!user.getIsActive() || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+            return null;
+        }
 
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
@@ -113,19 +115,5 @@ public class AuthServiceImpl implements AuthService {
             .orElseThrow(() -> new UserNotFoundException(userId));
         
         return entityMapper.toUserDTO(user);
-    }
-
-    /**
-     * Verify credentials (login) using email.
-     */
-    private boolean verifyCredentials(String email, String password) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-
-        if (userOpt.isEmpty()) {
-            return false;
-        }
-
-        User user = userOpt.get();
-        return user.getIsActive() && passwordEncoder.matches(password, user.getPassword());
     }
 }

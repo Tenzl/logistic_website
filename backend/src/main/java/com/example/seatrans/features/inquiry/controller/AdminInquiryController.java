@@ -36,6 +36,8 @@ import com.example.seatrans.features.inquiry.repository.SpecialRequestInquiryRep
 import com.example.seatrans.features.inquiry.repository.TotalLogisticInquiryRepository;
 import com.example.seatrans.features.inquiry.service.InquiryDocumentService;
 import com.example.seatrans.features.inquiry.service.InquiryResponseEnricher;
+import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
+import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +54,13 @@ public class AdminInquiryController {
     private final TotalLogisticInquiryRepository totalLogisticInquiryRepository;
     private final InquiryResponseEnricher enricher;
     private final InquiryDocumentService inquiryDocumentService;
+    private final ServiceTypeRepository serviceTypeRepository;
+
+    private static final String SHIPPING_AGENCY = "SHIPPING AGENCY";
+    private static final String CHARTERING = "CHARTERING";
+    private static final String FREIGHT_FORWARDING = "FREIGHT FORWARDING";
+    private static final String LOGISTICS = "LOGISTICS";
+    private static final String SPECIAL_REQUEST = "SPECIAL REQUEST";
 
     public AdminInquiryController(ShippingAgencyInquiryRepository shippingAgencyInquiryRepository,
                                   CharteringBrokingInquiryRepository charteringBrokingInquiryRepository,
@@ -59,7 +68,8 @@ public class AdminInquiryController {
                                   SpecialRequestInquiryRepository specialRequestInquiryRepository,
                                   TotalLogisticInquiryRepository totalLogisticInquiryRepository,
                                   InquiryResponseEnricher enricher,
-                                  InquiryDocumentService inquiryDocumentService) {
+                                  InquiryDocumentService inquiryDocumentService,
+                                  ServiceTypeRepository serviceTypeRepository) {
         this.shippingAgencyInquiryRepository = shippingAgencyInquiryRepository;
         this.charteringBrokingInquiryRepository = charteringBrokingInquiryRepository;
         this.freightForwardingInquiryRepository = freightForwardingInquiryRepository;
@@ -67,6 +77,7 @@ public class AdminInquiryController {
         this.totalLogisticInquiryRepository = totalLogisticInquiryRepository;
         this.enricher = enricher;
         this.inquiryDocumentService = inquiryDocumentService;
+        this.serviceTypeRepository = serviceTypeRepository;
     }
 
     // Quick filters per service for admin UI compatibility
@@ -127,62 +138,67 @@ public class AdminInquiryController {
 
     @GetMapping
     public ResponseEntity<?> getInquiries(
-            @RequestParam(value = "serviceSlug") String serviceSlug,
+            @RequestParam(value = "serviceType") String serviceTypeName,
             @RequestParam(value = "status", required = false) InquiryStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        return fetchPage(serviceSlug, status, pageable);
+        return fetchPage(serviceTypeName, status, pageable);
     }
 
-    @GetMapping("/{serviceSlug}")
-    public ResponseEntity<?> getInquiriesBySlug(
-            @PathVariable String serviceSlug,
+    @GetMapping("/{serviceType}")
+    public ResponseEntity<?> getInquiriesByType(
+            @PathVariable("serviceType") String serviceTypeName,
             @RequestParam(value = "status", required = false) InquiryStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        return fetchPage(serviceSlug, status, pageable);
+        return fetchPage(serviceTypeName, status, pageable);
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<?> getRecent(@RequestParam("serviceSlug") String serviceSlug) {
+    public ResponseEntity<?> getRecent(@RequestParam("serviceType") String serviceTypeName) {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        return fetchPage(serviceSlug, null, pageable);
+        return fetchPage(serviceTypeName, null, pageable);
     }
 
-    @DeleteMapping("/{serviceSlug}/{id}")
-    public ResponseEntity<Void> deleteInquiry(@PathVariable String serviceSlug, @PathVariable Long id) {
+    @DeleteMapping("/{serviceType}/{id}")
+    public ResponseEntity<Void> deleteInquiry(@PathVariable("serviceType") String serviceTypeName, @PathVariable Long id) {
         try {
-            boolean deleted = deleteByService(serviceSlug, id);
+            boolean deleted = deleteByService(serviceTypeName, id);
             return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
         } catch (Exception ex) {
-            log.error("Failed to delete inquiry and documents: serviceSlug={}, id={}", serviceSlug, id, ex);
+            log.error("Failed to delete inquiry and documents: serviceType={}, id={}", serviceTypeName, id, ex);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    @GetMapping("/{serviceSlug}/{id}")
-    public ResponseEntity<?> getInquiry(@PathVariable String serviceSlug, @PathVariable Long id) {
-        return fetchOne(serviceSlug, id);
+    @GetMapping("/{serviceType}/{id}")
+    public ResponseEntity<?> getInquiry(@PathVariable("serviceType") String serviceTypeName, @PathVariable Long id) {
+        return fetchOne(serviceTypeName, id);
     }
 
-    @PatchMapping("/{serviceSlug}/{id}/status")
+    @PatchMapping("/{serviceType}/{id}/status")
     public ResponseEntity<?> updateStatus(
-            @PathVariable String serviceSlug,
+            @PathVariable("serviceType") String serviceTypeName,
             @PathVariable Long id,
             @RequestBody UpdateStatusRequest request) {
-        return updateStatusByService(serviceSlug, id, request.status());
+        return updateStatusByService(serviceTypeName, id, request.status());
     }
 
-    @PatchMapping("/{serviceSlug}/{id}/form")
+    @PatchMapping("/{serviceType}/{id}/form")
     public ResponseEntity<?> updateQuoteForm(
-            @PathVariable String serviceSlug,
+            @PathVariable("serviceType") String serviceTypeName,
             @PathVariable Long id,
             @RequestBody UpdateFormRequest request) {
-        String normalized = normalize(serviceSlug);
-        if (!"shipping-agency".equals(normalized)) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Quote form update only supported for shipping-agency"));
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = resolveServiceTypeByName(serviceTypeName);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+        if (!SHIPPING_AGENCY.equals(serviceType.getName())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Quote form update only supported for shipping agency"));
         }
         return shippingAgencyInquiryRepository.findById(id)
             .map(inquiry -> {
@@ -191,14 +207,19 @@ public class AdminInquiryController {
             }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PatchMapping("/{serviceSlug}/{id}/hours")
+    @PatchMapping("/{serviceType}/{id}/hours")
     public ResponseEntity<?> updateQuoteHours(
-            @PathVariable String serviceSlug,
+            @PathVariable("serviceType") String serviceTypeName,
             @PathVariable Long id,
             @RequestBody UpdateHoursRequest request) {
-        String normalized = normalize(serviceSlug);
-        if (!"shipping-agency".equals(normalized)) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Hours update only supported for shipping-agency"));
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = resolveServiceTypeByName(serviceTypeName);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+        if (!SHIPPING_AGENCY.equals(serviceType.getName())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Hours update only supported for shipping agency"));
         }
         return shippingAgencyInquiryRepository.findById(id)
             .map(inquiry -> {
@@ -219,131 +240,143 @@ public class AdminInquiryController {
     public record UpdateFormRequest(String form) {}
     public record UpdateHoursRequest(BigDecimal berthHours, BigDecimal anchorageHours, BigDecimal pilotage3rdMiles) {}
 
-    private ResponseEntity<?> fetchPage(String serviceSlug, InquiryStatus status, Pageable pageable) {
-        String normalized = normalize(serviceSlug);
-        return switch (normalized) {
-            case "shipping-agency" -> {
+    private ResponseEntity<?> fetchPage(String serviceTypeName, InquiryStatus status, Pageable pageable) {
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = resolveServiceTypeByName(serviceTypeName);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+
+        return switch (serviceType.getName()) {
+            case SHIPPING_AGENCY -> {
                 Page<ShippingAgencyInquiry> result = status != null
                     ? shippingAgencyInquiryRepository.findByStatus(status, pageable)
                     : shippingAgencyInquiryRepository.findAll(pageable);
                 yield ResponseEntity.ok(result.map(ShippingAgencyInquiryResponse::from).map(enricher::enrichShippingAgency));
             }
-            case "chartering-ship-broking" -> {
+            case CHARTERING -> {
                 Page<CharteringBrokingInquiry> result = status != null
                     ? charteringBrokingInquiryRepository.findByStatus(status, pageable)
                     : charteringBrokingInquiryRepository.findAll(pageable);
                 yield ResponseEntity.ok(result.map(CharteringBrokingInquiryResponse::from).map(enricher::enrichChartering));
             }
-            case "freight-forwarding" -> {
+            case FREIGHT_FORWARDING -> {
                 Page<FreightForwardingInquiry> result = status != null
                     ? freightForwardingInquiryRepository.findByStatus(status, pageable)
                     : freightForwardingInquiryRepository.findAll(pageable);
                 yield ResponseEntity.ok(result.map(FreightForwardingInquiryResponse::from).map(enricher::enrichFreightForwarding));
             }
-            case "total-logistics" -> {
+            case LOGISTICS -> {
                 Page<TotalLogisticInquiry> result = status != null
                     ? totalLogisticInquiryRepository.findByStatus(status, pageable)
                     : totalLogisticInquiryRepository.findAll(pageable);
                 yield ResponseEntity.ok(result.map(TotalLogisticInquiryResponse::from).map(enricher::enrichLogistics));
             }
-            case "special-request" -> {
+            case SPECIAL_REQUEST -> {
                 Page<SpecialRequestInquiry> result = status != null
                     ? specialRequestInquiryRepository.findByStatus(status, pageable)
                     : specialRequestInquiryRepository.findAll(pageable);
                 yield ResponseEntity.ok(result.map(SpecialRequestInquiryResponse::from).map(enricher::enrichSpecialRequest));
             }
-            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
+            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service type: " + serviceType.getName()));
         };
     }
 
-    private ResponseEntity<?> fetchOne(String serviceSlug, Long id) {
-        String normalized = normalize(serviceSlug);
+    private ResponseEntity<?> fetchOne(String serviceTypeName, Long id) {
+        ServiceTypeEntity serviceType;
         try {
-            return switch (normalized) {
-                case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
-                    .map(ShippingAgencyInquiryResponse::from)
-                    .map(enricher::enrichShippingAgency)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-                case "chartering-ship-broking" -> charteringBrokingInquiryRepository.findById(id)
-                    .map(CharteringBrokingInquiryResponse::from)
-                    .map(enricher::enrichChartering)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-                case "freight-forwarding" -> freightForwardingInquiryRepository.findById(id)
-                    .map(FreightForwardingInquiryResponse::from)
-                    .map(enricher::enrichFreightForwarding)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-                case "total-logistics" -> totalLogisticInquiryRepository.findById(id)
-                    .map(TotalLogisticInquiryResponse::from)
-                    .map(enricher::enrichLogistics)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-                case "special-request" -> specialRequestInquiryRepository.findById(id)
-                    .map(SpecialRequestInquiryResponse::from)
-                    .map(enricher::enrichSpecialRequest)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-                default -> ResponseEntity.notFound().build();
-            };
-        } catch (Exception e) {
-            // Log the error for debugging
-            System.err.println("Error fetching inquiry: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("error", "Internal server error", "message", e.getMessage()));
+            serviceType = resolveServiceTypeByName(serviceTypeName);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
         }
+
+        return switch (serviceType.getName()) {
+            case SHIPPING_AGENCY -> shippingAgencyInquiryRepository.findById(id)
+                .map(ShippingAgencyInquiryResponse::from)
+                .map(enricher::enrichShippingAgency)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+            case CHARTERING -> charteringBrokingInquiryRepository.findById(id)
+                .map(CharteringBrokingInquiryResponse::from)
+                .map(enricher::enrichChartering)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+            case FREIGHT_FORWARDING -> freightForwardingInquiryRepository.findById(id)
+                .map(FreightForwardingInquiryResponse::from)
+                .map(enricher::enrichFreightForwarding)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+            case LOGISTICS -> totalLogisticInquiryRepository.findById(id)
+                .map(TotalLogisticInquiryResponse::from)
+                .map(enricher::enrichLogistics)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+            case SPECIAL_REQUEST -> specialRequestInquiryRepository.findById(id)
+                .map(SpecialRequestInquiryResponse::from)
+                .map(enricher::enrichSpecialRequest)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service type: " + serviceType.getName()));
+        };
     }
 
-    private ResponseEntity<?> updateStatusByService(String serviceSlug, Long id, InquiryStatus status) {
+    private ResponseEntity<?> updateStatusByService(String serviceTypeName, Long id, InquiryStatus status) {
         if (status == null) {
             return ResponseEntity.badRequest().body(Map.of("message", "Status is required"));
         }
-        String normalized = normalize(serviceSlug);
-        return switch (normalized) {
-            case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = resolveServiceTypeByName(serviceTypeName);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+
+        return switch (serviceType.getName()) {
+            case SHIPPING_AGENCY -> shippingAgencyInquiryRepository.findById(id)
                 .map(inquiry -> {
                     inquiry.setStatus(status);
                     return ResponseEntity.ok(shippingAgencyInquiryRepository.save(inquiry));
                 }).orElse(ResponseEntity.notFound().build());
-            case "chartering-ship-broking" -> charteringBrokingInquiryRepository.findById(id)
+            case CHARTERING -> charteringBrokingInquiryRepository.findById(id)
                 .map(inquiry -> {
                     inquiry.setStatus(status);
                     return ResponseEntity.ok(charteringBrokingInquiryRepository.save(inquiry));
                 }).orElse(ResponseEntity.notFound().build());
-            case "freight-forwarding" -> freightForwardingInquiryRepository.findById(id)
+            case FREIGHT_FORWARDING -> freightForwardingInquiryRepository.findById(id)
                 .map(inquiry -> {
                     inquiry.setStatus(status);
                     return ResponseEntity.ok(freightForwardingInquiryRepository.save(inquiry));
                 }).orElse(ResponseEntity.notFound().build());
-            case "total-logistics" -> totalLogisticInquiryRepository.findById(id)
+            case LOGISTICS -> totalLogisticInquiryRepository.findById(id)
                 .map(inquiry -> {
                     inquiry.setStatus(status);
                     return ResponseEntity.ok(totalLogisticInquiryRepository.save(inquiry));
                 }).orElse(ResponseEntity.notFound().build());
-            case "special-request" -> specialRequestInquiryRepository.findById(id)
+            case SPECIAL_REQUEST -> specialRequestInquiryRepository.findById(id)
                 .map(inquiry -> {
                     inquiry.setStatus(status);
                     return ResponseEntity.ok(specialRequestInquiryRepository.save(inquiry));
                 }).orElse(ResponseEntity.notFound().build());
-            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
+            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service type: " + serviceType.getName()));
         };
     }
 
-    private boolean deleteByService(String serviceSlug, Long id) throws Exception {
-        String normalized = normalize(serviceSlug);
-        boolean deleted = switch (normalized) {
-            case "shipping-agency" -> deleteIfExists(shippingAgencyInquiryRepository, id);
-            case "chartering-ship-broking" -> deleteIfExists(charteringBrokingInquiryRepository, id);
-            case "freight-forwarding" -> deleteIfExists(freightForwardingInquiryRepository, id);
-            case "total-logistics" -> deleteIfExists(totalLogisticInquiryRepository, id);
-            case "special-request" -> deleteIfExists(specialRequestInquiryRepository, id);
+    private boolean deleteByService(String serviceTypeName, Long id) throws Exception {
+        ServiceTypeEntity serviceType = resolveServiceTypeByName(serviceTypeName);
+
+        boolean deleted = switch (serviceType.getName()) {
+            case SHIPPING_AGENCY -> deleteIfExists(shippingAgencyInquiryRepository, id);
+            case CHARTERING -> deleteIfExists(charteringBrokingInquiryRepository, id);
+            case FREIGHT_FORWARDING -> deleteIfExists(freightForwardingInquiryRepository, id);
+            case LOGISTICS -> deleteIfExists(totalLogisticInquiryRepository, id);
+            case SPECIAL_REQUEST -> deleteIfExists(specialRequestInquiryRepository, id);
             default -> false;
         };
 
         if (deleted) {
             // Clean up any attached documents (Cloudinary + DB)
-            inquiryDocumentService.hardDeleteByServiceAndTarget(normalized, id);
+            inquiryDocumentService.hardDeleteByServiceAndTarget(serviceType.getName(), id);
         }
 
         return deleted;
@@ -357,27 +390,11 @@ public class AdminInquiryController {
         return true;
     }
 
-    /**
-     * Normalize and resolve service slug aliases to canonical slugs.
-     * Supports short aliases for convenience:
-     * - "chartering" -> "chartering-ship-broking"
-     * - "logistics" -> "total-logistics"
-     * - "freight" -> "freight-forwarding"
-     * - "shipping" -> "shipping-agency"
-     * - "special" -> "special-request"
-     */
-    private String normalize(String value) {
-        if (value == null) return "";
-        String normalized = value.trim().toLowerCase();
-        
-        // Map short aliases to canonical slugs
-        return switch (normalized) {
-            case "chartering" -> "chartering-ship-broking";
-            case "logistics" -> "total-logistics";
-            case "freight" -> "freight-forwarding";
-            case "shipping" -> "shipping-agency";
-            case "special" -> "special-request";
-            default -> normalized;
-        };
+    private ServiceTypeEntity resolveServiceTypeByName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("serviceType is required");
+        }
+        return serviceTypeRepository.findByName(name.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported service type: " + name));
     }
 }

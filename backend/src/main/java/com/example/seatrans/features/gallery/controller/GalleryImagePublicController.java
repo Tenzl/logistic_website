@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.seatrans.features.gallery.dto.GalleryImageDTO;
 import com.example.seatrans.features.gallery.service.GalleryImagePublicService;
-import com.example.seatrans.features.logistics.model.ServiceTypeKey;
 import com.example.seatrans.shared.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -59,9 +58,7 @@ public class GalleryImagePublicController {
                     img.getProvince() != null ? img.getProvince().getName() : "Unknown Province",
                     img.getImageType() != null ? img.getImageType().getDisplayName() : "Unknown",
                     img.getServiceType() != null ? img.getServiceType().getId() : null,
-                    ServiceTypeKey.fromId(img.getServiceType() != null ? img.getServiceType().getId() : null)
-                        .map(ServiceTypeKey::name)
-                        .orElse(img.getServiceType() != null ? img.getServiceType().getName() : null),
+                    img.getServiceType() != null ? img.getServiceType().getName() : null,
                     img.getServiceType() != null ? img.getServiceType().getDisplayName() : null,
                     img.getServiceType() != null ? img.getServiceType().getName() : null
                 ))

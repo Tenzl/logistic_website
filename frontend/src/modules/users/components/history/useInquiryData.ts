@@ -16,6 +16,22 @@ interface UseInquiryDataOptions {
   isAdmin?: boolean
 }
 
+const SERVICE_TYPE_NAME_MAP: Record<string, string> = {
+  'shipping-agency': 'SHIPPING AGENCY',
+  'freight-forwarding': 'FREIGHT FORWARDING',
+  'chartering-ship-broking': 'CHARTERING',
+  chartering: 'CHARTERING',
+  'total-logistics': 'LOGISTICS',
+  logistics: 'LOGISTICS',
+  'special-request': 'SPECIAL REQUEST',
+}
+
+function toServiceTypeName(input?: string): string | undefined {
+  if (!input) return undefined
+  const trimmed = input.trim()
+  return SERVICE_TYPE_NAME_MAP[trimmed] ?? trimmed
+}
+
 export function useInquiryData(options: UseInquiryDataOptions = {}) {
   const { serviceType, isAdmin = false } = options
   
@@ -26,13 +42,13 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
 
   const updateStatus = useCallback(async (id: number, status: string, serviceSlug?: string) => {
     if (!isAdmin) return { success: false }
-    const slug = serviceSlug || serviceType
-    if (!slug) {
-      throw new Error('serviceSlug is required to update status')
+    const serviceName = toServiceTypeName(serviceSlug || serviceType)
+    if (!serviceName) {
+      throw new Error('serviceType is required to update status')
     }
 
     const response = await apiClient.patch(
-      `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${slug}/${id}/status`,
+      `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${encodeURIComponent(serviceName)}/${id}/status`,
       { status }
     )
 
@@ -50,15 +66,15 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
 
   const updateForm = useCallback(async (id: number, form: string, serviceSlug?: string) => {
     if (!isAdmin) return { success: false }
-    const slug = serviceSlug || serviceType
-    if (!slug) {
-      throw new Error('serviceSlug is required to update form')
+    const serviceName = toServiceTypeName(serviceSlug || serviceType)
+    if (!serviceName) {
+      throw new Error('serviceType is required to update form')
     }
 
     setFormUpdatingId(id)
     try {
       const response = await apiClient.patch(
-        `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${slug}/${id}/form`,
+        `${API_CONFIG.INQUIRIES.ADMIN_BASE}/${encodeURIComponent(serviceName)}/${id}/form`,
         { form }
       )
 
@@ -91,8 +107,9 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
         }
 
         const params = new URLSearchParams({ page: '0', size: '100' })
-        if (serviceType) {
-          params.append('serviceType', serviceType)
+        const serviceName = toServiceTypeName(serviceType)
+        if (serviceName) {
+          params.append('serviceType', serviceName)
         }
 
         const response = await apiClient.get<PageResponse<any>>(
@@ -115,8 +132,9 @@ export function useInquiryData(options: UseInquiryDataOptions = {}) {
       } else {
         // Admin endpoint - can see all inquiries
         const params = new URLSearchParams({ page: '0', size: '100' })
-        if (serviceType) {
-          params.append('serviceType', serviceType)
+        const serviceName = toServiceTypeName(serviceType)
+        if (serviceName) {
+          params.append('serviceType', serviceName)
         }
 
         const response = await apiClient.get<PageResponse<any>>(

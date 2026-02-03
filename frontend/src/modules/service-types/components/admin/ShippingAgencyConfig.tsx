@@ -15,7 +15,8 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
 
     hero: {
       title: 'Shipping Agency Services',
-      description: 'Comprehensive vessel agency services across major Vietnamese ports. Available 24/7 for emergency support and operational assistance.',
+      // description: 'Comprehensive vessel agency services across major Vietnamese ports. Available 24/7 for emergency support and operational assistance.',
+      description: "",
       image: 'https://images.unsplash.com/photo-1614568111194-3c251800e81e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXJnbyUyMHNoaXAlMjBwb3J0JTIwY29udGFpbmVyfGVufDF8fHx8MTc2NTA3NDMwMnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
     },
 

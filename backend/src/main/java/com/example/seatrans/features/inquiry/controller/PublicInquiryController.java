@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +46,7 @@ import com.example.seatrans.features.inquiry.repository.ShippingAgencyInquiryRep
 import com.example.seatrans.features.inquiry.repository.SpecialRequestInquiryRepository;
 import com.example.seatrans.features.inquiry.repository.TotalLogisticInquiryRepository;
 import com.example.seatrans.features.inquiry.service.InquiryDocumentService;
+import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
 import com.example.seatrans.features.logistics.repository.ServiceTypeRepository;
 import com.example.seatrans.features.ports.repository.PortRepository;
 import com.example.seatrans.features.provinces.repository.ProvinceRepository;
@@ -70,6 +72,12 @@ public class PublicInquiryController {
     private final PortRepository portRepository;
     private final ProvinceRepository provinceRepository;
     private final ObjectMapper objectMapper;
+
+    private static final String SHIPPING_AGENCY = "SHIPPING AGENCY";
+    private static final String CHARTERING = "CHARTERING";
+    private static final String FREIGHT_FORWARDING = "FREIGHT FORWARDING";
+    private static final String LOGISTICS = "LOGISTICS";
+    private static final String SPECIAL_REQUEST = "SPECIAL REQUEST";
 
     public PublicInquiryController(
             ShippingAgencyInquiryRepository shippingAgencyInquiryRepository,
@@ -120,26 +128,44 @@ public class PublicInquiryController {
 
         Pageable pageable = Pageable.unpaged();
 
-        // Filter by serviceType if provided
+        // Filter by serviceType if provided (exact name as stored in DB)
         boolean filterService = serviceType != null && !serviceType.isBlank();
-        String serviceSlug = filterService ? serviceType.toLowerCase().trim() : null;
+        String requestedServiceName = filterService ? serviceType.trim() : null;
+
+        Map<String, ServiceTypeEntity> serviceTypes = serviceTypeRepository.findAll().stream()
+            .collect(Collectors.toMap(ServiceTypeEntity::getName, st -> st, (a, b) -> a));
+
+        if (filterService && !serviceTypes.containsKey(requestedServiceName)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Unsupported service type: " + requestedServiceName));
+        }
+
+        ServiceTypeEntity shippingType = serviceTypes.get(SHIPPING_AGENCY);
+        ServiceTypeEntity charteringType = serviceTypes.get(CHARTERING);
+        ServiceTypeEntity freightType = serviceTypes.get(FREIGHT_FORWARDING);
+        ServiceTypeEntity logisticsType = serviceTypes.get(LOGISTICS);
+        ServiceTypeEntity specialType = serviceTypes.get(SPECIAL_REQUEST);
+
+        if (shippingType == null || charteringType == null || freightType == null || logisticsType == null || specialType == null) {
+            log.error("Service type configuration is missing in database");
+            return ResponseEntity.status(500).body(Map.of("message", "Service type configuration is missing"));
+        }
 
         // Aggregate inquiries based on serviceType filter
-        var shippingAgency = (!filterService || "shipping-agency".equals(serviceSlug))
-                ? shippingAgencyInquiryRepository.findByUserId(userId, pageable).getContent()
-                : List.<ShippingAgencyInquiry>of();
-        var chartering = (!filterService || "chartering".equals(serviceSlug))
-                ? charteringBrokingInquiryRepository.findByUserId(userId, pageable).getContent()
-                : List.<CharteringBrokingInquiry>of();
-        var freight = (!filterService || "freight-forwarding".equals(serviceSlug))
-                ? freightForwardingInquiryRepository.findByUserId(userId, pageable).getContent()
-                : List.<FreightForwardingInquiry>of();
-        var logistics = (!filterService || "total-logistic".equals(serviceSlug) || "total-logistics".equals(serviceSlug))
-                ? totalLogisticInquiryRepository.findByUserId(userId, pageable).getContent()
-                : List.<TotalLogisticInquiry>of();
-        var special = (!filterService || "special-request".equals(serviceSlug))
-                ? specialRequestInquiryRepository.findByUserId(userId, pageable).getContent()
-                : List.<SpecialRequestInquiry>of();
+        var shippingAgency = includeService(requestedServiceName, SHIPPING_AGENCY)
+            ? shippingAgencyInquiryRepository.findByUserId(userId, pageable).getContent()
+            : List.<ShippingAgencyInquiry>of();
+        var chartering = includeService(requestedServiceName, CHARTERING)
+            ? charteringBrokingInquiryRepository.findByUserId(userId, pageable).getContent()
+            : List.<CharteringBrokingInquiry>of();
+        var freight = includeService(requestedServiceName, FREIGHT_FORWARDING)
+            ? freightForwardingInquiryRepository.findByUserId(userId, pageable).getContent()
+            : List.<FreightForwardingInquiry>of();
+        var logistics = includeService(requestedServiceName, LOGISTICS)
+            ? totalLogisticInquiryRepository.findByUserId(userId, pageable).getContent()
+            : List.<TotalLogisticInquiry>of();
+        var special = includeService(requestedServiceName, SPECIAL_REQUEST)
+            ? specialRequestInquiryRepository.findByUserId(userId, pageable).getContent()
+            : List.<SpecialRequestInquiry>of();
 
         List<Map<String, Object>> all = new ArrayList<>();
         
@@ -165,9 +191,9 @@ public class PublicInquiryController {
             ShippingAgencyInquiryResponse dto = ShippingAgencyInquiryResponse.from(i);
             Map<String, Object> item = objectMapper.convertValue(dto, Map.class);
             item.put("serviceType", Map.of(
-                "id", 1,
-                "name", "shipping-agency",
-                "displayName", "Shipping Agency"
+                "id", shippingType.getId(),
+                "name", shippingType.getName(),
+                "displayName", shippingType.getDisplayName()
             ));
             enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
@@ -176,9 +202,9 @@ public class PublicInquiryController {
             CharteringBrokingInquiryResponse dto = CharteringBrokingInquiryResponse.from(i);
             Map<String, Object> item = objectMapper.convertValue(dto, Map.class);
             item.put("serviceType", Map.of(
-                "id", 2,
-                "name", "chartering",
-                "displayName", "Chartering & Broking"
+                "id", charteringType.getId(),
+                "name", charteringType.getName(),
+                "displayName", charteringType.getDisplayName()
             ));
             enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
@@ -187,9 +213,9 @@ public class PublicInquiryController {
             FreightForwardingInquiryResponse dto = FreightForwardingInquiryResponse.from(i);
             Map<String, Object> item = objectMapper.convertValue(dto, Map.class);
             item.put("serviceType", Map.of(
-                "id", 3,
-                "name", "freight-forwarding",
-                "displayName", "Freight Forwarding"
+                "id", freightType.getId(),
+                "name", freightType.getName(),
+                "displayName", freightType.getDisplayName()
             ));
             enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
@@ -198,9 +224,9 @@ public class PublicInquiryController {
             TotalLogisticInquiryResponse dto = TotalLogisticInquiryResponse.from(i);
             Map<String, Object> item = objectMapper.convertValue(dto, Map.class);
             item.put("serviceType", Map.of(
-                "id", 4,
-                "name", "total-logistics",
-                "displayName", "Total Logistics"
+                "id", logisticsType.getId(),
+                "name", logisticsType.getName(),
+                "displayName", logisticsType.getDisplayName()
             ));
             enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
@@ -209,9 +235,9 @@ public class PublicInquiryController {
             SpecialRequestInquiryResponse dto = SpecialRequestInquiryResponse.from(i);
             Map<String, Object> item = objectMapper.convertValue(dto, Map.class);
             item.put("serviceType", Map.of(
-                "id", 5,
-                "name", "special-request",
-                "displayName", "Special Request"
+                "id", specialType.getId(),
+                "name", specialType.getName(),
+                "displayName", specialType.getDisplayName()
             ));
             enrichUserInfo.accept(item, i.getUserId());
             all.add(item);
@@ -291,10 +317,15 @@ public class PublicInquiryController {
             request.setServiceTypeSlug(serviceSlugOverride);
         }
 
-        var serviceType = request.getServiceTypeId() != null
-            ? serviceTypeRepository.findById(request.getServiceTypeId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid service type ID"))
-            : resolveServiceTypeBySlug(request.getServiceTypeSlug());
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = request.getServiceTypeId() != null
+                ? serviceTypeRepository.findById(request.getServiceTypeId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid service type ID"))
+                : resolveServiceTypeBySlug(request.getServiceTypeSlug());
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
 
         // Get authenticated user
         com.example.seatrans.features.auth.model.User currentUser;
@@ -315,36 +346,34 @@ public class PublicInquiryController {
             ));
         }
 
-        // Prefer serviceTypeSlug from request, fallback to serviceType.getName()
-        String serviceSlug = request.getServiceTypeSlug() != null ? request.getServiceTypeSlug() : serviceType.getName();
-        String normalizedSlug = serviceSlug != null ? serviceSlug.trim().toLowerCase() : "";
+        String serviceName = serviceType.getName();
 
         Long targetId;
 
-        switch (normalizedSlug) {
-            case "shipping-agency" -> {
+        switch (serviceName) {
+            case SHIPPING_AGENCY -> {
                 ShippingAgencyInquiry inquiry = buildShippingAgency(currentUser.getId(), request);
                 targetId = shippingAgencyInquiryRepository.save(inquiry).getId();
             }
-            case "chartering-ship-broking" -> {
+            case CHARTERING -> {
                 CharteringBrokingInquiry inquiry = buildChartering(currentUser.getId(), request);
                 targetId = charteringBrokingInquiryRepository.save(inquiry).getId();
             }
-            case "freight-forwarding" -> {
+            case FREIGHT_FORWARDING -> {
                 FreightForwardingInquiry inquiry = buildFreight(currentUser.getId(), request);
                 targetId = freightForwardingInquiryRepository.save(inquiry).getId();
             }
-            case "total-logistics" -> {
+            case LOGISTICS -> {
                 TotalLogisticInquiry inquiry = buildLogistics(currentUser.getId(), request);
                 targetId = totalLogisticInquiryRepository.save(inquiry).getId();
             }
-            case "special-request" -> {
+            case SPECIAL_REQUEST -> {
                 SpecialRequestInquiry inquiry = buildSpecialRequest(currentUser.getId(), request);
                 targetId = specialRequestInquiryRepository.save(inquiry).getId();
             }
             default -> {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "message", "Unsupported service type: " + normalizedSlug
+                    "message", "Unsupported service type: " + serviceName
                 ));
             }
         }
@@ -352,20 +381,20 @@ public class PublicInquiryController {
         if (files != null && files.length > 0) {
             try {
                 Long uploaderId = currentUser.getId();
-                log.info("Saving {} attachments for serviceSlug={}, targetId={}, uploaderId={}", 
-                    files.length, serviceSlug, targetId, uploaderId);
-                saveAttachments(serviceSlug, targetId, files, uploaderId);
+                log.info("Saving {} attachments for serviceName={}, targetId={}, uploaderId={}", 
+                    files.length, serviceName, targetId, uploaderId);
+                saveAttachments(serviceName, targetId, files, uploaderId);
                 log.info("Successfully saved {} attachments", files.length);
             } catch (IOException | IllegalArgumentException e) {
                 // Log error but don't fail the inquiry submission
-                log.error("Failed to save attachments for serviceSlug={}, targetId={}: {}", 
-                        serviceSlug, targetId, e.getMessage(), e);
+                log.error("Failed to save attachments for serviceName={}, targetId={}: {}", 
+                    serviceName, targetId, e.getMessage(), e);
             }
         }
 
         return ResponseEntity.ok(Map.of(
             "message", "Inquiry submitted successfully.",
-            "serviceSlug", serviceType.getName(),
+            "serviceSlug", serviceName,
             "targetId", targetId
         ));
     }
@@ -374,42 +403,13 @@ public class PublicInquiryController {
      * Resolve service type by slug-style input (e.g., "special-request") by
      * attempting exact name match, then title-cased name with spaces.
      */
-    private com.example.seatrans.features.logistics.model.ServiceTypeEntity resolveServiceTypeBySlug(String slug) {
+    private ServiceTypeEntity resolveServiceTypeBySlug(String slug) {
         if (slug == null || slug.isBlank()) {
-            throw new IllegalArgumentException("Service type slug is required");
+            throw new IllegalArgumentException("Service type name is required");
         }
 
-        // First try exact name match (in case the frontend already sends the proper name)
-        var byName = serviceTypeRepository.findByName(slug);
-        if (byName.isPresent()) {
-            return byName.get();
-        }
-
-        // Then try converting slug to title case name ("special-request" -> "Special Request")
-        String titleCaseName = toTitleCase(slug.replace('-', ' '));
-        var byTitle = serviceTypeRepository.findByName(titleCaseName);
-        if (byTitle.isPresent()) {
-            return byTitle.get();
-        }
-
-        throw new IllegalArgumentException("Invalid service type: " + slug);
-    }
-
-    private String toTitleCase(String input) {
-        if (input == null || input.isBlank()) {
-            return input;
-        }
-        String[] parts = input.trim().toLowerCase().split(" ");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < parts.length; i++) {
-            if (parts[i].isEmpty()) continue;
-            sb.append(Character.toUpperCase(parts[i].charAt(0)));
-            if (parts[i].length() > 1) {
-                sb.append(parts[i].substring(1));
-            }
-            if (i < parts.length - 1) sb.append(' ');
-        }
-        return sb.toString();
+        return serviceTypeRepository.findByName(slug.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid service type: " + slug));
     }
 
     private void saveAttachments(String serviceSlug, Long targetId, MultipartFile[] files, Long uploaderId) throws IOException {
@@ -610,44 +610,29 @@ public class PublicInquiryController {
             .map(serviceType -> serviceType.getName())
             .orElse(null);
     }
+
+    private boolean includeService(String requestedServiceName, String targetName) {
+        return requestedServiceName == null || targetName.equals(requestedServiceName);
+    }
     @GetMapping("/{serviceSlug}/{id}")
     public ResponseEntity<?> getOne(@PathVariable String serviceSlug, @PathVariable Long id) {
         return fetchOne(serviceSlug, id);
     }
 
-    /**
-     * Normalize and resolve service slug aliases to canonical slugs.
-     * Supports short aliases for convenience:
-     * - "chartering" -> "chartering-ship-broking"
-     * - "logistics" -> "total-logistics"
-     * - "freight" -> "freight-forwarding"
-     * - "shipping" -> "shipping-agency"
-     * - "special" -> "special-request"
-     */
-    private String normalizeSlug(String value) {
-        if (value == null) return "";
-        String normalized = value.trim().toLowerCase();
-        
-        // Map short aliases to canonical slugs
-        return switch (normalized) {
-            case "chartering" -> "chartering-ship-broking";
-            case "logistics" -> "total-logistics";
-            case "freight" -> "freight-forwarding";
-            case "shipping" -> "shipping-agency";
-            case "special" -> "special-request";
-            default -> normalized;
-        };
-    }
-
     private ResponseEntity<?> fetchPage(String serviceSlug, Pageable pageable) {
-        String normalized = normalizeSlug(serviceSlug);
-        return switch (normalized) {
-            case "shipping-agency" -> ResponseEntity.ok(shippingAgencyInquiryRepository.findAll(pageable));
-            case "chartering-ship-broking" -> ResponseEntity.ok(charteringBrokingInquiryRepository.findAll(pageable));
-            case "freight-forwarding" -> ResponseEntity.ok(freightForwardingInquiryRepository.findAll(pageable));
-            case "total-logistics" -> ResponseEntity.ok(totalLogisticInquiryRepository.findAll(pageable));
-            case "special-request" -> ResponseEntity.ok(specialRequestInquiryRepository.findAll(pageable));
-            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = resolveServiceTypeBySlug(serviceSlug);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+        return switch (serviceType.getName()) {
+            case SHIPPING_AGENCY -> ResponseEntity.ok(shippingAgencyInquiryRepository.findAll(pageable));
+            case CHARTERING -> ResponseEntity.ok(charteringBrokingInquiryRepository.findAll(pageable));
+            case FREIGHT_FORWARDING -> ResponseEntity.ok(freightForwardingInquiryRepository.findAll(pageable));
+            case LOGISTICS -> ResponseEntity.ok(totalLogisticInquiryRepository.findAll(pageable));
+            case SPECIAL_REQUEST -> ResponseEntity.ok(specialRequestInquiryRepository.findAll(pageable));
+            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service type: " + serviceType.getName()));
         };
     }
 
@@ -733,24 +718,29 @@ public class PublicInquiryController {
     public record BatchDeleteRequest(List<Long> ids) {}
 
     private ResponseEntity<?> fetchOne(String serviceSlug, Long id) {
-        String normalized = normalizeSlug(serviceSlug);
-        return switch (normalized) {
-            case "shipping-agency" -> shippingAgencyInquiryRepository.findById(id)
+        ServiceTypeEntity serviceType;
+        try {
+            serviceType = resolveServiceTypeBySlug(serviceSlug);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+        return switch (serviceType.getName()) {
+            case SHIPPING_AGENCY -> shippingAgencyInquiryRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-            case "chartering-ship-broking" -> charteringBrokingInquiryRepository.findById(id)
+            case CHARTERING -> charteringBrokingInquiryRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-            case "freight-forwarding" -> freightForwardingInquiryRepository.findById(id)
+            case FREIGHT_FORWARDING -> freightForwardingInquiryRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-            case "total-logistics" -> totalLogisticInquiryRepository.findById(id)
+            case LOGISTICS -> totalLogisticInquiryRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-            case "special-request" -> specialRequestInquiryRepository.findById(id)
+            case SPECIAL_REQUEST -> specialRequestInquiryRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service slug: " + serviceSlug));
+            default -> ResponseEntity.badRequest().body(Map.of("message", "Unsupported service type: " + serviceType.getName()));
         };
     }
 }

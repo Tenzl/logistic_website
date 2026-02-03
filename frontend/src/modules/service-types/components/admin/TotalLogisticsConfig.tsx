@@ -15,7 +15,8 @@ export function TotalLogistics({ onNavigateHome }: TotalLogisticsProps) {
 
     hero: {
       title: 'Freight Forwarding & Logistics',
-      description: 'SEATRANS\' professional team with their knowledge & experience are able to perform the full range of services: Accepting and Delivering consignments from Door to Door by Sea, Air, Land (FCL/LCL), Multimodal transportation and other total logistics services.',
+      description: "",
+      // description: 'SEATRANS\' professional team with their knowledge & experience are able to perform the full range of services: Accepting and Delivering consignments from Door to Door by Sea, Air, Land (FCL/LCL), Multimodal transportation and other total logistics services.',
       image: 'https://images.unsplash.com/photo-1759826350352-c5b0b77729bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsb2dpc3RpY3MlMjB3YXJlaG91c2UlMjBmcmVpZ2h0JTIwZm9yd2FyZGluZ3xlbnwxfHx8fDE3NjUwNzQzMjV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
     },
 

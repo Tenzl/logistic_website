@@ -15,7 +15,8 @@ export function FreightForwarding({ onNavigateHome }: FreightForwardingProps) {
 
     hero: {
       title: 'International Freight Forwarding',
-      description: 'End-to-end logistics solutions for air, sea, and land freight. We handle your cargo with precision and care across global supply chains.'
+      description:"",
+      // description: 'End-to-end logistics solutions for air, sea, and land freight. We handle your cargo with precision and care across global supply chains.'
     },
 
     contacts: {
