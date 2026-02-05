@@ -1,35 +1,31 @@
 export type InquiryStatus = 'PENDING' | 'PROCESSING' | 'QUOTED' | 'COMPLETED' | 'CANCELLED'
 
+// Individual status constants
+export const STATUS_PENDING: InquiryStatus = 'PENDING'
+export const STATUS_PROCESSING: InquiryStatus = 'PROCESSING'
+export const STATUS_QUOTED: InquiryStatus = 'QUOTED'
+export const STATUS_COMPLETED: InquiryStatus = 'COMPLETED'
+export const STATUS_CANCELLED: InquiryStatus = 'CANCELLED'
+
 export const INQUIRY_STATUS_OPTIONS: InquiryStatus[] = [
-  'PENDING',
-  'PROCESSING',
-  'QUOTED',
-  'COMPLETED',
-  'CANCELLED',
+  STATUS_PENDING,
+  STATUS_PROCESSING,
+  STATUS_QUOTED,
+  STATUS_COMPLETED,
+  STATUS_CANCELLED,
 ]
 
-export interface StatusStyle {
+export interface StatusBadgeConfig {
   variant: 'default' | 'secondary' | 'destructive' | 'outline'
+  label: string
   className?: string
 }
 
-export const INQUIRY_STATUS_STYLES: Record<InquiryStatus, StatusStyle> = {
-  PENDING: {
-    variant: 'secondary',
-  },
-  PROCESSING: {
-    variant: 'default',
-    className: 'bg-yellow-500 hover:bg-yellow-600 text-white',
-  },
-  QUOTED: {
-    variant: 'default',
-    className: 'bg-primary hover:bg-primary/90',
-  },
-  COMPLETED: {
-    variant: 'default',
-    className: 'bg-green-600 hover:bg-green-700 text-white',
-  },
-  CANCELLED: {
-    variant: 'destructive',
-  },
+// Badge config for status display (used in tables/lists)
+export const STATUS_BADGE_CONFIG: Record<InquiryStatus, StatusBadgeConfig> = {
+  [STATUS_PENDING]: { variant: 'secondary', label: 'Pending' },
+  [STATUS_PROCESSING]: { variant: 'default', label: 'Processing', className: 'bg-yellow-500 hover:bg-yellow-600 text-white' },
+  [STATUS_QUOTED]: { variant: 'default', label: 'Quoted', className: 'bg-primary hover:bg-primary/90' },
+  [STATUS_COMPLETED]: { variant: 'default', label: 'Completed', className: 'bg-green-600 hover:bg-green-700 text-white' },
+  [STATUS_CANCELLED]: { variant: 'destructive', label: 'Cancelled' },
 }

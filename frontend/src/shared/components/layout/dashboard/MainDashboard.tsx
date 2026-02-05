@@ -19,7 +19,7 @@ import {
 import { NavUser } from "@/shared/components/ui/nav-user"
 import { createQueryClient } from "@/shared/config/react-query.config"
 import { getRoleGroup } from "@/shared/utils/auth"
-import { RoleGroup } from "@/types/dashboard"
+import { RoleGroup } from "@/shared/types/dashboard"
 import {
   Sidebar,
   SidebarContent,

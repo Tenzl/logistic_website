@@ -17,6 +17,7 @@ import {
   getFieldValue,
 } from "./serviceInquirySchemas"
 import { documentService, type InquiryDocument } from "@/modules/inquiries/services/documentService"
+import { STATUS_QUOTED, STATUS_COMPLETED, STATUS_BADGE_CONFIG, InquiryStatus } from '@/shared/constants/inquiry-status'
 
 interface InquiryDetailDrawerProps {
   inquiry: any | null
@@ -131,22 +132,15 @@ export function InquiryDetailDrawer({
   }
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-      PENDING: { variant: 'destructive', label: 'Pending' },
-      PROCESSING: { variant: 'secondary', label: 'Processing' },
-      QUOTED: { variant: 'default', label: 'Quoted' },
-      COMPLETED: { variant: 'default', label: 'Completed' },
-      CANCELLED: { variant: 'outline', label: 'Cancelled' },
-    }
-    const config = variants[status] || { variant: 'outline' as const, label: status }
-    return <Badge variant={config.variant}>{config.label}</Badge>
+    const config = STATUS_BADGE_CONFIG[status as InquiryStatus] || { variant: 'outline' as const, label: status }
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>
   }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString()
   }
 
-  const canViewInvoice = inquiry.status === 'QUOTED' || inquiry.status === 'COMPLETED'
+  const canViewInvoice = inquiry.status === STATUS_QUOTED || inquiry.status === STATUS_COMPLETED
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

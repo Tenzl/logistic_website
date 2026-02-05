@@ -14,7 +14,7 @@ import {
   PlusCircle,
   History,
 } from "lucide-react"
-import { DashboardConfig } from "@/types/dashboard"
+import { DashboardConfig } from "@/shared/types/dashboard"
 
 /**
  * Dashboard Navigation Configuration for INTERNAL users

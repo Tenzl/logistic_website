@@ -48,6 +48,15 @@ function decorateContent(html: string): string {
       if (!hasMedia && text.length === 0) p.remove()
     }
 
+    // Force all images to be full-width via inline styles
+    const images = Array.from(doc.querySelectorAll('img')) as HTMLImageElement[]
+    for (const img of images) {
+      img.style.width = '100%'
+      img.style.height = 'auto'
+      img.style.maxWidth = '100%'
+      img.style.display = 'block'
+    }
+
     return doc.body.innerHTML
   } catch {
     return html
@@ -107,7 +116,8 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
       ALLOWED_ATTR: [
         'href', 'title', 'target', 'rel',
         'src', 'alt', 'width', 'height', 'loading', 'srcset', 'sizes',
-        'class', 'id', 'colspan', 'rowspan'
+        'class', 'id', 'colspan', 'rowspan',
+        'style'
       ],
       ALLOW_DATA_ATTR: false,
       ALLOW_UNKNOWN_PROTOCOLS: false
@@ -233,8 +243,9 @@ export function ArticleDetailPage({ articleId, onNavigateBack }: ArticleDetailPa
             'prose-li:my-1',
             'prose-li:marker:text-muted-foreground',
 
-            // Images inside content
-            'prose-img:rounded-2xl prose-img:shadow-sm prose-img:mx-auto',
+            // Images inside content - always fit container width (force override inline styles)
+            'prose-img:rounded-2xl prose-img:shadow-sm prose-img:!w-full prose-img:!h-auto prose-img:!max-w-full',
+            'prose-img:block',
 
             // Blockquotes
             'prose-blockquote:border-l-border prose-blockquote:text-muted-foreground',

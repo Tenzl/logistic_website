@@ -4,7 +4,7 @@ import { ReactNode, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/modules/auth/context/AuthContext"
 import { getRoleGroup } from "@/shared/utils/auth"
-import { RoleGroup } from "@/types/dashboard"
+import { RoleGroup } from "@/shared/types/dashboard"
 import { SectionLoadingSkeleton } from "../loading/SectionLoadingSkeleton"
 
 interface ProtectedRouteProps {

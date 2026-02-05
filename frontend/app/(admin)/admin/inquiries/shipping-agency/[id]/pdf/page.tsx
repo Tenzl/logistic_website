@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
 import { useToast } from '@/shared/hooks/use-toast'
+import { STATUS_PROCESSING } from '@/shared/constants/inquiry-status'
 
 interface ShippingAgencyInquiry {
   id: number
@@ -148,7 +149,7 @@ export default function ShippingAgencyPdfPage() {
     setError(null)
     try {
       const token = authService.getToken()
-      const res = await axios.get<ShippingAgencyInquiry>(`${API_BASE}/api/v1/admin/inquiries/shipping-agency/${id}`, {
+      const res = await axios.get<ShippingAgencyInquiry>(`${API_BASE}/api/v1/admin/inquiries/SHIPPING%20AGENCY/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       setInquiry(res.data)
@@ -241,7 +242,7 @@ export default function ShippingAgencyPdfPage() {
     if (!inquiryId) return
     const token = authService.getToken()
     await axios.patch(
-      `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/form`,
+      `${API_BASE}/api/v1/admin/inquiries/SHIPPING%20AGENCY/${inquiryId}/form`,
       { form },
       { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
     )
@@ -254,7 +255,7 @@ export default function ShippingAgencyPdfPage() {
       // Update status to QUOTED
       const token = authService.getToken()
       await axios.patch(
-        `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/status`,
+        `${API_BASE}/api/v1/admin/inquiries/SHIPPING%20AGENCY/${inquiryId}/status`,
         { status: 'QUOTED' },
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )
@@ -330,7 +331,7 @@ export default function ShippingAgencyPdfPage() {
     try {
       const token = authService.getToken()
       await axios.patch(
-        `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/hours`,
+        `${API_BASE}/api/v1/admin/inquiries/SHIPPING%20AGENCY/${inquiryId}/hours`,
         {
           berthHours: validBerth ? nextBerth : berthHours,
           anchorageHours: validAnchorage ? nextAnchorage : anchorageHours,
@@ -366,15 +367,15 @@ export default function ShippingAgencyPdfPage() {
 
   const startEdit = async () => {
     // If status is not PROCESSING, update it
-    if (inquiry && inquiry.status !== 'PROCESSING') {
+    if (inquiry && inquiry.status !== STATUS_PROCESSING) {
       try {
         const token = authService.getToken()
         await axios.patch(
-          `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/status`,
-          { status: 'PROCESSING' },
+          `${API_BASE}/api/v1/admin/inquiries/SHIPPING%20AGENCY/${inquiryId}/status`,
+          { status: STATUS_PROCESSING },
           { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
         )
-        setInquiry((prev) => (prev ? { ...prev, status: 'PROCESSING' } : prev))
+        setInquiry((prev) => (prev ? { ...prev, status: STATUS_PROCESSING } : prev))
       } catch (err) {
         console.error('Failed to update status to PROCESSING', err)
         // Non-blocking error, user can still edit
@@ -397,7 +398,7 @@ export default function ShippingAgencyPdfPage() {
   }
 
   const handleBack = () => {
-    if (inquiry?.status === 'PROCESSING') {
+    if (inquiry?.status === STATUS_PROCESSING) {
       setShowBackAlert(true)
     } else {
       navigateBack()
@@ -418,7 +419,7 @@ export default function ShippingAgencyPdfPage() {
     try {
       const token = authService.getToken()
       await axios.patch(
-        `${API_BASE}/api/v1/admin/inquiries/shipping-agency/${inquiryId}/status`,
+        `${API_BASE}/api/v1/admin/inquiries/SHIPPING%20AGENCY/${inquiryId}/status`,
         { status: 'QUOTED' },
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       )
@@ -433,7 +434,7 @@ export default function ShippingAgencyPdfPage() {
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <div className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
+      <div className="mx-auto max-w-[1920px] space-y-4 p-4 md:p-6">
         <div className="flex items-center justify-between gap-3">
           <Button
             variant="ghost"
@@ -483,7 +484,8 @@ export default function ShippingAgencyPdfPage() {
               </div>
             ) : (
               <div className="flex flex-col lg:flex-row gap-4 min-h-[70vh]">
-                <div className="w-full lg:w-80 shrink-0 rounded-md border bg-muted/40 p-3 space-y-3 overflow-auto">
+                {/* Left Sidebar - Inquiry Info */}
+                <div className="w-full lg:w-64 shrink-0 rounded-md border bg-muted/40 p-3 space-y-3 overflow-auto">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold">Inquiry #{inquiry.id}</p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -537,12 +539,35 @@ export default function ShippingAgencyPdfPage() {
                   </div>
                 </div>
 
+                {/* Center - A4 Preview */}
                 <div className="flex-1 flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                      <span className="text-sm text-foreground">A4 quote preview</span>
+                  <div className="flex-1 min-h-[65vh] rounded-md border overflow-hidden bg-white">
+                    {loadingQuote ? (
+                      <div className="flex items-center justify-center h-full bg-gray-100">
+                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                      </div>
+                    ) : quoteHtml ? (
+                      <iframe
+                        srcDoc={quoteHtml}
+                        className="w-full h-full border-0"
+                        title="Quote Preview"
+                        style={{ minHeight: '800px' }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
+                        <FileText className="h-6 w-6 mr-2" />
+                        No quote data yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Sidebar - Controls */}
+                <div className="w-full lg:w-72 shrink-0 rounded-md border bg-muted/40 p-4 space-y-4 overflow-auto">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Berth hrs</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs uppercase tracking-wide">Berth hrs</span>
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -550,13 +575,16 @@ export default function ShippingAgencyPdfPage() {
                           step="1"
                           value={berthHoursInput}
                           onChange={(e) => setBerthHoursInput(e.target.value)}
-                          className="h-8 w-24"
+                          className="flex-1"
                           disabled={!isEditing}
                         />
-                        <span className="text-xs text-muted-foreground">hrs</span>
+                        <span className="text-sm text-muted-foreground">hrs</span>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Anchorage hrs</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs uppercase tracking-wide">Anchorage hrs</span>
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -564,13 +592,16 @@ export default function ShippingAgencyPdfPage() {
                           step="1"
                           value={anchorageHoursInput}
                           onChange={(e) => setAnchorageHoursInput(e.target.value)}
-                          className="h-8 w-24"
+                          className="flex-1"
                           disabled={!isEditing}
                         />
-                        <span className="text-xs text-muted-foreground">hrs</span>
+                        <span className="text-sm text-muted-foreground">hrs</span>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pilotage 3rd miles</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs uppercase tracking-wide">Pilotage 3rd miles</span>
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -578,21 +609,37 @@ export default function ShippingAgencyPdfPage() {
                           step="1"
                           value={pilotageThirdMilesInput}
                           onChange={(e) => setPilotageThirdMilesInput(e.target.value)}
-                          className="h-8 w-24"
+                          className="flex-1"
                           disabled={!isEditing}
                         />
-                        <span className="text-xs text-muted-foreground">miles</span>
+                        <span className="text-sm text-muted-foreground">miles</span>
                       </div>
-                      <Button size="sm" variant="outline" className="h-8 px-3" onClick={isEditing ? cancelEdit : startEdit}>
+                    </div>
+
+                    <div className="border-t pt-4 space-y-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={isEditing ? cancelEdit : startEdit}
+                      >
                         {isEditing ? 'Cancel' : 'Edit'}
                       </Button>
-                      <Button size="sm" className="h-8 px-3" onClick={applyHours} disabled={!isEditing}>
+                      <Button 
+                        size="sm" 
+                        className="w-full" 
+                        onClick={applyHours} 
+                        disabled={!isEditing}
+                      >
                         Apply
                       </Button>
+                    </div>
+
+                    <div className="border-t pt-4 space-y-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2"
+                        className="w-full gap-2"
                         onClick={async () => {
                           if (!quoteHtml) return
                           
@@ -636,7 +683,7 @@ export default function ShippingAgencyPdfPage() {
                       <Button
                         variant="default"
                         size="sm"
-                        className="gap-2"
+                        className="w-full gap-2"
                         onClick={transferToUser}
                         disabled={!quoteHtml || loadingQuote}
                       >
@@ -644,26 +691,6 @@ export default function ShippingAgencyPdfPage() {
                         Transfer to User
                       </Button>
                     </div>
-                  </div>
-
-                  <div className="flex-1 min-h-[65vh] rounded-md border overflow-hidden bg-white">
-                    {loadingQuote ? (
-                      <div className="flex items-center justify-center h-full bg-gray-100">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                      </div>
-                    ) : quoteHtml ? (
-                      <iframe
-                        srcDoc={quoteHtml}
-                        className="w-full h-full border-0"
-                        title="Quote Preview"
-                        style={{ minHeight: '800px' }}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
-                        <FileText className="h-6 w-6 mr-2" />
-                        No quote data yet
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

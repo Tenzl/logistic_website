@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
-import { User } from '@/types/dashboard'
+import { User } from '@/shared/types/dashboard'
 
 interface LoginRequest {
   email: string

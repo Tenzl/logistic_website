@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { toast } from 'sonner'
-import { User } from '@/types/dashboard'
+import { User } from '@/shared/types/dashboard'
 import { authService } from '../services/authService'
 
 interface AuthContextType {

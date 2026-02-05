@@ -18,6 +18,7 @@ import {
   getSchemaForService,
   getServiceSlugFromInquiry,
 } from './serviceInquirySchemas'
+import { INQUIRY_STATUS_OPTIONS, STATUS_PROCESSING, STATUS_QUOTED, STATUS_BADGE_CONFIG, InquiryStatus } from '@/shared/constants/inquiry-status'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,15 +60,8 @@ export function BaseInquiryHistoryLayout({
   }, [fetchInquiries])
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-      PENDING: { variant: 'destructive', label: 'Pending' },
-      PROCESSING: { variant: 'secondary', label: 'Processing' },
-      QUOTED: { variant: 'default', label: 'Quoted' },
-      COMPLETED: { variant: 'default', label: 'Completed' },
-      CANCELLED: { variant: 'outline', label: 'Cancelled' },
-    }
-    const config = variants[status] || { variant: 'outline' as const, label: status }
-    return <Badge variant={config.variant}>{config.label}</Badge>
+    const config = STATUS_BADGE_CONFIG[status as InquiryStatus] || { variant: 'outline' as const, label: status }
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>
   }
 
   const formatDate = (value: string) => new Date(value).toLocaleString()
@@ -92,8 +86,8 @@ export function BaseInquiryHistoryLayout({
     if (slug === 'shipping-agency' && isAdmin) {
       setPdfOpeningId(inquiry.id)
       try {
-        if (inquiry.status !== 'PROCESSING') {
-          await updateStatus(inquiry.id, 'PROCESSING', slug)
+        if (inquiry.status !== STATUS_PROCESSING) {
+          await updateStatus(inquiry.id, STATUS_PROCESSING, slug)
         }
         router.push(`/admin/inquiries/${slug}/${inquiry.id}/pdf`)
       } catch (err) {
@@ -164,7 +158,7 @@ export function BaseInquiryHistoryLayout({
       },
       cell: ({ row }) => {
         const inq = row.original
-        const options = ['PENDING', 'PROCESSING', 'QUOTED', 'COMPLETED', 'CANCELLED']
+        const options = INQUIRY_STATUS_OPTIONS
         const current = inq.status
         if (!isAdmin) {
           return getStatusBadge(current)
@@ -339,7 +333,7 @@ export function BaseInquiryHistoryLayout({
         // User actions
         if (isShippingAgency) {
           // Shipping agency: View Invoice only available when status is QUOTED
-          const isQuoted = inq.status === 'QUOTED'
+          const isQuoted = inq.status === STATUS_QUOTED
           return (
             <div className="flex gap-2">
               <Button

@@ -15,7 +15,7 @@ import {
   Database,
 } from "lucide-react"
 
-import { RoleGroup } from "@/types/dashboard"
+import { RoleGroup } from "@/shared/types/dashboard"
 
 // Role strings from backend
 export type SectionRole = "ADMIN" | "EMPLOYEE" | "CUSTOMER"

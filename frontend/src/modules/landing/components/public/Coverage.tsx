@@ -11,7 +11,7 @@ import {
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import vnGeo from '@/shared/assets/data/newvn.json'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
-import { getProvinceCoordinates } from '@/utils/provinceCoordinates'
+import { getProvinceCoordinates } from '@/shared/utils/provinceCoordinates'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
 

@@ -22,6 +22,7 @@ import {
   getFieldValue,
   InquiryFieldSchema,
 } from './history/serviceInquirySchemas'
+import { InquiryStatus, STATUS_QUOTED, STATUS_COMPLETED, STATUS_BADGE_CONFIG } from '@/shared/constants/inquiry-status'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +34,7 @@ interface Inquiry {
   id: number
   fullName: string
   contactInfo: string
-  status: 'PENDING' | 'PROCESSING' | 'QUOTED' | 'COMPLETED' | 'CANCELLED'
+  status: InquiryStatus
   submittedAt: string
   details?: string
   
@@ -294,15 +295,8 @@ export function UserInquiryHistoryTab() {
   }
 
   const getStatusBadge = (status: Inquiry['status']) => {
-    const variants: Record<Inquiry['status'], { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-      PENDING: { variant: 'destructive', label: 'Pending' },
-      PROCESSING: { variant: 'secondary', label: 'Processing' },
-      QUOTED: { variant: 'default', label: 'Quoted' },
-      COMPLETED: { variant: 'default', label: 'Completed' },
-      CANCELLED: { variant: 'outline', label: 'Cancelled' },
-    }
-    const config = variants[status]
-    return <Badge variant={config.variant}>{config.label}</Badge>
+    const config = STATUS_BADGE_CONFIG[status]
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>
   }
 
   const formatDate = (value: string) => new Date(value).toLocaleString()
@@ -397,7 +391,7 @@ export function UserInquiryHistoryTab() {
                 <FileText className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              {(inq.status === 'QUOTED' || inq.status === 'COMPLETED') && (
+              {(inq.status === STATUS_QUOTED || inq.status === STATUS_COMPLETED) && (
                 <DropdownMenuItem onClick={() => handleViewQuote(inq)}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Invoice
