@@ -1,25 +1,25 @@
-'use client'
+import type { Metadata } from 'next'
+import FreightForwardingClient from './FreightForwardingClient'
 
-import { useEffect } from 'react'
-import { FreightForwarding } from '@/modules/service-types/components/admin/FreightForwardingConfig'
-import { useRouter } from 'next/navigation'
+export const metadata: Metadata = {
+  title: 'Freight Forwarding Services',
+  description: 'Freight forwarding and logistics services, including customs clearance and multimodal transport.',
+  alternates: {
+    canonical: '/services/freight-forwarding',
+  },
+  openGraph: {
+    type: 'website',
+    url: '/services/freight-forwarding',
+    title: 'Freight Forwarding Services | Seatrans',
+    description: 'Freight forwarding and logistics services, including customs clearance and multimodal transport.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Freight Forwarding Services | Seatrans',
+    description: 'Freight forwarding and logistics services, including customs clearance and multimodal transport.',
+  },
+}
 
 export default function FreightForwardingPage() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    const hash = window.location.hash
-    const scrollTarget = hash === '#gallery' ? 'service-gallery' : hash === '#quote' ? 'quote-form' : null
-    if (scrollTarget) {
-      setTimeout(() => {
-        document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
-    }
-  }, [])
-  
-  return (
-    <main>
-      <FreightForwarding onNavigateHome={() => router.push('/')} />
-    </main>
-  )
+  return <FreightForwardingClient />
 }

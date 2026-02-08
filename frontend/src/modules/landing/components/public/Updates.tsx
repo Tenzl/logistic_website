@@ -162,6 +162,7 @@ export function Updates({ onNavigateToArticle }: UpdatesProps) {
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
                           fill
+                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

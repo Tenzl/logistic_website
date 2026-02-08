@@ -148,6 +148,7 @@ export function FieldGallery() {
                             alt={item.portName}
                             width={800}
                             height={600}
+                            sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                       
@@ -188,6 +189,7 @@ export function FieldGallery() {
                       alt={item.portName}
                       width={1200}
                       height={800}
+                      sizes="100vw"
                       className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
                     />
                   </DialogContent>

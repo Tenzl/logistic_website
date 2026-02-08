@@ -1,25 +1,25 @@
-'use client'
+import type { Metadata } from 'next'
+import CharteringBrokingClient from './CharteringBrokingClient'
 
-import { useEffect } from 'react'
-import { CharteringBroking } from '@/modules/service-types/components/admin/CharteringBrokingConfig'
-import { useRouter } from 'next/navigation'
+export const metadata: Metadata = {
+  title: 'Chartering and Broking Services',
+  description: 'Vessel chartering and broking services for bulk, project cargo, and specialized shipments.',
+  alternates: {
+    canonical: '/services/chartering-broking',
+  },
+  openGraph: {
+    type: 'website',
+    url: '/services/chartering-broking',
+    title: 'Chartering and Broking Services | Seatrans',
+    description: 'Vessel chartering and broking services for bulk, project cargo, and specialized shipments.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Chartering and Broking Services | Seatrans',
+    description: 'Vessel chartering and broking services for bulk, project cargo, and specialized shipments.',
+  },
+}
 
 export default function CharteringBrokingPage() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    const hash = window.location.hash
-    const scrollTarget = hash === '#gallery' ? 'service-gallery' : hash === '#quote' ? 'quote-form' : null
-    if (scrollTarget) {
-      setTimeout(() => {
-        document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
-    }
-  }, [])
-  
-  return (
-    <main>
-      <CharteringBroking onNavigateHome={() => router.push('/')} />
-    </main>
-  )
+  return <CharteringBrokingClient />
 }

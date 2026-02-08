@@ -31,6 +31,7 @@ export function Footer() {
                   alt="SEATRANS Logo"
                   width={240}
                   height={120}
+                  sizes="240px"
                   className="h-10 sm:h-12 w-auto object-contain"
                 />
                 <h3 className="uppercase text-[#202124] text-[16px] sm:text-[18px] leading-tight" style={{ fontWeight: 800 }}>
