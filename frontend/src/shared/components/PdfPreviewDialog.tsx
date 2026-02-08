@@ -1,3 +1,5 @@
+'use client'
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/shared/components/ui/dialog'
 import { Button } from '@/shared/components/ui/button'
 import { Document, Page, pdfjs } from 'react-pdf'

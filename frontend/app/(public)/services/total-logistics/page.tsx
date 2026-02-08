@@ -1,25 +1,25 @@
-'use client'
+import type { Metadata } from 'next'
+import TotalLogisticsClient from './TotalLogisticsClient'
 
-import { useEffect } from 'react'
-import { TotalLogistics } from '@/modules/service-types/components/admin/TotalLogisticsConfig'
-import { useRouter } from 'next/navigation'
+export const metadata: Metadata = {
+  title: 'Total Logistics Services',
+  description: 'End-to-end logistics solutions covering sea, land, and air transport with integrated tracking.',
+  alternates: {
+    canonical: '/services/total-logistics',
+  },
+  openGraph: {
+    type: 'website',
+    url: '/services/total-logistics',
+    title: 'Total Logistics Services | Seatrans',
+    description: 'End-to-end logistics solutions covering sea, land, and air transport with integrated tracking.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Total Logistics Services | Seatrans',
+    description: 'End-to-end logistics solutions covering sea, land, and air transport with integrated tracking.',
+  },
+}
 
 export default function TotalLogisticsPage() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    const hash = window.location.hash
-    const scrollTarget = hash === '#gallery' ? 'service-gallery' : hash === '#quote' ? 'quote-form' : null
-    if (scrollTarget) {
-      setTimeout(() => {
-        document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
-    }
-  }, [])
-  
-  return (
-    <main>
-      <TotalLogistics onNavigateHome={() => router.push('/')} />
-    </main>
-  )
+  return <TotalLogisticsClient />
 }
