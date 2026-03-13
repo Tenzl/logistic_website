@@ -73,6 +73,21 @@ const formatAmount = (value: unknown) => {
   return rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const hasText = (value: unknown) => {
+  if (value === undefined || value === null) return false
+  return String(value).trim() !== ''
+}
+
+const isMeaningfulQuoteRow = (row: QuoteRow) => {
+  return [row.item, row.details, row.add, row.remark, row.amount].some(hasText)
+}
+
+const normalizeCustomRows = (rows: QuoteRow[]) => {
+  return rows
+    .filter(isMeaningfulQuoteRow)
+    .map((row, index) => ({ ...row, no: index + 1 }))
+}
+
 const buildAARows = (
   rows: QuoteRow[],
   grt?: string | number,
@@ -88,6 +103,8 @@ const buildAARows = (
     pilotageThirdMiles?: string | number
   },
 ): { html: string; total?: string } => {
+  const customRows = normalizeCustomRows(rows)
+
   const renderRow = (row: QuoteRow, index: number) => {
     const no = escapeHtml(row.no ?? index + 1)
     if (row.mergeItemDetails) {
@@ -112,7 +129,7 @@ const buildAARows = (
       </tr>`
   }
 
-  if (!rows.length) {
+  if (!customRows.length) {
     const grtDisplay = escapeHtml(grt ?? 'GRT')
     const grtNumeric = toNumber(grt)
 
@@ -294,7 +311,7 @@ const buildAARows = (
     pushNumbered({ item: 'Quarantine fee', details: '(out)', amount: quarantineFee })
 
     if (showOceanFrtTax) {
-      defaultRows.push({
+      pushNumbered({
         item: 'Ocean Frt Tax',
         details: 'Total Frt x 2% tax rate',
         remark: 'PLS ADVISE',
@@ -303,7 +320,7 @@ const buildAARows = (
     }
 
     if (hasTransportQuarantine && transportQuarantineAmount !== undefined) {
-      defaultRows.push({
+      pushNumbered({
         item: 'Transport for entry quarantine formality',
         details: '',
         amount: transportQuarantineAmount,
@@ -312,7 +329,7 @@ const buildAARows = (
     }
 
     if (hasBoatHire && boatHireAmount !== undefined) {
-      defaultRows.push({
+      pushNumbered({
         item: "Boat-hire for entry quarantine",
         details: '',
         amount: boatHireAmount,
@@ -321,15 +338,15 @@ const buildAARows = (
     }
 
     if (hasTallyFee && tallyFeeAmount !== undefined) {
-      defaultRows.push({
+      pushNumbered({
         item: "Ship's side tally fee",
         details: '',
         amount: tallyFeeAmount,
       })
     }
 
-    defaultRows.push({ item: 'Clearance fees', details: '(outward clearance)', amount: clearanceFees })
-    defaultRows.push({
+    pushNumbered({ item: 'Clearance fees', details: '(outward clearance)', amount: clearanceFees })
+    pushNumbered({
       item: 'Garbage removal fee',
       details: mooringLocation === 'anchorage' ? 'USD 55/cbm/2 days/time' : 'USD 35/cbm/2 days/time',
       amount: garbageRemoval,
@@ -345,12 +362,12 @@ const buildAARows = (
     return { html, total: totalNumeric ? formatAmount(totalNumeric) : undefined }
   }
 
-  const totalNumeric = rows.reduce((sum, row) => {
+  const totalNumeric = customRows.reduce((sum, row) => {
     const n = toNumber(row.amount)
     return n === null ? sum : sum + n
   }, 0)
 
-  const html = rows.map(renderRow).join('\n')
+  const html = customRows.map(renderRow).join('\n')
 
   return { html, total: totalNumeric ? formatAmount(totalNumeric) : undefined }
 }
@@ -363,6 +380,8 @@ const buildBBRows = (
   cargoType?: string,
   transportLs?: string | number,
 ): { html: string; total?: string } => {
+  const customRows = normalizeCustomRows(rows)
+
   const formatUsd = (value?: number) =>
     value === undefined
       ? ''
@@ -424,7 +443,7 @@ const buildBBRows = (
     .filter(Boolean)
     .join(': ')
 
-  if (!rows.length) {
+  if (!customRows.length) {
     const autoRows: QuoteRow[] = []
 
     if (agencyFee.amount !== undefined || detail) {
@@ -457,7 +476,7 @@ const buildBBRows = (
     return { html: autoRows.map(renderRow).join('\n'), total: totalNumeric ? formatAmount(totalNumeric) : undefined }
   }
 
-  const adjustedRows = rows.map((row) => {
+  const adjustedRows = customRows.map((row) => {
     const isCargoFee = (row.item || '').toLowerCase().includes('agency fee on cargo')
     const isGrtFee = (row.item || '').toLowerCase().includes('agency fee on grt')
     const isTransportLs = (row.item || '').toLowerCase().includes('transport')
@@ -473,12 +492,16 @@ const buildBBRows = (
     return row
   })
 
-  const totalNumeric = adjustedRows.reduce((sum, row) => {
+  const finalRows = adjustedRows
+    .filter(isMeaningfulQuoteRow)
+    .map((row, index) => ({ ...row, no: index + 1 }))
+
+  const totalNumeric = finalRows.reduce((sum, row) => {
     const n = toNumber(row.amount)
     return n === null ? sum : sum + n
   }, 0)
 
-  return { html: adjustedRows.map(renderRow).join('\n'), total: totalNumeric ? formatAmount(totalNumeric) : undefined }
+  return { html: finalRows.map(renderRow).join('\n'), total: totalNumeric ? formatAmount(totalNumeric) : undefined }
 }
 
 export const renderQuoteHtml = (template: string, data: QuoteData) => {

@@ -61,8 +61,9 @@ export default function NavMenu({ menu }: NavMenuProps) {
                 </NavigationMenuContent>
               </>
             ) : (
-              <Link href={item.path ?? '#'} legacyBehavior passHref>
-                <NavigationMenuLink
+              <NavigationMenuLink asChild>
+                <Link
+                  href={item.path ?? '#'}
                   className={cn(
                     navigationMenuTriggerStyle(),
                     'bg-transparent text-sm font-medium',
@@ -70,8 +71,8 @@ export default function NavMenu({ menu }: NavMenuProps) {
                   )}
                 >
                   {item.title}
-                </NavigationMenuLink>
-              </Link>
+                </Link>
+              </NavigationMenuLink>
             )}
           </NavigationMenuItem>
         ))}

@@ -1,6 +1,17 @@
 /** @type {import('next').NextConfig} */
+const isProd = process.env.NODE_ENV === 'production'
+
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: [
+    'zod',
+    '@tanstack/react-query',
+    'date-fns',
+    'react-day-picker',
+    'react-phone-number-input',
+    'swiper',
+    'd3-geo',
+  ],
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
@@ -39,7 +50,12 @@ const nextConfig = {
       {
         source: '/_next/static/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          {
+            key: 'Cache-Control',
+            value: isProd
+              ? 'public, max-age=31536000, immutable'
+              : 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
         ],
       },
       {

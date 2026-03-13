@@ -85,7 +85,8 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      <head />
+      <body suppressHydrationWarning>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
           strategy="afterInteractive"
@@ -98,12 +99,11 @@ export default function RootLayout({
             gtag('config', '${gaMeasurementId}');
           `}
         </Script>
-        <script
+        <Script
+          id="organization-schema"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-      </head>
-      <body suppressHydrationWarning>
         <AuthProvider>
           <Suspense fallback={null}>
             <NProgressProvider />
