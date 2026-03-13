@@ -38,6 +38,7 @@ export function Hero({ title, subtitle, image, primaryCTA, secondaryCTA, trustBa
             width={1920}
             height={1080}
             priority
+            sizes="100vw"
             className="w-full h-full object-cover"
           />
           {/* Overlay when text is present */}

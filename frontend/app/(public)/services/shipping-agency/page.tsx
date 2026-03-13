@@ -1,25 +1,25 @@
-'use client'
+import type { Metadata } from 'next'
+import ShippingAgencyClient from './ShippingAgencyClient'
 
-import { useEffect } from 'react'
-import { ShippingAgency } from '@/modules/service-types/components/admin/ShippingAgencyConfig'
-import { useRouter } from 'next/navigation'
+export const metadata: Metadata = {
+  title: 'Shipping Agency Services',
+  description: 'Shipping agency services in Vietnam ports, including port clearance, vessel husbandry, and operational support.',
+  alternates: {
+    canonical: '/services/shipping-agency',
+  },
+  openGraph: {
+    type: 'website',
+    url: '/services/shipping-agency',
+    title: 'Shipping Agency Services | Seatrans',
+    description: 'Shipping agency services in Vietnam ports, including port clearance, vessel husbandry, and operational support.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Shipping Agency Services | Seatrans',
+    description: 'Shipping agency services in Vietnam ports, including port clearance, vessel husbandry, and operational support.',
+  },
+}
 
 export default function ShippingAgencyPage() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    const hash = window.location.hash
-    const scrollTarget = hash === '#gallery' ? 'service-gallery' : hash === '#quote' ? 'quote-form' : null
-    if (scrollTarget) {
-      setTimeout(() => {
-        document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
-    }
-  }, [])
-  
-  return (
-    <main>
-      <ShippingAgency onNavigateHome={() => router.push('/')} />
-    </main>
-  )
+  return <ShippingAgencyClient />
 }

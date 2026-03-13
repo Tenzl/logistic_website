@@ -1,138 +1,142 @@
 "use client"
 
-import React, { type SVGProps } from 'react'
+import React from 'react'
+import Image from 'next/image'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { LogoCarousel } from "@/shared/components/ui/logo-carousel"
 
 // Partner Logo Components
-function MaerskLogo(props: SVGProps<SVGSVGElement>) {
+type LogoProps = { className?: string }
+
+function LogoImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   return (
-    <img 
-      src="/icon-image/maersk-group.jpg" 
+    <Image
+      src={src}
+      alt={alt}
+      width={160}
+      height={160}
+      className={className}
+      sizes="(min-width: 1024px) 160px, 120px"
+    />
+  )
+}
+
+function MaerskLogo(props: LogoProps) {
+  return (
+    <LogoImage
+      src="/icon-image/maersk-group.jpg"
       alt="Maersk"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function MSCLogo(props: SVGProps<SVGSVGElement>) {
+function MSCLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/msc.jpg" 
+    <LogoImage
+      src="/icon-image/msc.jpg"
       alt="MSC"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function CMACGMLogo(props: SVGProps<SVGSVGElement>) {
+function CMACGMLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/cma.jpg" 
+    <LogoImage
+      src="/icon-image/cma.jpg"
       alt="CMA CGM"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function WanHaiLogo(props: SVGProps<SVGSVGElement>) {
+function WanHaiLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/wanhai.png" 
+    <LogoImage
+      src="/icon-image/wanhai.png"
       alt="Wan Hai"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function UASCLogo(props: SVGProps<SVGSVGElement>) {
+function UASCLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/UASC.png" 
+    <LogoImage
+      src="/icon-image/UASC.png"
       alt="UASC"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function COSCOLogo(props: SVGProps<SVGSVGElement>) {
+function COSCOLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/cosco.png" 
+    <LogoImage
+      src="/icon-image/cosco.png"
       alt="COSCO"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function MCCLogo(props: SVGProps<SVGSVGElement>) {
+function MCCLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/mcc.jpg" 
+    <LogoImage
+      src="/icon-image/mcc.jpg"
       alt="MCC"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function YangMingLogo(props: SVGProps<SVGSVGElement>) {
+function YangMingLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/yangming.png" 
+    <LogoImage
+      src="/icon-image/yangming.png"
       alt="Yang Ming"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function MOLLogo(props: SVGProps<SVGSVGElement>) {
+function MOLLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/mol.png" 
+    <LogoImage
+      src="/icon-image/mol.png"
       alt="MOL"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function NYKLogo(props: SVGProps<SVGSVGElement>) {
+function NYKLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/nyk.png" 
+    <LogoImage
+      src="/icon-image/nyk.png"
       alt="NYK"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function ZIMLogo(props: SVGProps<SVGSVGElement>) {
+function ZIMLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/zim.svg" 
+    <LogoImage
+      src="/icon-image/zim.svg"
       alt="ZIM"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }
 
-function ChanMayLogo(props: SVGProps<SVGSVGElement>) {
+function ChanMayLogo(props: LogoProps) {
   return (
-    <img 
-      src="/icon-image/cmp.png" 
+    <LogoImage
+      src="/icon-image/cmp.png"
       alt="Chan May"
-      className="h-24 w-auto object-contain md:h-28"
-      {...props as any}
+      className={`h-24 w-auto object-contain md:h-28 ${props.className || ''}`}
     />
   )
 }

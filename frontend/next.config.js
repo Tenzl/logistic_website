@@ -1,7 +1,20 @@
 /** @type {import('next').NextConfig} */
+const isProd = process.env.NODE_ENV === 'production'
+
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: [
+    'zod',
+    '@tanstack/react-query',
+    'date-fns',
+    'react-day-picker',
+    'react-phone-number-input',
+    'swiper',
+    'd3-geo',
+  ],
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
     remotePatterns: [
       {
         protocol: 'https',
@@ -23,6 +36,51 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination: 'http://localhost:8080/api/:path*',
+      },
+    ]
+  },
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store' },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: isProd
+              ? 'public, max-age=31536000, immutable'
+              : 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400' },
+        ],
+      },
+      {
+        source: '/icon-image/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/landing-image/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/tinymce/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+        ],
       },
     ]
   },

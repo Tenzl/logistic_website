@@ -1,6 +1,8 @@
+'use client'
+
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Editor } from '@tinymce/tinymce-react'
+import dynamic from 'next/dynamic'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
@@ -11,6 +13,11 @@ import { categoryService, Category } from '@/modules/categories/services/categor
 import { toast } from '@/shared/utils/toast'
 import { Save, X, ChevronDown, Plus } from 'lucide-react'
 import { API_CONFIG } from '@/shared/config/api.config'
+
+const Editor = dynamic<any>(
+  () => import('@tinymce/tinymce-react').then((mod) => mod.Editor as any),
+  { ssr: false, loading: () => <div className="text-sm text-muted-foreground">Loading editor...</div> }
+)
 
 // Helper function to construct proper image URL
 const getImageUrl = (url: string) => {
@@ -336,9 +343,9 @@ export function PostEditorPage({ postId }: PostEditorPageProps) {
                 <Editor
                   tinymceScriptSrc="/tinymce/tinymce.min.js"
                   licenseKey='gpl'
-                  onInit={(evt, editor) => (editorRef.current = editor)}
+                  onInit={(_evt: any, editor: any) => (editorRef.current = editor)}
                   value={formData.content}
-                  onEditorChange={(content) => setFormData({ ...formData, content })}
+                  onEditorChange={(content: string) => setFormData({ ...formData, content })}
                   init={{
                     height: 600,
                     menubar: true,

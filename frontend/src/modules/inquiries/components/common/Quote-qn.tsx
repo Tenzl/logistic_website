@@ -71,6 +71,17 @@ const formatAmount = (value: unknown) => {
   return rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const hasText = (value: unknown) => {
+  if (value === undefined || value === null) return false
+  return String(value).trim() !== ''
+}
+
+const isMeaningfulQuoteRow = (row: QuoteRow) => {
+  return [row.item, row.details, row.add, row.remark, row.amount].some(hasText)
+}
+
+const normalizeCustomRows = (rows: QuoteRow[]) => rows.filter(isMeaningfulQuoteRow)
+
 const buildAARows = (
   rows: QuoteRow[],
   grt?: string | number,
@@ -84,6 +95,8 @@ const buildAARows = (
     loa?: string | number
   },
 ): { html: string; total?: string } => {
+  const customRows = normalizeCustomRows(rows)
+
   const renderRow = (row: QuoteRow, index: number) => {
     if (row.mergeItemDetails) {
       return `
@@ -107,7 +120,7 @@ const buildAARows = (
       </tr>`
   }
 
-  if (!rows.length) {
+  if (!customRows.length) {
     const grtDisplay = escapeHtml(grt ?? 'GRT')
     const grtNumeric = toNumber(grt)
 
@@ -260,12 +273,12 @@ const buildAARows = (
     return { html, total: totalNumeric ? formatAmount(totalNumeric) : undefined }
   }
 
-  const totalNumeric = rows.reduce((sum, row) => {
+  const totalNumeric = customRows.reduce((sum, row) => {
     const n = toNumber(row.amount)
     return n === null ? sum : sum + n
   }, 0)
 
-  const html = rows.map(renderRow).join('\n')
+  const html = customRows.map(renderRow).join('\n')
 
   return { html, total: totalNumeric ? formatAmount(totalNumeric) : undefined }
 }
@@ -278,6 +291,8 @@ const buildBBRows = (
   cargoType?: string,
   transportLs?: string | number,
 ): { html: string; total?: string } => {
+  const customRows = normalizeCustomRows(rows)
+
   const formatUsd = (value?: number) =>
     value === undefined
       ? ''
@@ -339,7 +354,7 @@ const buildBBRows = (
     .filter(Boolean)
     .join(': ')
 
-  if (!rows.length) {
+  if (!customRows.length) {
     const autoRows: QuoteRow[] = []
 
     if (agencyFee.amount !== undefined || detail) {
@@ -372,7 +387,7 @@ const buildBBRows = (
     return { html: autoRows.map(renderRow).join('\n'), total: totalNumeric ? formatAmount(totalNumeric) : undefined }
   }
 
-  const adjustedRows = rows.map((row) => {
+  const adjustedRows = customRows.map((row) => {
     const isCargoFee = (row.item || '').toLowerCase().includes('agency fee on cargo')
     const isGrtFee = (row.item || '').toLowerCase().includes('agency fee on grt')
     const isTransportLs = (row.item || '').toLowerCase().includes('transport')
@@ -388,12 +403,14 @@ const buildBBRows = (
     return row
   })
 
-  const totalNumeric = adjustedRows.reduce((sum, row) => {
+  const finalRows = adjustedRows.filter(isMeaningfulQuoteRow)
+
+  const totalNumeric = finalRows.reduce((sum, row) => {
     const n = toNumber(row.amount)
     return n === null ? sum : sum + n
   }, 0)
 
-  return { html: adjustedRows.map(renderRow).join('\n'), total: totalNumeric ? formatAmount(totalNumeric) : undefined }
+  return { html: finalRows.map(renderRow).join('\n'), total: totalNumeric ? formatAmount(totalNumeric) : undefined }
 }
 
 export const renderQuoteHtml = (template: string, data: QuoteData) => {

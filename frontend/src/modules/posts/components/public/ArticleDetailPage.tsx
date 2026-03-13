@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Clock, Eye, Tag, User } from 'lucide-react'
 import DOMPurify from 'dompurify'

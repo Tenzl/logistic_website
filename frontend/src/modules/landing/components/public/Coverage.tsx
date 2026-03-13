@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { Card } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -9,7 +11,6 @@ import {
   Anchor // Import thêm icon Anchor cho đẹp
 } from 'lucide-react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
-import vnGeo from '@/shared/assets/data/newvn.json'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { getProvinceCoordinates } from '@/shared/utils/provinceCoordinates'
 import { apiClient } from '@/shared/utils/apiClient'
@@ -17,9 +18,28 @@ import { API_CONFIG } from '@/shared/config/api.config'
 
 export function Coverage() {
   const [provinces, setProvinces] = useState<any[]>([])
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
-  const [hoveredProvince, setHoveredProvince] = useState<string | null>(null)
+  const [selectedProvince, setSelectedProvince] = useState<number | null>(null)
+  const [hoveredProvince, setHoveredProvince] = useState<number | null>(null)
+  const [geoData, setGeoData] = useState<any | null>(null)
   const [ref, isInView] = useIntersectionObserver()
+
+  useEffect(() => {
+    const loadGeoData = async () => {
+      try {
+        const response = await fetch('/geo/newvn.json')
+        if (!response.ok) {
+          console.error('Failed to load map data', response.status)
+          return
+        }
+        const data = await response.json()
+        setGeoData(data)
+      } catch (error) {
+        console.error('Failed to load map data', error)
+      }
+    }
+
+    loadGeoData()
+  }, [])
 
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -122,106 +142,112 @@ export function Coverage() {
               <Card className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold">Vietnam Network</h3>
+                    <h3 className="text-xl font-semibold">SEATRANS - OPRATION MAP</h3>
                     <Badge variant="secondary">Live Coverage</Badge>
                   </div>
 
                   {/* Map Container */}
                   <div ref={ref} className="relative bg-card rounded-lg overflow-hidden border">
-                    <ComposableMap
-                      projection="geoMercator"
-                      projectionConfig={{ center: [107, 16], scale: 3000 }}
-                      width={800}
-                      height={850}
-                      className="w-full h-auto"
-                    >
-                      <Geographies geography={vnGeo}>
-                        {({ geographies }) =>
-                          geographies.map((geo) => (
-                            <Geography
-                              key={geo.rsmKey}
-                              geography={geo}
-                              fill="#e0f2fe"
-                              stroke="#1a54b4"
-                              strokeWidth={0.5}
-                              style={{
-                                default: { outline: 'none' },
-                                hover: { outline: 'none', fill: '#bae6fd' },
-                                pressed: { outline: 'none' }
-                              }}
-                            />
-                          ))
-                        }
-                      </Geographies>
+                    {geoData ? (
+                      <ComposableMap
+                        projection="geoMercator"
+                        projectionConfig={{ center: [107, 16], scale: 3000 }}
+                        width={800}
+                        height={850}
+                        className="w-full h-auto"
+                      >
+                        <Geographies geography={geoData}>
+                          {({ geographies }) =>
+                            geographies.map((geo) => (
+                              <Geography
+                                key={geo.rsmKey}
+                                geography={geo}
+                                fill="#e0f2fe"
+                                stroke="#1a54b4"
+                                strokeWidth={0.5}
+                                style={{
+                                  default: { outline: 'none' },
+                                  hover: { outline: 'none', fill: '#bae6fd' },
+                                  pressed: { outline: 'none' }
+                                }}
+                              />
+                            ))
+                          }
+                        </Geographies>
 
-                      {/* Province Markers */}
-                      {provinces.map((province, index) => (
-                        <Marker key={province.id} coordinates={province.coordinates}>
-                          <g
-                            onMouseEnter={() => setHoveredProvince(province.id)}
-                            onMouseLeave={() => setHoveredProvince(null)}
-                            onClick={() => setSelectedProvince(province.id)}
-                            className="cursor-pointer"
-                          >
-                            {/* Pulsating Rings */}
-                            <circle
-                              r={13}
-                              fill="none"
-                              stroke="#2ECC71"
-                              strokeWidth={2}
-                              opacity={0.6}
-                              className="animate-ping"
-                              style={{ animationDuration: '2s' }}
-                            />
+                        {/* Province Markers */}
+                        {provinces.map((province, index) => (
+                          <Marker key={province.id} coordinates={province.coordinates}>
+                            <g
+                              onMouseEnter={() => setHoveredProvince(province.id)}
+                              onMouseLeave={() => setHoveredProvince(null)}
+                              onClick={() => setSelectedProvince(province.id)}
+                              className="cursor-pointer"
+                            >
+                              {/* Pulsating Rings */}
+                              <circle
+                                r={13}
+                                fill="none"
+                                stroke="#2ECC71"
+                                strokeWidth={2}
+                                opacity={0.6}
+                                className="animate-ping"
+                                style={{ animationDuration: '2s' }}
+                              />
 
-                            {/* Main Marker Circle */}
-                            <circle
-                              r={8}
-                              fill="#2ECC71"
-                              stroke="#fff"
-                              strokeWidth={2}
-                              className="transition-all hover:scale-110"
-                            />
+                              {/* Main Marker Circle */}
+                              <circle
+                                r={8}
+                                fill="#2ECC71"
+                                stroke="#fff"
+                                strokeWidth={2}
+                                className="transition-all hover:scale-110"
+                              />
 
-                            {/* HOVER MESSAGE BUBBLE */}
-                            {hoveredProvince === province.id && (
-                              <foreignObject
-                                x={-215}
-                                y={-60}
-                                width={200}
-                                height={120}
-                                style={{ overflow: 'visible', zIndex: 50 }}
-                              >
-                                <div className="flex flex-row items-center justify-end h-full animate-in fade-in zoom-in-95 duration-200">
-                                  {/* Bubble Body */}
-                                  <div className="bg-card rounded-lg shadow-xl border p-3 min-w-[140px]">
-                                    {/* Header: Province Name */}
-                                    <div className="text-xs font-bold text-foreground uppercase tracking-wide border-b pb-1 mb-1.5">
-                                      {province.name}
+                              {/* HOVER MESSAGE BUBBLE */}
+                              {hoveredProvince === province.id && (
+                                <foreignObject
+                                  x={-215}
+                                  y={-60}
+                                  width={200}
+                                  height={120}
+                                  style={{ overflow: 'visible', zIndex: 50 }}
+                                >
+                                  <div className="flex flex-row items-center justify-end h-full animate-in fade-in zoom-in-95 duration-200">
+                                    {/* Bubble Body */}
+                                    <div className="bg-card rounded-lg shadow-xl border p-3 min-w-[140px]">
+                                      {/* Header: Province Name */}
+                                      <div className="text-xs font-bold text-foreground uppercase tracking-wide border-b pb-1 mb-1.5">
+                                        {province.name}
+                                      </div>
+
+                                      {/* List of Ports */}
+                                      <div className="space-y-1.5">
+                                        {province.ports.map((port: string, idx: number) => (
+                                          <div key={idx} className="flex items-start gap-1.5">
+                                            <Anchor className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                                            <span className="text-[11px] font-medium text-muted-foreground leading-tight text-left">
+                                              {port}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
 
-                                    {/* List of Ports */}
-                                    <div className="space-y-1.5">
-                                      {province.ports.map((port: string, idx: number) => (
-                                        <div key={idx} className="flex items-start gap-1.5">
-                                          <Anchor className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
-                                          <span className="text-[11px] font-medium text-muted-foreground leading-tight text-left">
-                                            {port}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
+                                    {/* Triangle Tail (Mũi tên trỏ phải) */}
+                                    <div className="w-3 h-3 bg-card rotate-45 transform -translate-x-1.5 shadow-sm border-t border-r z-10"></div>
                                   </div>
-
-                                  {/* Triangle Tail (Mũi tên trỏ phải) */}
-                                  <div className="w-3 h-3 bg-card rotate-45 transform -translate-x-1.5 shadow-sm border-t border-r z-10"></div>
-                                </div>
-                              </foreignObject>
-                            )}
-                          </g>
-                        </Marker>
-                      ))}
-                    </ComposableMap>
+                                </foreignObject>
+                              )}
+                            </g>
+                          </Marker>
+                        ))}
+                      </ComposableMap>
+                    ) : (
+                      <div className="flex items-center justify-center h-[520px] text-sm text-muted-foreground">
+                        Loading map...
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>

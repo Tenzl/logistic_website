@@ -1,4 +1,7 @@
+'use client'
+
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { Calendar, User } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
@@ -222,7 +225,13 @@ function PostCard({
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <div className={cardStyles.media}>
-        <img src={imageUrl} alt={post.title} className={cardStyles.mediaImg} />
+        <Image
+          src={imageUrl}
+          alt={post.title}
+          fill
+          sizes="(min-width: 1024px) 360px, (min-width: 768px) 50vw, 100vw"
+          className={cardStyles.mediaImg}
+        />
         <div className={`${cardStyles.categoryPill} bg-primary text-primary-foreground`}>{displayCategory}</div>
       </div>
 

@@ -244,6 +244,7 @@ export function Solutions({ onNavigate }: SolutionsProps) {
                       alt={`${activeSolution.title} - ${activeSolution.description}`}
                       width={800}
                       height={550}
+                      sizes="(min-width: 1024px) 50vw, 0px"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
