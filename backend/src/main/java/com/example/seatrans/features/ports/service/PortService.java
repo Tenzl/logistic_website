@@ -2,6 +2,7 @@ package com.example.seatrans.features.ports.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import com.example.seatrans.shared.mapper.EntityMapper;
 
 @Service
 public class PortService {
+
+    private static final Pattern PORT_OF_CALL_SUFFIX_PATTERN = Pattern.compile("(\\s+(PORT|TERMINAL|ANCHORAGE))+$", Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private PortRepository portRepository;
@@ -87,9 +90,12 @@ public class PortService {
             return null;
         }
 
+        String normalizedName = normalizePortName(request.getName());
+        String normalizedPortOfCall = normalizePortOfCall(request.getPortOfCall(), normalizedName);
+
         // Check if port already exists
         Optional<Port> existing = portRepository.findByNameAndProvinceId(
-                request.getName(),
+            normalizedName,
                 request.getProvinceId()
         );
         if (existing.isPresent()) {
@@ -97,7 +103,8 @@ public class PortService {
         }
 
         Port port = new Port();
-        port.setName(request.getName());
+        port.setName(normalizedName);
+        port.setPortOfCall(normalizedPortOfCall);
         port.setProvince(provinceOpt.get());
         port.setIsActive(true);
 
@@ -116,8 +123,12 @@ public class PortService {
             return null;
         }
 
+        String normalizedName = normalizePortName(request.getName());
+        String normalizedPortOfCall = normalizePortOfCall(request.getPortOfCall(), normalizedName);
+
         Port port = existingOpt.get();
-        port.setName(request.getName());
+        port.setName(normalizedName);
+        port.setPortOfCall(normalizedPortOfCall);
         port.setProvince(provinceOpt.get());
 
         Port updatedPort = portRepository.save(port);
@@ -130,5 +141,22 @@ public class PortService {
 
     public long getPortCount() {
         return portRepository.count();
+    }
+
+    private String normalizePortName(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizePortOfCall(String providedPortOfCall, String normalizedName) {
+        if (providedPortOfCall != null && !providedPortOfCall.trim().isEmpty()) {
+            return providedPortOfCall.trim().replaceAll("\\s+", " ").toUpperCase();
+        }
+
+        String uppercaseName = normalizedName.toUpperCase();
+        String stripped = PORT_OF_CALL_SUFFIX_PATTERN.matcher(uppercaseName).replaceAll("").trim();
+        return stripped.isEmpty() ? uppercaseName : stripped;
     }
 }

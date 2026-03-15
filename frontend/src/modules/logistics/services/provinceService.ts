@@ -5,6 +5,9 @@ import type { ApiResponse } from '@/shared/types/api.types'
 export interface Province {
   id: number
   name: string
+  displayName?: string
+  code?: string
+  area?: string
 }
 
 export const provinceService = {

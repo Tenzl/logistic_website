@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 public class ProvinceDTO {
     private Long id;
     private String name;
+    private String displayName;
+    private String code;
+    private String area;
     private int portCount;
     private List<String> ports;
     private Boolean isActive;

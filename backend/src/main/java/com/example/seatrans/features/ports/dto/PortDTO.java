@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class PortDTO {
     private Long id;
     private String name;
+    private String portOfCall;
     private Long provinceId;
     private String provinceName;
     private Boolean isActive;

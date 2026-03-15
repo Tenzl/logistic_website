@@ -34,6 +34,9 @@ public class Port {
     
     @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(name = "port_of_call", nullable = false, length = 100)
+    private String portOfCall;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "province_id")

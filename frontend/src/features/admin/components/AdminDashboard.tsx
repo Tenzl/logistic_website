@@ -59,7 +59,7 @@ interface AdminPageProps {
 type AdminSection =
   | 'profile'
   | 'inquiry'
-  | 'create-invoice'
+  | 'create-epda'
   | 'shipping-agency-inquiries'
   | 'freight-forwarding-inquiries'
   | 'logistics-inquiries'
@@ -92,7 +92,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
   const menuItems = [
     { id: 'profile' as AdminSection, label: 'Edit Profile', icon: User, category: 'Profile' },
-    { id: 'create-invoice' as AdminSection, label: 'Create Invoice', icon: Calculator, category: 'Invoices' },
+    { id: 'create-epda' as AdminSection, label: 'Create EPDA', icon: Calculator, category: 'Port Charge' },
     { id: 'shipping-agency-inquiries' as AdminSection, label: 'Shipping Agency', icon: ListChecks, category: 'Inquiries' },
     { id: 'freight-forwarding-inquiries' as AdminSection, label: 'Freight Forwarding', icon: Package, category: 'Inquiries' },
     { id: 'logistics-inquiries' as AdminSection, label: 'Logistics', icon: Truck, category: 'Inquiries' },
@@ -110,7 +110,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
   const categories = [
     { name: 'Profile', items: menuItems.filter(item => item.category === 'Profile') },
-    { name: 'Invoices', items: menuItems.filter(item => item.category === 'Invoices') },
+    { name: 'Port Charge', items: menuItems.filter(item => item.category === 'Port Charge') },
     { name: 'Inquiries', items: menuItems.filter(item => item.category === 'Inquiries') },
     { name: 'Image Management', items: menuItems.filter(item => item.category === 'Image Management') },
     { name: 'Data Management', items: menuItems.filter(item => item.category === 'Data Management') },
@@ -199,7 +199,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
 
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           {activeSection === 'profile' && <EditProfileTab />}
-          {activeSection === 'create-invoice' && <CreateInvoiceTab />}
+          {activeSection === 'create-epda' && <CreateInvoiceTab />}
           {activeSection === 'shipping-agency-inquiries' && <ShippingAgencyInquiriesTab />}
           {activeSection === 'freight-forwarding-inquiries' && <FreightForwardingInquiriesTab />}
           {activeSection === 'logistics-inquiries' && <LogisticsInquiriesTab />}

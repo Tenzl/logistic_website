@@ -27,24 +27,44 @@ import {
   TableRow,
 } from '@/shared/components/ui/table'
 
+const AREA_OPTIONS = ['NORTHERN', 'MIDDLE', 'SOUTHERN'] as const
+
 interface Port {
   id: number
   name: string
+  portOfCall?: string
   provinceId: number
 }
 
 export function ManagePorts() {
   const [provinces, setProvinces] = useState<Province[]>([])
+  const [selectedArea, setSelectedArea] = useState<string>('')
   const [selectedProvinceId, setSelectedProvinceId] = useState<number | null>(null)
   const [ports, setPorts] = useState<Port[]>([])
   const [loading, setLoading] = useState(false)
   const [newPortName, setNewPortName] = useState('')
   const [editingPortId, setEditingPortId] = useState<number | null>(null)
   const [editingPortName, setEditingPortName] = useState('')
+  const [editingPortOfCall, setEditingPortOfCall] = useState('')
 
   useEffect(() => {
     fetchProvinces()
   }, [])
+
+  useEffect(() => {
+    if (!selectedArea) {
+      setSelectedProvinceId(null)
+      return
+    }
+
+    const provinceStillValid = provinces.some(
+      (province) => province.id === selectedProvinceId && province.area === selectedArea
+    )
+
+    if (!provinceStillValid) {
+      setSelectedProvinceId(null)
+    }
+  }, [selectedArea, selectedProvinceId, provinces])
 
   useEffect(() => {
     if (selectedProvinceId) {
@@ -116,6 +136,7 @@ export function ManagePorts() {
   const handleEditPort = (port: Port) => {
     setEditingPortId(port.id)
     setEditingPortName(port.name)
+    setEditingPortOfCall(port.portOfCall || '')
   }
 
   const handleSavePort = async (portId: number) => {
@@ -128,6 +149,7 @@ export function ManagePorts() {
       setLoading(true)
       const response = await apiClient.put<ApiResponse<Port>>(API_CONFIG.PORTS.BY_ID(portId), {
         name: editingPortName.trim(),
+        portOfCall: editingPortOfCall.trim(),
         provinceId: selectedProvinceId
       })
 
@@ -136,6 +158,7 @@ export function ManagePorts() {
         setPorts(ports.map(p => p.id === portId ? updatedPort.data : p))
         setEditingPortId(null)
         setEditingPortName('')
+        setEditingPortOfCall('')
         toast.success('Port updated successfully')
       } else {
         throw new Error('Failed to update port')
@@ -167,9 +190,12 @@ export function ManagePorts() {
     }
   }
 
+  const provincesByArea = provinces.filter((province) => province.area === selectedArea)
+  const selectedProvince = provinces.find((p) => p.id === selectedProvinceId)
+
   return (
     <div className="space-y-6">
-      {/* Row 1: Province Selector */}
+      {/* Row 1: Area + Province Selectors */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -181,23 +207,45 @@ export function ManagePorts() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="province">Select Province</Label>
-            <Select
-              value={selectedProvinceId?.toString() || ''}
-              onValueChange={(value) => setSelectedProvinceId(value ? Number(value) : null)}
-            >
-              <SelectTrigger id="province">
-                <SelectValue placeholder="-- Select Province --" />
-              </SelectTrigger>
-              <SelectContent>
-                {provinces.map((province) => (
-                  <SelectItem key={province.id} value={province.id.toString()}>
-                    {province.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="area">Select Area</Label>
+              <Select
+                value={selectedArea}
+                onValueChange={(value) => setSelectedArea(value)}
+              >
+                <SelectTrigger id="area">
+                  <SelectValue placeholder="-- Select Area --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AREA_OPTIONS.map((area) => (
+                    <SelectItem key={area} value={area}>
+                      {area}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="province">Select Province</Label>
+              <Select
+                value={selectedProvinceId?.toString() || ''}
+                onValueChange={(value) => setSelectedProvinceId(value ? Number(value) : null)}
+                disabled={!selectedArea}
+              >
+                <SelectTrigger id="province">
+                  <SelectValue placeholder={selectedArea ? '-- Select Province --' : '-- Select Area First --'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {provincesByArea.map((province) => (
+                    <SelectItem key={province.id} value={province.id.toString()}>
+                      {province.displayName || province.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -237,7 +285,7 @@ export function ManagePorts() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                Ports in {provinces.find(p => p.id === selectedProvinceId)?.name} ({ports.length})
+                Ports in {selectedProvince?.displayName || selectedProvince?.name} ({ports.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -254,6 +302,7 @@ export function ManagePorts() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Port Name</TableHead>
+                      <TableHead>Port of Call</TableHead>
                       <TableHead className="text-right w-32">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -270,6 +319,18 @@ export function ManagePorts() {
                             />
                           ) : (
                             port.name
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editingPortId === port.id ? (
+                            <Input
+                              value={editingPortOfCall}
+                              onChange={(e) => setEditingPortOfCall(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleSavePort(port.id)}
+                              placeholder="Port of call"
+                            />
+                          ) : (
+                            port.portOfCall || '-'
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -290,6 +351,7 @@ export function ManagePorts() {
                                   onClick={() => {
                                     setEditingPortId(null)
                                     setEditingPortName('')
+                                    setEditingPortOfCall('')
                                   }}
                                   disabled={loading}
                                 >

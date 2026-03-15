@@ -9,39 +9,39 @@ export const PROVINCE_COORDINATES: Record<string, [number, number]> = {
     105.57572,
     10.446396
   ],
-  "Bắc Ninh": [
+  "Bac Ninh": [
     107.03352,
     21.319625
   ],
-  "Cà Mau": [
+  "Ca Mau": [
     105.860463,
     9.364276
   ],
-  "Cần Thơ": [
+  "Can Tho": [
     106.298168,
     9.58847
   ],
-  "Cao Bằng": [
+  "Cao Bang": [
     106.8373,
     22.80287
   ],
-  "Đà Nẵng": [
+  "Da Nang": [
     108.739287,
     15.398639
   ],
-  "Đắk Lắk": [
+  "Dak Lak": [
     109.458875,
     12.881408
   ],
-  "Điện Biên": [
+  "Dien Bien": [
     103.598477,
     21.682996
   ],
-  "Đồng Nai": [
-    107.577774,
-    10.833085
+  "Dong Nai": [
+    108.08,
+    11.0
   ],
-  "Đồng Tháp": [
+  "Dong Thap": [
     106.807813,
     10.395847
   ],
@@ -49,106 +49,140 @@ export const PROVINCE_COORDINATES: Record<string, [number, number]> = {
     109.299418,
     13.829998
   ],
-  "Hà Nội": [
+  "Ha Noi": [
     106.020128,
     21.041475
   ],
-  "Hà Tĩnh": [
+  "Ha Tinh": [
     106.510723,
     17.959937
   ],
-  "Hải Phòng": [
+  "Hai Phong": [
     106.909849,
     20.796868
   ],
-  "Huế": [
+  "Hue": [
     108.19492855700008,
     16.209770062000075
   ],
-  "Hưng Yên": [
+  "Hung Yen": [
     106.659473,
     20.607421
   ],
-  "Khánh Hòa": [
+  "Khanh Hoa": [
     109.461776,
     12.6484
   ],
-  "Lai Châu": [
+  "Lai Chau": [
     103.985094,
     21.96695
   ],
-  "Lâm Đồng": [
+  "Lam Dong": [
     108.876634,
     11.354382
   ],
-  "Lạng Sơn": [
+  "Lang Son": [
     107.363944,
     21.640057
   ],
-  "Lào Cai": [
+  "Lao Cai": [
     105.100413,
     21.811453
   ],
-  "Nghệ An": [
+  "Nghe An": [
     105.805989,
     19.274381
   ],
-  "Ninh Bình": [
+  "Ninh Binh": [
     106.585939,
     20.231941
   ],
-  "Phú Thọ": [
+  "Phu Tho": [
     105.858077,
     20.426202
   ],
-  "Quảng Ngãi": [
+  "Quang Ngai": [
     109.083977,
     14.672209
   ],
-  "Quảng Ninh": [
+  "Quang Ninh": [
     108.088991,
     21.48497
   ],
-  "Quảng Trị": [
+  "Quang Tri": [
     107.389464,
     16.742918
   ],
-  "Sơn La": [
+  "Son La": [
     105.032913,
     20.773673
   ],
-  "Tây Ninh": [
+  "Tay Ninh": [
     106.748357,
     10.525201
   ],
-  "Thái Nguyên": [
+  "Thai Nguyen": [
     106.247189,
     22.255977
   ],
-  "Thanh Hóa": [
+  "Thanh Hoa": [
     106.07595,
     20.062722
   ],
-  "TP. Hồ Chí Minh": [
-    107.571928,
-    10.6002
+  "TP Ho Chi Minh": [
+    107.260964,
+    10.4751
   ],
-  "Tuyên Quang": [
+  "Tuyen Quang": [
     105.599155,
     22.522308
   ],
-  "Vĩnh Long": [
+  "Vinh Long": [
     106.791831,
     10.113434
   ]
 }
+
+const COORDINATE_ALIASES: Record<string, string> = {
+  'ho chi minh': 'tp ho chi minh',
+}
+
+function normalizeProvinceKey(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const PROVINCE_COORDINATES_NORMALIZED = Object.entries(PROVINCE_COORDINATES).reduce<Record<string, [number, number]>>(
+  (acc, [name, coordinates]) => {
+    acc[normalizeProvinceKey(name)] = coordinates
+    return acc
+  },
+  {}
+)
 
 /**
  * Get coordinates for a province by name
  * Returns [0, 0] if province not found
  */
 export function getProvinceCoordinates(provinceName: string): [number, number] {
-  return PROVINCE_COORDINATES[provinceName] || [0, 0]
+  if (!provinceName) {
+    return [0, 0]
+  }
+
+  const exactCoordinates = PROVINCE_COORDINATES[provinceName]
+  if (exactCoordinates) {
+    return exactCoordinates
+  }
+
+  const normalizedInput = normalizeProvinceKey(provinceName)
+  const aliasKey = COORDINATE_ALIASES[normalizedInput] || normalizedInput
+
+  return PROVINCE_COORDINATES_NORMALIZED[aliasKey] || [0, 0]
 }
 
 /**

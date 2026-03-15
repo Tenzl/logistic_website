@@ -74,6 +74,9 @@ public class ProvinceService {
 
         Province province = new Province();
         province.setName(request.getName());
+        province.setDisplayName(resolveDisplayName(request.getName(), request.getDisplayName()));
+        province.setCode(request.getCode());
+        province.setArea(request.getArea());
         province.setIsActive(true);
 
         Province savedProvince = provinceRepository.save(province);
@@ -88,6 +91,9 @@ public class ProvinceService {
 
         Province province = existingOpt.get();
         province.setName(request.getName());
+        province.setDisplayName(resolveDisplayName(request.getName(), request.getDisplayName()));
+        province.setCode(request.getCode());
+        province.setArea(request.getArea());
 
         Province updatedProvince = provinceRepository.save(province);
         return entityMapper.toProvinceDTO(updatedProvince);
@@ -99,5 +105,37 @@ public class ProvinceService {
 
     public long getProvinceCount() {
         return provinceRepository.count();
+    }
+
+    private String resolveDisplayName(String name, String displayName) {
+        if (displayName != null && !displayName.trim().isEmpty()) {
+            return displayName.trim();
+        }
+        return toTitleCase(name);
+    }
+
+    private String toTitleCase(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+
+        String[] parts = value.trim().toLowerCase().split("\\s+");
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            if (part.isEmpty()) {
+                continue;
+            }
+            builder.append(Character.toUpperCase(part.charAt(0)));
+            if (part.length() > 1) {
+                builder.append(part.substring(1));
+            }
+            if (i < parts.length - 1) {
+                builder.append(' ');
+            }
+        }
+
+        return builder.toString();
     }
 }

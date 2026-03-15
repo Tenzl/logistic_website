@@ -64,12 +64,17 @@ public class EntityMapper {
         if (image == null) {
             return null;
         }
+
+        ProvinceDTO galleryProvince = toProvinceDTO(image.getProvince());
+        if (galleryProvince != null && galleryProvince.getDisplayName() != null) {
+            galleryProvince.setName(galleryProvince.getDisplayName());
+        }
         
         return GalleryImageDTO.builder()
                 .id(image.getId())
                 .serviceType(toServiceTypeDTO(image.getServiceType()))
                 .imageType(toImageTypeDTO(image.getImageType()))
-                .province(toProvinceDTO(image.getProvince()))
+                .province(galleryProvince)
                 .port(toPortDTO(image.getPort()))
                 .imageUrl(image.getImageUrl())
                 .uploadedAt(image.getUploadedAt())
@@ -100,6 +105,7 @@ public class EntityMapper {
                 entity.getDisplayName(),
                 entity.getDescription(),
                 entity.getRequiredImageCount(),
+            entity.getCargoType(),
                 entity.getIsActive()
         );
     }
@@ -120,6 +126,9 @@ public class EntityMapper {
         return new ProvinceDTO(
                 entity.getId(),
                 entity.getName(),
+                entity.getDisplayName(),
+            entity.getCode(),
+            entity.getArea(),
                 portCount,
                 portNames,
                 entity.getIsActive()
@@ -128,11 +137,20 @@ public class EntityMapper {
 
     public PortDTO toPortDTO(Port entity) {
         if (entity == null) return null;
+        String provinceName = "";
+        if (entity.getProvince() != null) {
+            if (entity.getProvince().getDisplayName() != null && !entity.getProvince().getDisplayName().isBlank()) {
+                provinceName = entity.getProvince().getDisplayName();
+            } else {
+                provinceName = entity.getProvince().getName();
+            }
+        }
         return new PortDTO(
                 entity.getId(),
                 entity.getName(),
+                entity.getPortOfCall(),
                 entity.getProvince() != null ? entity.getProvince().getId() : null,
-                entity.getProvince() != null ? entity.getProvince().getName() : "",
+                provinceName,
                 entity.getIsActive()
         );
     }

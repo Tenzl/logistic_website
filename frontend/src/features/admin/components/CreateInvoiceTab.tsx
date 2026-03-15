@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -10,6 +10,10 @@ import { toast } from '@/shared/utils/toast'
 import { Loader2, FileText, Eye } from 'lucide-react'
 import { renderQuoteHtml as renderQuoteHtmlHcm, QuoteData, QuotePreview } from '@/modules/inquiries/components/common/Quote-hcm'
 import { renderQuoteHtml as renderQuoteHtmlQn } from '@/modules/inquiries/components/common/Quote-qn'
+import { imageTypeService, type CargoType, type ImageType } from '@/modules/gallery/services/imageTypeService'
+import { serviceTypeService } from '@/modules/service-types/services/serviceTypeService'
+import { provinceService, type Province } from '@/modules/logistics/services/provinceService'
+import { portService, type Port as LogisticsPort } from '@/modules/logistics/services/portService'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 import {
   Select,
@@ -18,25 +22,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Textarea } from '@/shared/components/ui/textarea'
+
+type EpdaCargoType = CargoType
+
+const CARGO_TYPE_OPTIONS: { value: EpdaCargoType; label: string }[] = [
+  { value: 'IN_BULK', label: 'in bulk' },
+  { value: 'IN_BAG_PACK', label: 'in bag/pack' },
+]
+
+const AREA_OPTIONS = ['NORTHERN', 'MIDDLE', 'SOUTHERN'] as const
+type AreaOption = typeof AREA_OPTIONS[number]
+
+function getCargoTypeLabel(value: EpdaCargoType): string {
+  return CARGO_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value
+}
 
 export function CreateInvoiceTab() {
   const [isLoading, setIsLoading] = useState(false)
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [cargoTypeCatalog, setCargoTypeCatalog] = useState<ImageType[]>([])
+  const [isLoadingCargoCatalog, setIsLoadingCargoCatalog] = useState(false)
+  const [provinces, setProvinces] = useState<Province[]>([])
+  const [ports, setPorts] = useState<LogisticsPort[]>([])
+  const [isLoadingPorts, setIsLoadingPorts] = useState(false)
   
   // Form fields
   const [quoteForm, setQuoteForm] = useState<'HCM' | 'QN'>('HCM')
+  const [selectedArea, setSelectedArea] = useState<AreaOption | ''>('')
   const [toShipowner, setToShipowner] = useState('')
   const [mv, setMv] = useState('')
   const [dwt, setDwt] = useState('')
   const [grt, setGrt] = useState('')
   const [loa, setLoa] = useState('')
   const [eta, setEta] = useState('')
-  const [cargoType, setCargoType] = useState('')
+  const [cargoType, setCargoType] = useState<EpdaCargoType | ''>('')
   const [cargoQty, setCargoQty] = useState('')
   const [cargoName, setCargoName] = useState('')
-  const [cargoNameOther, setCargoNameOther] = useState('')
   const [frtTaxType, setFrtTaxType] = useState('')
   const [port, setPort] = useState('')
   const [dischargeLoadingLocation, setDischargeLoadingLocation] = useState('')
@@ -46,7 +68,115 @@ export function CreateInvoiceTab() {
   const [boatHireAmount, setBoatHireAmount] = useState('')
   const [tallyFeeAmount, setTallyFeeAmount] = useState('')
   const [transportLs, setTransportLs] = useState('')
-  const [transportQuarantine, setTransportQuarantine] = useState('')
+
+  useEffect(() => {
+    const loadCargoTypeCatalog = async () => {
+      try {
+        setIsLoadingCargoCatalog(true)
+        const serviceTypes = await serviceTypeService.getAllServiceTypes()
+        const shippingAgency = serviceTypes.find((service) => {
+          const normalized = (service.name || '').toUpperCase().replace(/[\s-]+/g, '_')
+          return normalized === 'SHIPPING_AGENCY'
+        })
+
+        if (!shippingAgency?.id) {
+          setCargoTypeCatalog([])
+          toast.error('Shipping Agency service type not found')
+          return
+        }
+
+        const imageTypes = await imageTypeService.getImageTypesByServiceType(shippingAgency.id)
+        setCargoTypeCatalog(Array.isArray(imageTypes) ? imageTypes : [])
+      } catch (error) {
+        console.error('Failed to load commodity catalog for EPDA:', error)
+        toast.error('Failed to load cargo names from database')
+        setCargoTypeCatalog([])
+      } finally {
+        setIsLoadingCargoCatalog(false)
+      }
+    }
+
+    void loadCargoTypeCatalog()
+  }, [])
+
+  useEffect(() => {
+    const loadAreaAndPorts = async () => {
+      try {
+        setIsLoadingPorts(true)
+        const [provinceData, portData] = await Promise.all([
+          provinceService.getAllProvinces(),
+          portService.getAllPorts(),
+        ])
+        setProvinces(Array.isArray(provinceData) ? provinceData : [])
+        setPorts(Array.isArray(portData) ? portData : [])
+      } catch (error) {
+        console.error('Failed to load area and ports for EPDA:', error)
+        toast.error('Failed to load port list by area')
+        setProvinces([])
+        setPorts([])
+      } finally {
+        setIsLoadingPorts(false)
+      }
+    }
+
+    void loadAreaAndPorts()
+  }, [])
+
+  useEffect(() => {
+    if (!selectedArea) {
+      setQuoteForm('HCM')
+      setPort('')
+      return
+    }
+
+    setQuoteForm(selectedArea === 'MIDDLE' ? 'QN' : 'HCM')
+    setPort('')
+  }, [selectedArea])
+
+  const portsByArea = useMemo(() => {
+    if (!selectedArea) return []
+
+    const provinceIdsInArea = new Set(
+      provinces
+        .filter((province) => province.area === selectedArea)
+        .map((province) => province.id)
+    )
+
+    const areaPorts = ports
+      .filter((item) => provinceIdsInArea.has(item.provinceId) && item.portOfCall?.trim())
+      .sort((a, b) => (a.portOfCall || '').localeCompare(b.portOfCall || ''))
+
+    const seen = new Set<string>()
+    return areaPorts.filter((item) => {
+      const value = item.portOfCall as string
+      if (seen.has(value)) return false
+      seen.add(value)
+      return true
+    })
+  }, [ports, provinces, selectedArea])
+
+  const filteredCargoNames = useMemo(() => {
+    if (!cargoType) return []
+    return cargoTypeCatalog.filter((item) => item.cargoType === cargoType)
+  }, [cargoType, cargoTypeCatalog])
+
+  useEffect(() => {
+    if (!cargoType) {
+      setCargoName('')
+      return
+    }
+
+    const stillValid = filteredCargoNames.some((item) => item.name === cargoName)
+    if (!stillValid) {
+      setCargoName('')
+    }
+  }, [cargoType, cargoName, filteredCargoNames])
+
+  useEffect(() => {
+    if (cargoType === 'IN_BULK') {
+      setTallyFeeAmount('')
+    }
+  }, [cargoType])
 
   const handlePreview = async () => {
     setIsLoading(true)
@@ -67,16 +197,16 @@ export function CreateInvoiceTab() {
         loa: loa,
         eta: eta || 'TBN',
         cargo_qty_mt: cargoQty,
-        cargo_name_upper: (cargoName === 'OTHER' ? cargoNameOther : cargoName).toUpperCase(),
-        cargo_type: cargoType,
+        cargo_name_upper: cargoName.toUpperCase(),
+        cargo_type: cargoType ? getCargoTypeLabel(cargoType) : '',
         port_upper: port.toUpperCase(),
         loading_term: dischargeLoadingLocation,
         at_berth: dischargeLoadingLocation === 'Berth' ? 'X' : undefined,
         at_anchorage: dischargeLoadingLocation === 'Anchorage' ? 'X' : undefined,
         transport_ls: transportLs ? Number(transportLs) : undefined,
-        transport_quarantine: transportQuarantine ? Number(transportQuarantine) : undefined,
+        transport_quarantine: undefined,
         boat_hire_entry: boatHireAmount ? Number(boatHireAmount) : undefined,
-        tally_fee: tallyFeeAmount ? Number(tallyFeeAmount) : undefined,
+        tally_fee: cargoType === 'IN_BULK' ? undefined : tallyFeeAmount ? Number(tallyFeeAmount) : undefined,
         total_a: undefined,
         total_b: undefined,
         grand_total: undefined,
@@ -143,6 +273,8 @@ export function CreateInvoiceTab() {
   }
 
   const handleReset = () => {
+    setSelectedArea('')
+    setQuoteForm('HCM')
     setToShipowner('')
     setMv('')
     setDwt('')
@@ -152,7 +284,6 @@ export function CreateInvoiceTab() {
     setCargoType('')
     setCargoQty('')
     setCargoName('')
-    setCargoNameOther('')
     setFrtTaxType('')
     setPort('')
     setDischargeLoadingLocation('')
@@ -162,7 +293,6 @@ export function CreateInvoiceTab() {
     setBoatHireAmount('')
     setTallyFeeAmount('')
     setTransportLs('')
-    setTransportQuarantine('')
     setPreviewHtml(null)
     setShowPreview(false)
   }
@@ -171,23 +301,63 @@ export function CreateInvoiceTab() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Create New Invoice</CardTitle>
-          <CardDescription>Generate a shipping agency invoice without an inquiry</CardDescription>
+          <CardTitle>Create New EPDA</CardTitle>
+          <CardDescription>Generate a shipping agency EPDA without an inquiry</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             {/* Quote Form Selection */}
-            <div className="grid gap-2">
-              <Label htmlFor="quoteForm">Quote Form Type</Label>
-              <Select value={quoteForm} onValueChange={(value) => setQuoteForm(value as 'HCM' | 'QN')}>
-                <SelectTrigger id="quoteForm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="HCM">Ho Chi Minh (HCM)</SelectItem>
-                  <SelectItem value="QN">Quy Nhon (QN)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="portArea">SELECT PORT AREA</Label>
+                <Select value={selectedArea} onValueChange={(value) => setSelectedArea(value as AreaOption)}>
+                  <SelectTrigger id="portArea">
+                    <SelectValue placeholder="Select area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AREA_OPTIONS.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="portOfCallSelect">PORT OF CALL</Label>
+                  {selectedArea && (
+                    <p className="text-xs text-muted-foreground">
+                      Template: {quoteForm === 'QN' ? 'Quy Nhon (QN)' : 'Ho Chi Minh (HCM)'}
+                    </p>
+                  )}
+                </div>
+                <Select
+                  value={port}
+                  onValueChange={setPort}
+                  disabled={!selectedArea || isLoadingPorts}
+                >
+                  <SelectTrigger id="portOfCallSelect">
+                    <SelectValue
+                      placeholder={
+                        !selectedArea
+                          ? 'Select area first'
+                          : isLoadingPorts
+                            ? 'Loading ports...'
+                            : 'Select port of call'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {portsByArea.map((item) => (
+                      <SelectItem key={item.id} value={item.portOfCall as string}>
+                        {item.portOfCall}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Basic Information */}
@@ -198,7 +368,7 @@ export function CreateInvoiceTab() {
                   id="toShipowner"
                   value={toShipowner}
                   onChange={(e) => setToShipowner(e.target.value)}
-                  placeholder="Enter recipient name"
+                  placeholder="Enter shipowner/company name"
                   required
                 />
               </div>
@@ -265,14 +435,19 @@ export function CreateInvoiceTab() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="cargoType">Cargo Type *</Label>
-                <Select value={cargoType} onValueChange={setCargoType}>
+                <Select
+                  value={cargoType}
+                  onValueChange={(value) => setCargoType(value as EpdaCargoType)}
+                >
                   <SelectTrigger id="cargoType">
                     <SelectValue placeholder="Select cargo type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="IN BULK">IN BULK</SelectItem>
-                    <SelectItem value="IN BAGS">IN BAGS</SelectItem>
-                    <SelectItem value="IN EQUIPMENT">IN EQUIPMENT</SelectItem>
+                    {CARGO_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -281,29 +456,25 @@ export function CreateInvoiceTab() {
                 <Label htmlFor="cargoName">Cargo Name *</Label>
                 <Select value={cargoName} onValueChange={setCargoName}>
                   <SelectTrigger id="cargoName">
-                    <SelectValue placeholder="Select cargo name" />
+                    <SelectValue
+                      placeholder={
+                        isLoadingCargoCatalog
+                          ? 'Loading cargo names...'
+                          : cargoType
+                            ? 'Select cargo name'
+                            : 'Select cargo type first'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="WOOD PELLET">WOOD PELLET</SelectItem>
-                    <SelectItem value="WOODCHIP">WOODCHIP</SelectItem>
-                    <SelectItem value="EQUIPMENT">EQUIPMENT</SelectItem>
-                    <SelectItem value="OTHER">OTHER</SelectItem>
+                    {filteredCargoNames.map((item) => (
+                      <SelectItem key={item.id} value={item.name}>
+                        {item.displayName}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              {cargoName === 'OTHER' && (
-                <div className="grid gap-2 md:col-span-2">
-                  <Label htmlFor="cargoNameOther">Cargo name (if OTHER) *</Label>
-                  <Input
-                    id="cargoNameOther"
-                    value={cargoNameOther}
-                    onChange={(e) => setCargoNameOther(e.target.value)}
-                    placeholder="Enter cargo name"
-                    required
-                  />
-                </div>
-              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="cargoQty">Quantity (tons) *</Label>
@@ -318,10 +489,13 @@ export function CreateInvoiceTab() {
               </div>
             </div>
 
-            {/* Trade & Port */}
+            {/* Trade */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="frtTaxType">Frt tax type (import/export) *</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="frtTaxType">Frt tax type (import/export) *</Label>
+                  <p className="text-xs text-muted-foreground">Export may incur freight tax; import may not.</p>
+                </div>
                 <Select value={frtTaxType} onValueChange={setFrtTaxType}>
                   <SelectTrigger id="frtTaxType">
                     <SelectValue placeholder="Select type" />
@@ -331,18 +505,6 @@ export function CreateInvoiceTab() {
                     <SelectItem value="Export">Export</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Export may incur freight tax; import may not.</p>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="port">Port of Call *</Label>
-                <Input
-                  id="port"
-                  value={port}
-                  onChange={(e) => setPort(e.target.value)}
-                  placeholder="e.g., Quy Nhon, HCM..."
-                  required
-                />
               </div>
 
               <div className="grid gap-2">
@@ -372,16 +534,18 @@ export function CreateInvoiceTab() {
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="tallyFeeAmount">Ship's side tally fee (USD)</Label>
-                <Input
-                  id="tallyFeeAmount"
-                  type="number"
-                  value={tallyFeeAmount}
-                  onChange={(e) => setTallyFeeAmount(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
+              {cargoType !== 'IN_BULK' && (
+                <div className="grid gap-2">
+                  <Label htmlFor="tallyFeeAmount">Ship's side tally fee (USD)</Label>
+                  <Input
+                    id="tallyFeeAmount"
+                    type="number"
+                    value={tallyFeeAmount}
+                    onChange={(e) => setTallyFeeAmount(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="transportLs">Transport/Communication in L/S (optional)</Label>
@@ -390,17 +554,6 @@ export function CreateInvoiceTab() {
                   type="number"
                   value={transportLs}
                   onChange={(e) => setTransportLs(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="transportQuarantine">Transport for entry quarantine formality (optional)</Label>
-                <Input
-                  id="transportQuarantine"
-                  type="number"
-                  value={transportQuarantine}
-                  onChange={(e) => setTransportQuarantine(e.target.value)}
                   placeholder="0"
                 />
               </div>
@@ -448,11 +601,13 @@ export function CreateInvoiceTab() {
                 onClick={handlePreview}
                 disabled={
                   isLoading || 
+                  isLoadingCargoCatalog ||
+                  isLoadingPorts ||
+                  !selectedArea ||
                   !toShipowner || 
                   !mv || 
                   !cargoType || 
                   !cargoName || 
-                  (cargoName === 'OTHER' && !cargoNameOther) ||
                   !cargoQty || 
                   !frtTaxType ||
                   !port || 

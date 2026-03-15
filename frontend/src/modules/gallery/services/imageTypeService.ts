@@ -9,16 +9,20 @@ interface ImageType {
   serviceTypeId: number
   serviceTypeName?: string
   requiredImageCount: number
+  cargoType: CargoType
   isActive: boolean
   createdAt?: string
   updatedAt?: string
 }
+
+type CargoType = 'IN_BULK' | 'IN_BAG_PACK'
 
 interface CreateImageTypeRequest {
   name: string
   displayName: string
   serviceTypeId: number
   requiredImageCount: number
+  cargoType: CargoType
 }
 
 interface ImageCountDTO {
@@ -86,4 +90,4 @@ export const imageTypeService = {
   },
 }
 
-export type { ImageType, CreateImageTypeRequest, ImageCountDTO }
+export type { CargoType, ImageType, CreateImageTypeRequest, ImageCountDTO }

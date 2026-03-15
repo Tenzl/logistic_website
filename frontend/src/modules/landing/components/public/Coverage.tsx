@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import {
@@ -8,20 +8,76 @@ import {
   Shield,
   Headphones,
   X,
-  Anchor // Import thêm icon Anchor cho đẹp
+  Anchor,
+  Plus
 } from 'lucide-react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { useIntersectionObserver } from '@/shared/hooks/useIntersectionObserver'
 import { getProvinceCoordinates } from '@/shared/utils/provinceCoordinates'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
+import { MorphingPopover, MorphingPopoverContent } from '@/shared/components/ui/morphing-popover'
+
+interface ProvinceApiResponse {
+  id: number
+  name: string
+  displayName?: string
+  ports?: string[]
+}
+
+interface MapProvince {
+  id: number
+  name: string
+  coordinates: [number, number]
+  ports: string[]
+}
 
 export function Coverage() {
-  const [provinces, setProvinces] = useState<any[]>([])
+  const [provinces, setProvinces] = useState<MapProvince[]>([])
   const [selectedProvince, setSelectedProvince] = useState<number | null>(null)
   const [hoveredProvince, setHoveredProvince] = useState<number | null>(null)
+  const [popupHoveredProvince, setPopupHoveredProvince] = useState<number | null>(null)
+  const [selectedPort, setSelectedPort] = useState<{ provinceName: string; portName: string } | null>(null)
   const [geoData, setGeoData] = useState<any | null>(null)
   const [ref, isInView] = useIntersectionObserver()
+  const hoverHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearHoverHideTimeout = () => {
+    if (hoverHideTimeoutRef.current) {
+      clearTimeout(hoverHideTimeoutRef.current)
+      hoverHideTimeoutRef.current = null
+    }
+  }
+
+  const scheduleHideProvincePopup = (provinceId: number, delay = 120) => {
+    clearHoverHideTimeout()
+    hoverHideTimeoutRef.current = setTimeout(() => {
+      setHoveredProvince((current) => (current === provinceId ? null : current))
+      setSelectedProvince((current) => (current === provinceId ? null : current))
+    }, delay)
+  }
+
+  const shouldPopupRenderRight = (provinceName: string) => {
+    const normalized = provinceName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    return (
+      normalized.includes('ho chi minh') ||
+      normalized.includes('tp hcm') ||
+      normalized.includes('dong nai') ||
+      normalized.includes('quang ninh') ||
+      normalized.includes('quang ngai')
+    )
+  }
+
+  useEffect(() => {
+    return () => clearHoverHideTimeout()
+  }, [])
 
   useEffect(() => {
     const loadGeoData = async () => {
@@ -44,7 +100,7 @@ export function Coverage() {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const response = await apiClient.get(API_CONFIG.PROVINCES.ACTIVE, { skipAuth: true })
+        const response = await apiClient.get(API_CONFIG.PROVINCES.BASE, { skipAuth: true })
 
         if (!response.ok) {
           const errorText = await response.text()
@@ -54,24 +110,39 @@ export function Coverage() {
 
         const data = await response.json()
 
+        const resolveCoordinates = (province: ProvinceApiResponse): [number, number] => {
+          const candidateNames = [province.displayName, province.name]
+            .filter((value): value is string => Boolean(value && value.trim()))
+
+          for (const candidate of candidateNames) {
+            const coordinates = getProvinceCoordinates(candidate)
+            if (!(coordinates[0] === 0 && coordinates[1] === 0)) {
+              return coordinates
+            }
+          }
+
+          return [0, 0]
+        }
+
         if (data?.success) {
           const mappedProvinces = data.data
-            .map((p: any) => {
-              // Get pre-calculated coordinates
-              const coordinates = getProvinceCoordinates(p.name)
+            .filter((p: ProvinceApiResponse) => Array.isArray(p.ports) && p.ports.length > 0)
+            .map((p: ProvinceApiResponse) => {
+              const mapLabel = (p.displayName || p.name || '').trim()
+              const coordinates = resolveCoordinates(p)
 
               if (coordinates[0] === 0 && coordinates[1] === 0) {
-                console.warn(`No coordinates found for province: ${p.name} (ID: ${p.id})`)
+                console.warn(`No coordinates found for province: ${mapLabel} (ID: ${p.id})`)
               }
 
               return {
                 id: p.id,
-                name: p.name,
+                name: mapLabel,
                 coordinates: coordinates,
                 ports: p.ports || []
               }
             })
-            .filter((p: any) => p.coordinates[0] !== 0) // Filter out unmapped
+            .filter((p: MapProvince) => p.coordinates[0] !== 0) // Filter out unmapped
 
           setProvinces(mappedProvinces)
         } else {
@@ -94,9 +165,9 @@ export function Coverage() {
             <div className={`space-y-8 ${isInView ? 'fade-rise' : 'opacity-0'}`}>
               <div className="space-y-4">
                 <h2 className="text-4xl font-bold">
-                  Full Coverage Across
-                  <br />
-                  <span className="text-primary">Trans-Asia Routes</span>
+                  {/* Full Coverage Across */}
+                  {/* <br /> */}
+                  <span className="text-primary">South East Asia Transport and Logistics (SEATRANS)</span>
                 </h2>
                 <p className="text-xl text-muted-foreground">
                   Comprehensive network spanning Vietnam's key ports and beyond, ensuring seamless connectivity for your cargo.
@@ -142,12 +213,16 @@ export function Coverage() {
               <Card className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold">SEATRANS - OPRATION MAP</h3>
+                    <h3 className="text-xl font-semibold">SEATRANS - OPERATION MAP</h3>
                     <Badge variant="secondary">Live Coverage</Badge>
                   </div>
 
                   {/* Map Container */}
                   <div ref={ref} className="relative bg-card rounded-lg overflow-hidden border">
+                    {selectedPort && (
+                      <div className="absolute inset-0 z-30 bg-black/25 backdrop-blur-sm" />
+                    )}
+
                     {geoData ? (
                       <ComposableMap
                         projection="geoMercator"
@@ -176,12 +251,22 @@ export function Coverage() {
                         </Geographies>
 
                         {/* Province Markers */}
-                        {provinces.map((province, index) => (
+                        {provinces.map((province) => (
                           <Marker key={province.id} coordinates={province.coordinates}>
                             <g
-                              onMouseEnter={() => setHoveredProvince(province.id)}
-                              onMouseLeave={() => setHoveredProvince(null)}
-                              onClick={() => setSelectedProvince(province.id)}
+                              onMouseEnter={() => {
+                                clearHoverHideTimeout()
+                                setHoveredProvince(province.id)
+                              }}
+                              onMouseLeave={() => {
+                                if (popupHoveredProvince === province.id) return
+                                scheduleHideProvincePopup(province.id)
+                              }}
+                              onClick={() => {
+                                clearHoverHideTimeout()
+                                setSelectedProvince(province.id)
+                                setHoveredProvince(province.id)
+                              }}
                               className="cursor-pointer"
                             >
                               {/* Pulsating Rings */}
@@ -192,7 +277,6 @@ export function Coverage() {
                                 strokeWidth={2}
                                 opacity={0.6}
                                 className="animate-ping"
-                                style={{ animationDuration: '2s' }}
                               />
 
                               {/* Main Marker Circle */}
@@ -205,37 +289,94 @@ export function Coverage() {
                               />
 
                               {/* HOVER MESSAGE BUBBLE */}
-                              {hoveredProvince === province.id && (
+                              {(selectedProvince === province.id || hoveredProvince === province.id || popupHoveredProvince === province.id) && (
                                 <foreignObject
-                                  x={-215}
-                                  y={-60}
-                                  width={200}
-                                  height={120}
-                                  style={{ overflow: 'visible', zIndex: 50 }}
+                                  x={shouldPopupRenderRight(province.name) ? 20 : -300}
+                                  y={-95}
+                                  width={280}
+                                  height={190}
+                                  className="overflow-visible"
                                 >
-                                  <div className="flex flex-row items-center justify-end h-full animate-in fade-in zoom-in-95 duration-200">
-                                    {/* Bubble Body */}
-                                    <div className="bg-card rounded-lg shadow-xl border p-3 min-w-[140px]">
-                                      {/* Header: Province Name */}
-                                      <div className="text-xs font-bold text-foreground uppercase tracking-wide border-b pb-1 mb-1.5">
-                                        {province.name}
-                                      </div>
+                                  <div
+                                    className="flex flex-row items-center justify-end h-full animate-in fade-in zoom-in-95 duration-200"
+                                    onMouseEnter={() => {
+                                      clearHoverHideTimeout()
+                                      setPopupHoveredProvince(province.id)
+                                    }}
+                                    onMouseLeave={() => {
+                                      setPopupHoveredProvince((current) => (current === province.id ? null : current))
+                                      scheduleHideProvincePopup(province.id, 80)
+                                    }}
+                                  >
+                                    {shouldPopupRenderRight(province.name) ? (
+                                      <>
+                                        {/* Triangle Tail (pointing left) */}
+                                        <div className="w-4 h-4 bg-card rotate-45 transform translate-x-2 shadow-sm border-l border-b z-10"></div>
 
-                                      {/* List of Ports */}
-                                      <div className="space-y-1.5">
-                                        {province.ports.map((port: string, idx: number) => (
-                                          <div key={idx} className="flex items-start gap-1.5">
-                                            <Anchor className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
-                                            <span className="text-[11px] font-medium text-muted-foreground leading-tight text-left">
-                                              {port}
-                                            </span>
+                                        {/* Bubble Body */}
+                                        <div className="bg-card rounded-xl shadow-xl border p-4 min-w-[220px]">
+                                          <div className="text-base font-bold text-foreground uppercase tracking-wide border-b pb-2 mb-2">
+                                            {province.name}
                                           </div>
-                                        ))}
-                                      </div>
-                                    </div>
 
-                                    {/* Triangle Tail (Mũi tên trỏ phải) */}
-                                    <div className="w-3 h-3 bg-card rotate-45 transform -translate-x-1.5 shadow-sm border-t border-r z-10"></div>
+                                          <div className="space-y-2">
+                                            {province.ports.map((port: string, idx: number) => (
+                                              <div key={idx} className="flex items-center justify-between gap-3">
+                                                <Anchor className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                                                <span className="text-[15px] font-medium text-muted-foreground leading-tight text-left flex-1">
+                                                  {port}
+                                                </span>
+                                                <button
+                                                  type="button"
+                                                  onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    setSelectedPort({ provinceName: province.name, portName: port })
+                                                  }}
+                                                  className="inline-flex h-6 w-6 items-center justify-center rounded border border-primary/30 text-primary hover:bg-primary/10"
+                                                  aria-label={`View details for ${port}`}
+                                                >
+                                                  <Plus className="h-4 w-4" />
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {/* Bubble Body */}
+                                        <div className="bg-card rounded-xl shadow-xl border p-4 min-w-[220px]">
+                                          <div className="text-base font-bold text-foreground uppercase tracking-wide border-b pb-2 mb-2">
+                                            {province.name}
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            {province.ports.map((port: string, idx: number) => (
+                                              <div key={idx} className="flex items-center justify-between gap-3">
+                                                <Anchor className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                                                <span className="text-[15px] font-medium text-muted-foreground leading-tight text-left flex-1">
+                                                  {port}
+                                                </span>
+                                                <button
+                                                  type="button"
+                                                  onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    setSelectedPort({ provinceName: province.name, portName: port })
+                                                  }}
+                                                  className="inline-flex h-6 w-6 items-center justify-center rounded border border-primary/30 text-primary hover:bg-primary/10"
+                                                  aria-label={`View details for ${port}`}
+                                                >
+                                                  <Plus className="h-4 w-4" />
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        {/* Triangle Tail (pointing right) */}
+                                        <div className="w-4 h-4 bg-card rotate-45 transform -translate-x-2 shadow-sm border-t border-r z-10"></div>
+                                      </>
+                                    )}
                                   </div>
                                 </foreignObject>
                               )}
@@ -248,6 +389,41 @@ export function Coverage() {
                         Loading map...
                       </div>
                     )}
+
+                    <MorphingPopover
+                      open={!!selectedPort}
+                      onOpenChange={(open) => {
+                        if (!open) setSelectedPort(null)
+                      }}
+                      className="absolute inset-0 z-40 pointer-events-none"
+                    >
+                      <MorphingPopoverContent className="pointer-events-auto left-1/2 top-1/2 z-50 h-[70%] w-[70%] -translate-x-1/2 -translate-y-1/2 p-0">
+                        <div className="flex h-full flex-col bg-background">
+                          <div className="flex items-center justify-between border-b px-4 py-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-wide text-muted-foreground">Port information</p>
+                              <h4 className="text-base font-semibold">{selectedPort?.portName}</h4>
+                              <p className="text-sm text-muted-foreground">{selectedPort?.provinceName}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPort(null)}
+                              className="rounded-md p-1 text-muted-foreground hover:bg-muted"
+                              aria-label="Close port details"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          <div className="flex-1 overflow-y-auto p-4 text-sm text-muted-foreground">
+                            <p>
+                              Operational details for this port can be shown here, such as available services,
+                              contact points, and handling notes.
+                            </p>
+                          </div>
+                        </div>
+                      </MorphingPopoverContent>
+                    </MorphingPopover>
                   </div>
                 </div>
               </Card>

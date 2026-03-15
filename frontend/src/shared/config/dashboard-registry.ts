@@ -22,7 +22,7 @@ export type SectionRole = "ADMIN" | "EMPLOYEE" | "CUSTOMER"
 
 export type DashboardSection =
   | "profile"
-  | "create-invoice"
+  | "create-epda"
   | "shipping-agency-inquiries"
   | "freight-forwarding-inquiries"
   | "logistics-inquiries"
@@ -80,15 +80,15 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     category: "Profile",
     title: "Edit Profile",
   },
-  "create-invoice": {
-    id: "create-invoice",
-    label: "Create Invoice",
+  "create-epda": {
+    id: "create-epda",
+    label: "Create EPDA",
     icon: Calculator,
     component: CreateInvoiceTab,
     roles: ["ADMIN"],
     roleGroups: ["INTERNAL"],
-    category: "Invoices",
-    title: "Create Invoice",
+    category: "Port Charge",
+    title: "Create EPDA",
   },
   "shipping-agency-inquiries": {
     id: "shipping-agency-inquiries",

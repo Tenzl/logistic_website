@@ -5,6 +5,7 @@ import type { ApiResponse } from '@/shared/types/api.types'
 export interface Port {
   id: number
   name: string
+  portOfCall?: string
   provinceId: number
 }
 

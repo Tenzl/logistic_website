@@ -6,6 +6,8 @@ import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -48,6 +50,11 @@ public class ImageTypeEntity {
     @Column(name = "required_image_count", nullable = false)
     @Builder.Default
     private Integer requiredImageCount = 18;
+
+    @Column(name = "cargo_type", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private CargoType cargoType = CargoType.IN_BULK;
     
     @Column(name = "is_active", nullable = false)
     @Builder.Default

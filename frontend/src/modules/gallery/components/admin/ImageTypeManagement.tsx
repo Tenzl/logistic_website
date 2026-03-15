@@ -14,8 +14,18 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
 import { serviceTypeService, ServiceType } from '@/modules/service-types/services/serviceTypeService'
-import { imageTypeService, ImageType, CreateImageTypeRequest } from '@/modules/gallery/services/imageTypeService'
+import { imageTypeService, CargoType, ImageType, CreateImageTypeRequest } from '@/modules/gallery/services/imageTypeService'
 import { toast } from '@/shared/utils/toast'
+
+const CARGO_TYPE_OPTIONS: { value: CargoType; label: string }[] = [
+  { value: 'IN_BULK', label: 'in bulk' },
+  { value: 'IN_BAG_PACK', label: 'in bag/pack' },
+]
+
+const getCargoTypeLabel = (cargoType: CargoType): string => {
+  const matched = CARGO_TYPE_OPTIONS.find((option) => option.value === cargoType)
+  return matched?.label ?? cargoType
+}
 
 export function ManageImageTypes() {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
@@ -28,16 +38,16 @@ export function ManageImageTypes() {
   })
   
   const [newImageType, setNewImageType] = useState({
-    name: '',
     displayName: '',
     requiredImageCount: 18,
+    cargoType: 'IN_BULK' as CargoType,
   })
   
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null)
   const [editingData, setEditingData] = useState({
-    name: '',
     displayName: '',
     requiredImageCount: 18,
+    cargoType: 'IN_BULK' as CargoType,
   })
   useEffect(() => {
     loadServiceTypes()
@@ -82,8 +92,8 @@ export function ManageImageTypes() {
     }
   }
 
-  const normalizeImageTypeName = (name: string): string => {
-    return name.toUpperCase().replace(/\s+/g, '_').trim()
+  const deriveImageTypeName = (displayName: string): string => {
+    return displayName.trim().replace(/\s+/g, '_').toUpperCase()
   }
 
   // Avoid null entries from API responses to keep rendering safe
@@ -97,8 +107,8 @@ export function ManageImageTypes() {
       showToast('error', 'Please select a service type first')
       return
     }
-    if (!newImageType.name.trim() || !newImageType.displayName.trim()) {
-      showToast('error', 'Name and Display Name are required')
+    if (!newImageType.displayName.trim()) {
+      showToast('error', 'Display Name is required')
       return
     }
     if (newImageType.requiredImageCount < 1) {
@@ -106,7 +116,7 @@ export function ManageImageTypes() {
       return
     }
 
-    const normalizedName = normalizeImageTypeName(newImageType.name)
+    const normalizedName = deriveImageTypeName(newImageType.displayName)
     
     // Check for duplicate name
     if (imageTypes.some(t => t.name === normalizedName)) {
@@ -121,6 +131,7 @@ export function ManageImageTypes() {
         displayName: newImageType.displayName.trim(),
         requiredImageCount: newImageType.requiredImageCount,
         serviceTypeId: selectedServiceType,
+        cargoType: newImageType.cargoType,
       }
       
       const newType = await imageTypeService.createImageType(requestData)
@@ -128,7 +139,7 @@ export function ManageImageTypes() {
         throw new Error('Empty response when creating commodity type')
       }
       setImageTypes(sanitizeImageTypes([...imageTypes, newType]))
-      setNewImageType({ name: '', displayName: '', requiredImageCount: 18 })
+      setNewImageType({ displayName: '', requiredImageCount: 18, cargoType: 'IN_BULK' })
       showToast('success', `Commodity type "${newType.displayName}" added successfully`)
     } catch (error) {
       console.error('Error adding image type:', error)
@@ -141,15 +152,15 @@ export function ManageImageTypes() {
   const handleEditImageType = (type: ImageType) => {
     setEditingTypeId(type.id)
     setEditingData({
-      name: type.name,
       displayName: type.displayName,
       requiredImageCount: type.requiredImageCount,
+      cargoType: type.cargoType,
     })
   }
 
   const handleSaveImageType = async (typeId: number) => {
-    if (!editingData.name.trim() || !editingData.displayName.trim()) {
-      showToast('error', 'Name and Display Name are required')
+    if (!editingData.displayName.trim()) {
+      showToast('error', 'Display Name is required')
       return
     }
     if (editingData.requiredImageCount < 1) {
@@ -162,7 +173,7 @@ export function ManageImageTypes() {
       return
     }
 
-    const normalizedName = normalizeImageTypeName(editingData.name)
+    const normalizedName = deriveImageTypeName(editingData.displayName)
 
     try {
       setLoading(true)
@@ -171,6 +182,7 @@ export function ManageImageTypes() {
         displayName: editingData.displayName.trim(),
         requiredImageCount: editingData.requiredImageCount,
         serviceTypeId: selectedServiceType,
+        cargoType: editingData.cargoType,
       }
       
       const updatedType = await imageTypeService.updateImageType(typeId, requestData)
@@ -194,7 +206,7 @@ export function ManageImageTypes() {
 
   const handleCancelEdit = () => {
     setEditingTypeId(null)
-    setEditingData({ name: '', displayName: '', requiredImageCount: 18 })
+    setEditingData({ displayName: '', requiredImageCount: 18, cargoType: 'IN_BULK' })
   }
 
   const handleDeleteImageType = (type: ImageType) => {
@@ -236,6 +248,7 @@ export function ManageImageTypes() {
           <select
             value={selectedServiceType || ''}
             onChange={(e) => setSelectedServiceType(e.target.value ? Number(e.target.value) : null)}
+            aria-label="Select service type"
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">-- Select Service Type --</option>
@@ -260,20 +273,6 @@ export function ManageImageTypes() {
 
             <div className="grid md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Name (Technical) *</label>
-                <input
-                  type="text"
-                  value={newImageType.name}
-                  onChange={(e) => setNewImageType({ ...newImageType, name: e.target.value })}
-                  placeholder="e.g., BULK CARRIER"
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Will be converted to: {normalizeImageTypeName(newImageType.name) || 'EXAMPLE_NAME'}
-                </p>
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-2">Display Name *</label>
                 <input
                   type="text"
@@ -282,6 +281,9 @@ export function ManageImageTypes() {
                   placeholder="e.g., Bulk Carrier"
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Name tự tạo: {deriveImageTypeName(newImageType.displayName) || 'BULK_CARRIER'}
+                </p>
               </div>
 
               <div>
@@ -291,8 +293,25 @@ export function ManageImageTypes() {
                   value={newImageType.requiredImageCount}
                   onChange={(e) => setNewImageType({ ...newImageType, requiredImageCount: parseInt(e.target.value) || 18 })}
                   min="1"
+                  aria-label="Required image count"
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Cargo Type *</label>
+                <select
+                  value={newImageType.cargoType}
+                  onChange={(e) => setNewImageType({ ...newImageType, cargoType: e.target.value as CargoType })}
+                  aria-label="Select cargo type"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {CARGO_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -328,6 +347,7 @@ export function ManageImageTypes() {
                       <th className="text-left py-3 px-4 font-medium">Name</th>
                       <th className="text-left py-3 px-4 font-medium">Display Name</th>
                       <th className="text-left py-3 px-4 font-medium">Required Count</th>
+                      <th className="text-left py-3 px-4 font-medium">Cargo Type</th>
                       <th className="text-right py-3 px-4 font-medium w-32">Actions</th>
                     </tr>
                   </thead>
@@ -336,17 +356,7 @@ export function ManageImageTypes() {
                       <tr key={type.id} className="border-t hover:bg-muted/20">
                         <td className="py-3 px-4">
                           {editingTypeId === type.id ? (
-                            <div>
-                              <input
-                                type="text"
-                                value={editingData.name}
-                                onChange={(e) => setEditingData({ ...editingData, name: e.target.value })}
-                                className="w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                              />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                → {normalizeImageTypeName(editingData.name)}
-                              </p>
-                            </div>
+                            <span className="font-mono text-sm">{deriveImageTypeName(editingData.displayName) || '-'}</span>
                           ) : (
                             <span className="font-mono text-sm">{type.name}</span>
                           )}
@@ -357,6 +367,7 @@ export function ManageImageTypes() {
                               type="text"
                               value={editingData.displayName}
                               onChange={(e) => setEditingData({ ...editingData, displayName: e.target.value })}
+                              aria-label="Edit display name"
                               className="w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                           ) : (
@@ -370,10 +381,29 @@ export function ManageImageTypes() {
                               value={editingData.requiredImageCount}
                               onChange={(e) => setEditingData({ ...editingData, requiredImageCount: parseInt(e.target.value) || 18 })}
                               min="1"
+                              aria-label="Edit required image count"
                               className="w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                           ) : (
                             <span>{type.requiredImageCount}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {editingTypeId === type.id ? (
+                            <select
+                              value={editingData.cargoType}
+                              onChange={(e) => setEditingData({ ...editingData, cargoType: e.target.value as CargoType })}
+                              aria-label="Edit cargo type"
+                              className="w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                              {CARGO_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span>{getCargoTypeLabel(type.cargoType)}</span>
                           )}
                         </td>
                         <td className="py-3 px-4">

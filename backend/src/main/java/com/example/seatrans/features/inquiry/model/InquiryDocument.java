@@ -29,7 +29,8 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Table(name = "inquiry_documents", indexes = {
-    @Index(name = "idx_inquiry_id", columnList = "inquiry_id"),
+    @Index(name = "idx_target_id", columnList = "target_id"),
+    @Index(name = "idx_service_slug_target_id", columnList = "service_slug,target_id"),
     @Index(name = "idx_document_type", columnList = "document_type"),
     @Index(name = "idx_uploaded_at", columnList = "uploaded_at")
 })

@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreatePortRequest {
     private String name;
+    private String portOfCall;
     private Long provinceId;
 }

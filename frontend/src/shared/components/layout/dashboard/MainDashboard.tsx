@@ -54,7 +54,7 @@ type CategoryIcon = LucideIcon | string
 
 const CATEGORY_ICONS: Record<string, CategoryIcon> = {
   Profile: UserIcon,
-  Invoices: ReceiptText,
+  "Port Charge": ReceiptText,
   Inquiries: ListChecks,
   "Image Management": ImageIcon,
   "Data Management": Database,
@@ -75,7 +75,7 @@ function mapUserRole(role?: string, roleGroup?: RoleGroup): SectionRole | undefi
 function buildCategories(sections: ReturnType<typeof listSectionsByRoleGroup>): CategoryGroup[] {
   const order: Record<string, number> = {
     Profile: 0,
-    Invoices: 1,
+    "Port Charge": 1,
     Inquiries: 2,
     "Image Management": 3,
     "Data Management": 4,

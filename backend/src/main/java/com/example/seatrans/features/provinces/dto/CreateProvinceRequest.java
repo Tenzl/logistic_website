@@ -9,4 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateProvinceRequest {
     private String name;
+    private String displayName;
+    private String code;
+    private String area;
 }

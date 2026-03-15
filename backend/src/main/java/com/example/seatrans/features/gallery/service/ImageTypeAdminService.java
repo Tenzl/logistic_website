@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.seatrans.features.gallery.dto.CreateImageTypeRequest;
 import com.example.seatrans.features.gallery.dto.ImageTypeDTO;
+import com.example.seatrans.features.gallery.model.CargoType;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
@@ -62,7 +63,9 @@ public class ImageTypeAdminService {
         imageType.setName(request.getName());
         imageType.setDisplayName(request.getDisplayName());
         imageType.setDescription(request.getDescription());
-        imageType.setRequiredImageCount(request.getRequiredImageCount() != null ? request.getRequiredImageCount() : 18);
+        Integer requiredImageCount = request.getRequiredImageCount();
+        imageType.setRequiredImageCount(requiredImageCount != null ? requiredImageCount : 18);
+        imageType.setCargoType(request.getCargoType() != null ? request.getCargoType() : CargoType.IN_BULK);
         imageType.setIsActive(true);
 
         ImageTypeEntity savedImageType = imageTypeRepository.save(imageType);
@@ -87,6 +90,9 @@ public class ImageTypeAdminService {
         imageType.setDescription(request.getDescription());
         if (request.getRequiredImageCount() != null) {
             imageType.setRequiredImageCount(request.getRequiredImageCount());
+        }
+        if (request.getCargoType() != null) {
+            imageType.setCargoType(request.getCargoType());
         }
 
         ImageTypeEntity updatedImageType = imageTypeRepository.save(imageType);

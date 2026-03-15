@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Image as ImageIcon, Filter, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Info } from 'lucide-react'
+import { Image as ImageIcon, Filter, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Info, Edit2, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/shared/components/ui/dialog'
@@ -22,6 +22,9 @@ import { galleryService, GalleryImage } from '@/modules/gallery/services/gallery
 import { API_CONFIG } from '@/shared/config/api.config'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+
+const AREA_OPTIONS = ['NORTHERN', 'MIDDLE', 'SOUTHERN'] as const
 
 // Helper function to construct proper image URL
 const getImageUrl = (url: string) => {
@@ -42,9 +45,10 @@ const getImageUrl = (url: string) => {
 export function ManageImagesTab() {
   const [provinces, setProvinces] = useState<Province[]>([])
   const [provincesWithPorts, setProvincesWithPorts] = useState<Province[]>([])
+  const [allPorts, setAllPorts] = useState<Port[]>([])
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
   
-  const [filterProvince, setFilterProvince] = useState<number | null>(null)
+  const [filterArea, setFilterArea] = useState<string>('')
   const [filterPort, setFilterPort] = useState<number | null>(null)
   const [filterServiceType, setFilterServiceType] = useState<number | null>(null)
   const [filterImageType, setFilterImageType] = useState<number | null>(null)
@@ -60,6 +64,21 @@ export function ManageImagesTab() {
   
   const [currentPage, setCurrentPage] = useState(0)
   const [deleteModalImage, setDeleteModalImage] = useState<GalleryImage | null>(null)
+  const [editModalImage, setEditModalImage] = useState<GalleryImage | null>(null)
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [editPorts, setEditPorts] = useState<Port[]>([])
+  const [editImageTypes, setEditImageTypes] = useState<ImageType[]>([])
+  const [editForm, setEditForm] = useState<{
+    provinceId: number | null
+    portId: number | null
+    serviceTypeId: number | null
+    imageTypeId: number | null
+  }>({
+    provinceId: null,
+    portId: null,
+    serviceTypeId: null,
+    imageTypeId: null,
+  })
   const [imageTypeCounts, setImageTypeCounts] = useState<Record<string, number>>({})
 
   const imagesPerPage = 20
@@ -69,15 +88,21 @@ export function ManageImagesTab() {
     loadServiceTypes()
   }, [])
 
-  // Update available ports when province changes
+  // Update available ports when area changes
   useEffect(() => {
-    if (filterProvince) {
-      loadPorts(filterProvince)
+    if (filterArea) {
+      const provinceIdsByArea = new Set(
+        provinces
+          .filter((province) => province.area === filterArea)
+          .map((province) => province.id)
+      )
+      setAvailablePorts(allPorts.filter((port) => provinceIdsByArea.has(port.provinceId)))
+      setFilterPort(null)
     } else {
       setAvailablePorts([])
       setFilterPort(null)
     }
-  }, [filterProvince])
+  }, [filterArea, provinces, allPorts])
 
   // Update available image types when service type changes
   useEffect(() => {
@@ -112,6 +137,7 @@ export function ManageImagesTab() {
       
       // Load all ports to filter provinces with at least one port
       const allPorts = await portService.getAllPorts()
+      setAllPorts(allPorts)
       const provinceIdsWithPorts = new Set(allPorts.map(port => port.provinceId))
       const filtered = data.filter(province => provinceIdsWithPorts.has(province.id))
       setProvincesWithPorts(filtered)
@@ -126,16 +152,6 @@ export function ManageImagesTab() {
       setServiceTypes(data)
     } catch (error) {
       console.error('Error loading service types:', error)
-    }
-  }
-
-  const loadPorts = async (provinceId: number) => {
-    try {
-      const data = await portService.getPortsByProvince(provinceId)
-      setAvailablePorts(data)
-      setFilterPort(null)
-    } catch (error) {
-      console.error('Error loading ports:', error)
     }
   }
 
@@ -161,7 +177,7 @@ export function ManageImagesTab() {
   }
 
   const handleClearAll = () => {
-    setFilterProvince(null)
+    setFilterArea('')
     setFilterPort(null)
     setFilterServiceType(null)
     setFilterImageType(null)
@@ -173,6 +189,72 @@ export function ManageImagesTab() {
 
   const handleDeleteClick = (image: GalleryImage) => {
     setDeleteModalImage(image)
+  }
+
+  const loadEditPorts = async (provinceId: number) => {
+    try {
+      const data = await portService.getPortsByProvince(provinceId)
+      setEditPorts(data)
+    } catch (error) {
+      console.error('Error loading edit ports:', error)
+      setEditPorts([])
+    }
+  }
+
+  const loadEditImageTypes = async (serviceTypeId: number) => {
+    try {
+      const data = await imageTypeService.getImageTypesByServiceType(serviceTypeId)
+      setEditImageTypes(data)
+    } catch (error) {
+      console.error('Error loading edit image types:', error)
+      setEditImageTypes([])
+    }
+  }
+
+  const handleEditClick = async (image: GalleryImage) => {
+    if (!image.provinceId || !image.portId || !image.serviceTypeId || !image.imageTypeId) {
+      alert('Image metadata is incomplete and cannot be edited.')
+      return
+    }
+
+    setEditForm({
+      provinceId: image.provinceId,
+      portId: image.portId,
+      serviceTypeId: image.serviceTypeId,
+      imageTypeId: image.imageTypeId,
+    })
+    setEditModalImage(image)
+
+    await Promise.all([
+      loadEditPorts(image.provinceId),
+      loadEditImageTypes(image.serviceTypeId),
+    ])
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editModalImage) return
+    if (!editForm.provinceId || !editForm.portId || !editForm.serviceTypeId || !editForm.imageTypeId) {
+      alert('Please select all required fields.')
+      return
+    }
+
+    try {
+      setIsSavingEdit(true)
+      await galleryService.updateImage(editModalImage.id, {
+        provinceId: editForm.provinceId,
+        portId: editForm.portId,
+        serviceTypeId: editForm.serviceTypeId,
+        imageTypeId: editForm.imageTypeId,
+      })
+
+      setEditModalImage(null)
+      await loadPage(currentPage)
+    } catch (error) {
+      console.error('Error updating image metadata:', error)
+      alert('Failed to update image information')
+    } finally {
+      setIsSavingEdit(false)
+    }
   }
 
   const toggleSelectAll = (checked: boolean) => {
@@ -247,18 +329,20 @@ export function ManageImagesTab() {
     return 'normal'
   }
 
-  const hasActiveFilters = filterProvince || filterPort || filterServiceType || filterImageType
+  const hasActiveFilters = Boolean(filterArea || filterPort || filterServiceType || filterImageType)
+  const selectedFilterPortData = filterPort ? allPorts.find((port) => port.id === filterPort) : null
+  const filterProvinceId = selectedFilterPortData?.provinceId
 
   // Load when filters or page changes (realtime)
   useEffect(() => {
     loadPage(currentPage)
-  }, [currentPage, filterProvince, filterPort, filterServiceType, filterImageType])
+  }, [currentPage, filterArea, filterPort, filterServiceType, filterImageType])
 
   const loadPage = async (page: number) => {
     setIsLoading(true)
     try {
       const response = await galleryService.getAllImages(
-        filterProvince || undefined,
+        filterProvinceId || undefined,
         filterPort || undefined,
         filterServiceType || undefined,
         filterImageType || undefined,
@@ -292,99 +376,133 @@ export function ManageImagesTab() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-card border rounded-lg p-6">
-        <h2 className="mb-6 flex items-center gap-2">
-          <Filter className="h-5 w-5 text-primary" />
-          Filter Images
-        </h2>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Province</label>
-            <select
-              value={filterProvince || ''}
-              onChange={(e) => setFilterProvince(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">All Provinces</option>
-              {provincesWithPorts.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-primary" />
+                Image Filters
+              </CardTitle>
+              <CardDescription>Filter images by province, port, service and commodity. Data updates automatically.</CardDescription>
+            </div>
+            {hasActiveFilters && (
+              <Button variant="outline" onClick={handleClearAll} className="cursor-pointer">
+                <X className="mr-2 h-4 w-4" />
+                Clear All
+              </Button>
+            )}
           </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Area</label>
+              <select
+                value={filterArea}
+                onChange={(e) => setFilterArea(e.target.value)}
+                title="Area filter"
+                aria-label="Area filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Areas</option>
+                {AREA_OPTIONS.map((area) => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Port</label>
-            <select
-              value={filterPort || ''}
-              onChange={(e) => setFilterPort(e.target.value ? Number(e.target.value) : null)}
-              disabled={!filterProvince}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
-            >
-              <option value="">All Ports</option>
-              {availablePorts.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+            <div>
+              <label className="block text-sm font-medium mb-2">Port</label>
+              <select
+                value={filterPort || ''}
+                onChange={(e) => setFilterPort(e.target.value ? Number(e.target.value) : null)}
+                disabled={!filterArea}
+                title="Port filter"
+                aria-label="Port filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">All Ports</option>
+                {availablePorts.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Service Type</label>
+              <select
+                value={filterServiceType || ''}
+                onChange={(e) => setFilterServiceType(e.target.value ? Number(e.target.value) : null)}
+                title="Service type filter"
+                aria-label="Service type filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Services</option>
+                {serviceTypes.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Image Type</label>
+              <select
+                value={filterImageType || ''}
+                onChange={(e) => setFilterImageType(e.target.value ? Number(e.target.value) : null)}
+                disabled={!filterServiceType}
+                title="Image type filter"
+                aria-label="Image type filter"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">All Types</option>
+                {availableImageTypes.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.displayName} ({imageTypeCounts[t.id] || t.requiredImageCount}/{t.requiredImageCount})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Service Type</label>
-            <select
-              value={filterServiceType || ''}
-              onChange={(e) => setFilterServiceType(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">All Services</option>
-              {serviceTypes.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Image Type</label>
-            <select
-              value={filterImageType || ''}
-              onChange={(e) => setFilterImageType(e.target.value ? Number(e.target.value) : null)}
-              disabled={!filterServiceType}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
-            >
-              <option value="">All Types</option>
-              {availableImageTypes.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.displayName} ({imageTypeCounts[t.id] || t.requiredImageCount}/{t.requiredImageCount})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          {hasActiveFilters && (
-            <Button variant="outline" onClick={handleClearAll} className="cursor-pointer">
-              <X className="mr-2 h-4 w-4" />
-              Clear All
-            </Button>
-          )}
-          {images.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={deleteSelected}
-              disabled={selectedIds.size === 0 || isLoading}
-              className="cursor-pointer"
-            >
-              Delete Selected ({selectedIds.size})
-            </Button>
-          )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Images Table */}
-      <div className="bg-card border rounded-lg overflow-hidden">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Manage Images</CardTitle>
+              <CardDescription>{totalImages} image(s) found</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              {images.length > 0 && (
+                <Button
+                  variant="destructive"
+                  onClick={deleteSelected}
+                  disabled={selectedIds.size === 0 || isLoading}
+                  className="cursor-pointer"
+                >
+                  Delete Selected ({selectedIds.size})
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadPage(currentPage)}
+                disabled={isLoading}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Reload
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
         {isLoading ? (
           <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4" />
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground">Loading images...</p>
           </div>
         ) : images.length === 0 ? (
@@ -394,9 +512,9 @@ export function ManageImagesTab() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
-                <TableHeader className="bg-muted/50">
+                <TableHeader>
                   <TableRow>
                     <TableHead className="w-[40px]">
                       <Checkbox
@@ -486,14 +604,24 @@ export function ManageImagesTab() {
                             : '—'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(image)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditClick(image)}
+                              className="text-primary hover:text-primary/90 hover:bg-primary/10 cursor-pointer"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(image)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -504,9 +632,13 @@ export function ManageImagesTab() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t">
+              <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                  {selectedIds.size} of {totalImages} row(s) selected.
+                </div>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
                   disabled={currentPage === 0}
                   className="cursor-pointer disabled:cursor-not-allowed"
@@ -514,11 +646,9 @@ export function ManageImagesTab() {
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
                 </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage + 1} of {totalPages} ({totalImages} images)
-                </span>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={currentPage === totalPages - 1}
                   className="cursor-pointer disabled:cursor-not-allowed"
@@ -530,86 +660,106 @@ export function ManageImagesTab() {
             )}
           </>
         )}
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalImage && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className={`bg-card rounded-lg p-6 max-w-md w-full mx-4 border-2 ${
-            getDeleteWarningType(deleteModalImage) === 'over' 
-              ? 'border-orange-500' 
-              : getDeleteWarningType(deleteModalImage) === 'below'
-              ? 'border-blue-500'
-              : 'border-red-500'
-          }`}>
-            <div className="flex items-start gap-4 mb-4">
-              {getDeleteWarningType(deleteModalImage) === 'over' ? (
-                <AlertTriangle className="h-8 w-8 text-orange-500 flex-shrink-0" />
-              ) : getDeleteWarningType(deleteModalImage) === 'below' ? (
-                <Info className="h-8 w-8 text-blue-500 flex-shrink-0" />
-              ) : (
-                <Trash2 className="h-8 w-8 text-red-500 flex-shrink-0" />
-              )}
-              <div>
-                <h3 className="font-semibold mb-2">
-                  {getDeleteWarningType(deleteModalImage) === 'over' 
-                    ? '⚠️ Image Limit Exceeded'
-                    : getDeleteWarningType(deleteModalImage) === 'below'
-                    ? 'ℹ️ Warning: Below Required Limit'
-                    : 'Delete Image?'
+      <Dialog open={!!editModalImage} onOpenChange={(open) => !open && setEditModalImage(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogTitle>Edit Image Information</DialogTitle>
+          <DialogDescription>
+            Update province, port, service type, and commodity for this image.
+          </DialogDescription>
+
+          <div className="grid gap-4 py-2">
+            <div>
+              <label className="block text-sm font-medium mb-2">Province</label>
+              <select
+                value={editForm.provinceId || ''}
+                onChange={async (e) => {
+                  const provinceId = e.target.value ? Number(e.target.value) : null
+                  setEditForm(prev => ({ ...prev, provinceId, portId: null }))
+                  if (provinceId) {
+                    await loadEditPorts(provinceId)
+                  } else {
+                    setEditPorts([])
                   }
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {(() => {
-                    const modalKey = `${deleteModalImage.provinceId}_${deleteModalImage.portId}_${deleteModalImage.serviceTypeId}_${deleteModalImage.imageTypeId}`
-                    const modalCount = imageTypeCounts[modalKey] ?? 0
-
-                    if (getDeleteWarningType(deleteModalImage) === 'over') {
-                      return (
-                        <>
-                          This type has <strong>{modalCount}/18 images</strong>. 
-                          You MUST delete this image to meet the requirement.
-                        </>
-                      )
-                    }
-
-                    if (getDeleteWarningType(deleteModalImage) === 'below') {
-                      return (
-                        <>
-                          Deleting this image will bring the count below 18. 
-                          After deletion: <strong>{Math.max(modalCount - 1, 0)}/18</strong>
-                        </>
-                      )
-                    }
-
-                    return (
-                      <>
-                        Are you sure you want to delete <strong>{deleteModalImage.fileName}</strong>?
-                      </>
-                    )
-                  })()}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setDeleteModalImage(null)} className="cursor-pointer">
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleConfirmDelete}
-                className={
-                  getDeleteWarningType(deleteModalImage) === 'over' 
-                    ? 'bg-orange-500 hover:bg-orange-600 cursor-pointer' 
-                    : 'bg-red-500 hover:bg-red-600 cursor-pointer'
-                }
+                }}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                title="Province"
               >
-                {getDeleteWarningType(deleteModalImage) === 'over' ? 'Delete (Required)' : 'Confirm Delete'}
-              </Button>
+                <option value="">Select province</option>
+                {provincesWithPorts.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Port</label>
+              <select
+                value={editForm.portId || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, portId: e.target.value ? Number(e.target.value) : null }))}
+                disabled={!editForm.provinceId}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+                title="Port"
+              >
+                <option value="">Select port</option>
+                {editPorts.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Service Type</label>
+              <select
+                value={editForm.serviceTypeId || ''}
+                onChange={async (e) => {
+                  const serviceTypeId = e.target.value ? Number(e.target.value) : null
+                  setEditForm(prev => ({ ...prev, serviceTypeId, imageTypeId: null }))
+                  if (serviceTypeId) {
+                    await loadEditImageTypes(serviceTypeId)
+                  } else {
+                    setEditImageTypes([])
+                  }
+                }}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                title="Service Type"
+              >
+                <option value="">Select service type</option>
+                {serviceTypes.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Commodity</label>
+              <select
+                value={editForm.imageTypeId || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, imageTypeId: e.target.value ? Number(e.target.value) : null }))}
+                disabled={!editForm.serviceTypeId}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+                title="Commodity"
+              >
+                <option value="">Select commodity</option>
+                {editImageTypes.map(t => (
+                  <option key={t.id} value={t.id}>{t.displayName}</option>
+                ))}
+              </select>
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditModalImage(null)} disabled={isSavingEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSavingEdit}>
+              {isSavingEdit ? 'Saving...' : 'Save changes'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteModalImage} onOpenChange={(open) => !open && setDeleteModalImage(null)}>
         <AlertDialogContent>
