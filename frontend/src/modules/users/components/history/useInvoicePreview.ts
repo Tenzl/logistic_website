@@ -67,6 +67,7 @@ export function useInvoicePreview() {
 
   const buildQuoteData = (inquiry: any): QuoteData => {
     const map = normalizeDetails(inquiry.details)
+    const isQnForm = (inquiry.quoteForm || '').toUpperCase() === 'QN'
 
     const data: QuoteData = {
       to_shipowner: inquiry.toName || inquiry.fullName,
@@ -97,7 +98,8 @@ export function useInvoicePreview() {
       BB_ROWS: buildRows(map['bb_rows']),
       berth_hours: inquiry.berthHours ?? 96,
       anchorage_hours: inquiry.anchorageHours ?? 24,
-      pilotage_third_miles: inquiry.pilotage3rdMiles ?? 17,
+      pilotage_miles: isQnForm ? inquiry.pilotage3rdMiles ?? 1 : undefined,
+      pilotage_third_miles: isQnForm ? undefined : inquiry.pilotage3rdMiles ?? 17,
     }
 
     return data

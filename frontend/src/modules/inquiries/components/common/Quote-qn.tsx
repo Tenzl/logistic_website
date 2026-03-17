@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatCargoNameWithType, normalizeInvoiceNumericFields } from '@/shared/utils/invoiceFormatters'
 
 export type QuoteRow = {
   item?: string
@@ -39,6 +40,8 @@ export type QuoteData = {
   transport_ls?: string | number
   boat_hire_entry?: string | number
   tally_fee?: string | number
+  pilotage_miles?: string | number
+  pilotage_third_miles?: string | number
   AA_ROWS?: QuoteRow[]
   BB_ROWS?: QuoteRow[]
 }
@@ -93,6 +96,7 @@ const buildAARows = (
     boatHire?: string | number
     tallyFee?: string | number
     loa?: string | number
+    pilotageMiles?: string | number
   },
 ): { html: string; total?: string } => {
   const customRows = normalizeCustomRows(rows)
@@ -142,8 +146,12 @@ const buildAARows = (
     const navigationDueValue = grtNumeric === null ? null : 0.058 * grtNumeric * 2
     const navigationDue = navigationDueValue === null ? `0.058*${grtDisplay}*2` : formatAmount(navigationDueValue)
 
-    const pilotageValue = grtNumeric === null ? null : 0.0034 * grtNumeric * 2
+    const pilotageMilesNumeric = toNumber(options?.pilotageMiles)
+    const pilotageMultiplier =
+      pilotageMilesNumeric !== null && pilotageMilesNumeric > 1 ? pilotageMilesNumeric : 1
+    const pilotageValue = grtNumeric === null ? null : 0.0034 * grtNumeric * 2 * pilotageMultiplier
     const pilotage = pilotageValue === null ? `0.0034*${grtDisplay}*2` : formatAmount(pilotageValue)
+    const pilotageMilesText = pilotageMultiplier >= 2 ? `${pilotageMultiplier} miles` : ''
 
     const loaNumeric = toNumber(options?.loa)
     const pickTugRate = (loa?: number | null) => {
@@ -205,7 +213,12 @@ const buildAARows = (
     const defaultRows: QuoteRow[] = [
       { item: 'Tonnage', details: 'USD 0.034 / GRT x 2 (out)', amount: tonnage },
       { item: 'Navigation due', details: 'USD 0.058 / GRT x 2 (in + out)', amount: navigationDue },
-      { item: 'Pilotage', details: 'USD0.0034 / GRT x 2 (in & out)', amount: pilotage },
+      {
+        item: 'Pilotage',
+        details: 'USD0.0034 / GRT x 2 (in & out)',
+        add: pilotageMilesText,
+        amount: pilotage,
+      },
       { item: 'Tug assistance charge', details: '(in & out)', amount: tugAssistance },
       { item: 'Moor / Unmooring', details: '', amount: moorUnmoor },
       {
@@ -414,57 +427,60 @@ const buildBBRows = (
 }
 
 export const renderQuoteHtml = (template: string, data: QuoteData) => {
-  const aa = buildAARows(data.AA_ROWS || [], data.grt, {
-    berthHours: data.berth_hours,
-    anchorageHours: data.anchorage_hours,
-    frtTaxType: data.loading_term,
-    transportQuarantine: data.transport_quarantine,
-    boatHire: data.boat_hire_entry,
-    tallyFee: data.tally_fee,
-    loa: data.loa,
+  const normalizedData = normalizeInvoiceNumericFields(data)
+
+  const aa = buildAARows(normalizedData.AA_ROWS || [], normalizedData.grt, {
+    berthHours: normalizedData.berth_hours,
+    anchorageHours: normalizedData.anchorage_hours,
+    frtTaxType: normalizedData.loading_term,
+    transportQuarantine: normalizedData.transport_quarantine,
+    boatHire: normalizedData.boat_hire_entry,
+    tallyFee: normalizedData.tally_fee,
+    loa: normalizedData.loa,
+    pilotageMiles: normalizedData.pilotage_miles ?? normalizedData.pilotage_third_miles,
   })
 
   const bb = buildBBRows(
-    data.BB_ROWS || [],
-    data.grt,
-    data.cargo_qty_mt,
-    data.cargo_name_upper,
-    data.cargo_type,
-    data.transport_ls,
+    normalizedData.BB_ROWS || [],
+    normalizedData.grt,
+    normalizedData.cargo_qty_mt,
+    normalizedData.cargo_name_upper,
+    normalizedData.cargo_type,
+    normalizedData.transport_ls,
   )
 
-  const totalAValue = escapeHtml(data.total_a || aa.total)
-  const totalBValue = escapeHtml(data.total_b || bb.total)
-  const totalANum = toNumber(data.total_a || aa.total)
-  const totalBNum = toNumber(data.total_b || bb.total)
+  const totalAValue = escapeHtml(normalizedData.total_a || aa.total)
+  const totalBValue = escapeHtml(normalizedData.total_b || bb.total)
+  const totalANum = toNumber(normalizedData.total_a || aa.total)
+  const totalBNum = toNumber(normalizedData.total_b || bb.total)
   const grandNumeric =
     totalANum !== null && totalBNum !== null ? totalANum + totalBNum : totalANum !== null ? totalANum : totalBNum
-  const grandTotal = data.grand_total || (grandNumeric ? formatAmount(grandNumeric) : undefined)
+  const grandTotal = normalizedData.grand_total || (grandNumeric ? formatAmount(grandNumeric) : undefined)
 
   const replacements: Record<string, string> = {
-    to_shipowner: escapeHtml(data.to_shipowner),
-    date: escapeHtml(data.date),
-    ref: escapeHtml(data.ref),
-    mv: escapeHtml(data.mv),
-    dwt: escapeHtml(data.dwt),
-    grt: escapeHtml(data.grt),
-    loa: escapeHtml(data.loa),
-    eta: escapeHtml(data.eta || 'TBN'),
-    cargo_qty_mt: escapeHtml(data.cargo_qty_mt),
-    cargo_name_upper: escapeHtml(data.cargo_name_upper),
-    cargo_type: escapeHtml(data.cargo_type),
-    port_upper: escapeHtml(data.port_upper),
-    loading_term: escapeHtml(data.loading_term),
-    at_anchorage: escapeHtml(data.at_anchorage),
-    at_berth: escapeHtml(data.at_berth),
+    to_shipowner: escapeHtml(normalizedData.to_shipowner),
+    date: escapeHtml(normalizedData.date),
+    ref: escapeHtml(normalizedData.ref),
+    mv: escapeHtml(normalizedData.mv),
+    dwt: escapeHtml(normalizedData.dwt),
+    grt: escapeHtml(normalizedData.grt),
+    loa: escapeHtml(normalizedData.loa),
+    eta: escapeHtml(normalizedData.eta || 'TBN'),
+    cargo_qty_mt: escapeHtml(normalizedData.cargo_qty_mt),
+    cargo_name_upper: escapeHtml(formatCargoNameWithType(normalizedData.cargo_name_upper, normalizedData.cargo_type)),
+    cargo_type: escapeHtml(normalizedData.cargo_type),
+    port_upper: escapeHtml(normalizedData.port_upper),
+    loading_term: escapeHtml(normalizedData.loading_term),
+    at_anchorage: escapeHtml(normalizedData.at_anchorage),
+    at_berth: escapeHtml(normalizedData.at_berth),
     total_a: totalAValue,
     total_b: totalBValue,
     grand_total: escapeHtml(grandTotal),
-    bank_name: escapeHtml(data.bank_name),
-    bank_address: escapeHtml(data.bank_address),
-    beneficiary: escapeHtml(data.beneficiary),
-    usd_account: escapeHtml(data.usd_account),
-    swift: escapeHtml(data.swift),
+    bank_name: escapeHtml(normalizedData.bank_name),
+    bank_address: escapeHtml(normalizedData.bank_address),
+    beneficiary: escapeHtml(normalizedData.beneficiary),
+    usd_account: escapeHtml(normalizedData.usd_account),
+    swift: escapeHtml(normalizedData.swift),
     AA_ROWS: aa.html,
     BB_ROWS: bb.html,
   }

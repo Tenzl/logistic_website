@@ -8,8 +8,15 @@ import { Label } from '@/shared/components/ui/label'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { toast } from '@/shared/utils/toast'
 import { Loader2, FileText, Eye } from 'lucide-react'
-import { renderQuoteHtml as renderQuoteHtmlHcm, QuoteData, QuotePreview } from '@/modules/inquiries/components/common/Quote-hcm'
-import { renderQuoteHtml as renderQuoteHtmlQn } from '@/modules/inquiries/components/common/Quote-qn'
+import {
+  renderQuoteHtml as renderQuoteHtmlHcm,
+  type QuoteData as HcmQuoteData,
+  QuotePreview,
+} from '@/modules/inquiries/components/common/Quote-hcm'
+import {
+  renderQuoteHtml as renderQuoteHtmlQn,
+  type QuoteData as QnQuoteData,
+} from '@/modules/inquiries/components/common/Quote-qn'
 import { imageTypeService, type CargoType, type ImageType } from '@/modules/gallery/services/imageTypeService'
 import { serviceTypeService } from '@/modules/service-types/services/serviceTypeService'
 import { provinceService, type Province } from '@/modules/logistics/services/provinceService'
@@ -24,6 +31,7 @@ import {
 } from '@/shared/components/ui/select'
 
 type EpdaCargoType = CargoType
+type InvoiceQuoteData = HcmQuoteData & QnQuoteData
 
 const CARGO_TYPE_OPTIONS: { value: EpdaCargoType; label: string }[] = [
   { value: 'IN_BULK', label: 'in bulk' },
@@ -65,6 +73,7 @@ export function CreateInvoiceTab() {
   const [berthHours, setBerthHours] = useState('96')
   const [anchorageHours, setAnchorageHours] = useState('24')
   const [pilotageThirdMiles, setPilotageThirdMiles] = useState('17')
+  const [qnPilotageMiles, setQnPilotageMiles] = useState('1')
   const [boatHireAmount, setBoatHireAmount] = useState('')
   const [tallyFeeAmount, setTallyFeeAmount] = useState('')
   const [transportLs, setTransportLs] = useState('')
@@ -186,8 +195,11 @@ export function CreateInvoiceTab() {
       if (!res.ok) throw new Error('Template not found')
       const template = await res.text()
 
+      const selectedCargo = filteredCargoNames.find((item) => item.name === cargoName)
+      const cargoDisplayName = (selectedCargo?.displayName || cargoName || '').trim()
+
       // Build quote data
-      const quoteData: QuoteData = {
+      const quoteData: InvoiceQuoteData = {
         to_shipowner: toShipowner,
         date: eta || new Date().toISOString().split('T')[0],
         ref: undefined,
@@ -197,7 +209,7 @@ export function CreateInvoiceTab() {
         loa: loa,
         eta: eta || 'TBN',
         cargo_qty_mt: cargoQty,
-        cargo_name_upper: cargoName.toUpperCase(),
+        cargo_name_upper: cargoDisplayName.toUpperCase(),
         cargo_type: cargoType ? getCargoTypeLabel(cargoType) : '',
         port_upper: port.toUpperCase(),
         loading_term: dischargeLoadingLocation,
@@ -219,7 +231,8 @@ export function CreateInvoiceTab() {
         BB_ROWS: [],
         berth_hours: Number(berthHours),
         anchorage_hours: Number(anchorageHours),
-        pilotage_third_miles: Number(pilotageThirdMiles),
+        pilotage_miles: quoteForm === 'QN' ? Number(qnPilotageMiles || '1') : undefined,
+        pilotage_third_miles: quoteForm === 'HCM' ? Number(pilotageThirdMiles) : undefined,
       }
 
       // Render HTML
@@ -290,6 +303,7 @@ export function CreateInvoiceTab() {
     setBerthHours('96')
     setAnchorageHours('24')
     setPilotageThirdMiles('17')
+    setQnPilotageMiles('1')
     setBoatHireAmount('')
     setTallyFeeAmount('')
     setTransportLs('')
@@ -432,60 +446,64 @@ export function CreateInvoiceTab() {
             </div>
 
             {/* Cargo Information */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="cargoType">Cargo Type *</Label>
-                <Select
-                  value={cargoType}
-                  onValueChange={(value) => setCargoType(value as EpdaCargoType)}
-                >
-                  <SelectTrigger id="cargoType">
-                    <SelectValue placeholder="Select cargo type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CARGO_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="cargoQty">Quantity (tons) *</Label>
+                  <Input
+                    id="cargoQty"
+                    type="number"
+                    value={cargoQty}
+                    onChange={(e) => setCargoQty(e.target.value)}
+                    placeholder="e.g., 15000"
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="cargoName">Cargo Name *</Label>
-                <Select value={cargoName} onValueChange={setCargoName}>
-                  <SelectTrigger id="cargoName">
-                    <SelectValue
-                      placeholder={
-                        isLoadingCargoCatalog
-                          ? 'Loading cargo names...'
-                          : cargoType
-                            ? 'Select cargo name'
-                            : 'Select cargo type first'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredCargoNames.map((item) => (
-                      <SelectItem key={item.id} value={item.name}>
-                        {item.displayName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="cargoType">Cargo Type *</Label>
+                  <Select
+                    value={cargoType}
+                    onValueChange={(value) => setCargoType(value as EpdaCargoType)}
+                  >
+                    <SelectTrigger id="cargoType">
+                      <SelectValue placeholder="Select cargo type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CARGO_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="cargoQty">Quantity (tons) *</Label>
-                <Input
-                  id="cargoQty"
-                  type="number"
-                  value={cargoQty}
-                  onChange={(e) => setCargoQty(e.target.value)}
-                  placeholder="e.g., 15000"
-                  required
-                />
+                <div className="grid gap-2">
+                  <Label htmlFor="cargoName">Cargo Name *</Label>
+                  <Select value={cargoName} onValueChange={setCargoName}>
+                    <SelectTrigger id="cargoName">
+                      <SelectValue
+                        placeholder={
+                          isLoadingCargoCatalog
+                            ? 'Loading cargo names...'
+                            : cargoType
+                              ? 'Select cargo name'
+                              : 'Select cargo type first'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredCargoNames.map((item) => (
+                        <SelectItem key={item.id} value={item.name}>
+                          {item.displayName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -519,6 +537,55 @@ export function CreateInvoiceTab() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Hours Configuration */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="berthHours">Berth Hours</Label>
+                <Input
+                  id="berthHours"
+                  type="number"
+                  value={berthHours}
+                  onChange={(e) => setBerthHours(e.target.value)}
+                  min="0"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="anchorageHours">Anchorage Hours</Label>
+                <Input
+                  id="anchorageHours"
+                  type="number"
+                  value={anchorageHours}
+                  onChange={(e) => setAnchorageHours(e.target.value)}
+                  min="0"
+                />
+              </div>
+
+              {quoteForm === 'QN' ? (
+                <div className="grid gap-2">
+                  <Label htmlFor="qnPilotageMiles">Pilotage Miles</Label>
+                  <Input
+                    id="qnPilotageMiles"
+                    type="number"
+                    value={qnPilotageMiles}
+                    onChange={(e) => setQnPilotageMiles(e.target.value)}
+                    min="1"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  <Label htmlFor="pilotageThirdMiles">Pilotage 3rd Miles</Label>
+                  <Input
+                    id="pilotageThirdMiles"
+                    type="number"
+                    value={pilotageThirdMiles}
+                    onChange={(e) => setPilotageThirdMiles(e.target.value)}
+                    min="1"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Service Options */}
@@ -555,42 +622,6 @@ export function CreateInvoiceTab() {
                   value={transportLs}
                   onChange={(e) => setTransportLs(e.target.value)}
                   placeholder="0"
-                />
-              </div>
-            </div>
-
-            {/* Hours Configuration */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="berthHours">Berth Hours</Label>
-                <Input
-                  id="berthHours"
-                  type="number"
-                  value={berthHours}
-                  onChange={(e) => setBerthHours(e.target.value)}
-                  min="0"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="anchorageHours">Anchorage Hours</Label>
-                <Input
-                  id="anchorageHours"
-                  type="number"
-                  value={anchorageHours}
-                  onChange={(e) => setAnchorageHours(e.target.value)}
-                  min="0"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="pilotageThirdMiles">Pilotage 3rd Miles</Label>
-                <Input
-                  id="pilotageThirdMiles"
-                  type="number"
-                  value={pilotageThirdMiles}
-                  onChange={(e) => setPilotageThirdMiles(e.target.value)}
-                  min="1"
                 />
               </div>
             </div>

@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Image as ImageIcon, Filter, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Info, Edit2, Loader2, RefreshCw } from 'lucide-react'
+import {
+  type SortingState,
+  ColumnDef,
+  getFilteredRowModel,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type RowSelectionState,
+} from '@tanstack/react-table'
+import { Image as ImageIcon, Filter, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Info, Edit2, Loader2, RefreshCw, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/shared/components/ui/dialog'
@@ -23,6 +33,7 @@ import { API_CONFIG } from '@/shared/config/api.config'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Input } from '@/shared/components/ui/input'
 
 const AREA_OPTIONS = ['NORTHERN', 'MIDDLE', 'SOUTHERN'] as const
 
@@ -60,7 +71,9 @@ export function ManageImagesTab() {
   const [totalPages, setTotalPages] = useState(0)
   const [totalImages, setTotalImages] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
   
   const [currentPage, setCurrentPage] = useState(0)
   const [deleteModalImage, setDeleteModalImage] = useState<GalleryImage | null>(null)
@@ -127,7 +140,7 @@ export function ManageImagesTab() {
   }, [])
 
   useEffect(() => {
-    setSelectedIds(new Set())
+    setRowSelection({})
   }, [images])
 
   const loadProvinces = async () => {
@@ -257,36 +270,16 @@ export function ManageImagesTab() {
     }
   }
 
-  const toggleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedIds(new Set(images.map(img => img.id)))
-    } else {
-      setSelectedIds(new Set())
-    }
-  }
-
-  const toggleSelectOne = (id: number, checked: boolean) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (checked) {
-        next.add(id)
-      } else {
-        next.delete(id)
-      }
-      return next
-    })
-  }
-
   const deleteSelected = async () => {
-    if (selectedIds.size === 0) return
+    if (selectedRows.length === 0) return
     const confirmed = typeof window === 'undefined' ? true : window.confirm('Delete selected images? This cannot be undone.')
     if (!confirmed) return
 
     setIsLoading(true)
-    const ids = Array.from(selectedIds)
+    const ids = selectedRows.map((row) => row.original.id)
     try {
       await Promise.allSettled(ids.map(id => galleryService.deleteImage(id)))
-      setSelectedIds(new Set())
+      setRowSelection({})
       await loadPage(currentPage)
     } catch (error) {
       console.error('Error deleting selected images:', error)
@@ -372,6 +365,234 @@ export function ManageImagesTab() {
       setIsLoading(false)
     }
   }
+
+  const columns: ColumnDef<GalleryImage>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: 'thumbnail',
+      header: 'Thumbnail',
+      cell: ({ row }) => {
+        const image = row.original
+        return (
+          <Dialog>
+            <DialogTrigger asChild>
+              <div className="cursor-pointer hover:opacity-80 transition-opacity inline-block">
+                <ImageWithFallback
+                  src={getImageUrl(image.url)}
+                  alt={image.fileName}
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 object-cover rounded"
+                />
+              </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogTitle className="sr-only">{image.fileName}</DialogTitle>
+              <DialogDescription className="sr-only">
+                {image.portName} - {image.provinceName}
+              </DialogDescription>
+              <ImageWithFallback
+                src={getImageUrl(image.url)}
+                alt={image.fileName}
+                width={1200}
+                height={800}
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
+              <div className="mt-4 space-y-2">
+                <h3 className="text-xl font-semibold">{image.portName}</h3>
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="secondary">{image.provinceName}</Badge>
+                  <Badge variant="secondary">{image.serviceTypeName}</Badge>
+                  <Badge variant="outline">{image.imageTypeName}</Badge>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      },
+    },
+    {
+      accessorKey: 'provinceName',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Province
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.provinceName}</span>,
+    },
+    {
+      accessorKey: 'portName',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Port
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.portName}</span>,
+    },
+    {
+      accessorKey: 'serviceTypeName',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Service
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.serviceTypeName}</span>,
+    },
+    {
+      accessorKey: 'imageTypeName',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Commodities
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const image = row.original
+        const warningType = getDeleteWarningType(image)
+        const key = `${image.provinceId}_${image.portId}_${image.serviceTypeId}_${image.imageTypeId}`
+        const count = imageTypeCounts[key] || 0
+
+        return (
+          <div className="text-sm">
+            <div className="flex items-center gap-2">
+              <span>{image.imageTypeName}</span>
+              {warningType === 'over' && (
+                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  OVER
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">{count}/18</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'uploadedAt',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          className="px-0 hover:bg-transparent"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Uploaded
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <span className="text-sm">
+          {row.original.uploadedAt
+            ? new Date(row.original.uploadedAt).toLocaleDateString('vi-VN')
+            : '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const image = row.original
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEditClick(image)}
+              className="text-primary hover:text-primary/90 hover:bg-primary/10 cursor-pointer"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(image)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+    },
+  ]
+
+  const table = useReactTable({
+    data: images,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableRowSelection: true,
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const query = String(filterValue || '').toLowerCase().trim()
+      if (!query) return true
+      const image = row.original
+      const searchable = [
+        image.fileName,
+        image.provinceName,
+        image.portName,
+        image.serviceTypeName,
+        image.imageTypeName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return searchable.includes(query)
+    },
+    onRowSelectionChange: setRowSelection,
+    getRowId: (row) => row.id.toString(),
+    state: {
+      rowSelection,
+      sorting,
+      globalFilter,
+    },
+  })
+
+  const selectedRows = table.getFilteredSelectedRowModel().rows
+  const selectedCount = selectedRows.length
 
   return (
     <div className="space-y-6">
@@ -480,10 +701,10 @@ export function ManageImagesTab() {
                 <Button
                   variant="destructive"
                   onClick={deleteSelected}
-                  disabled={selectedIds.size === 0 || isLoading}
+                  disabled={selectedCount === 0 || isLoading}
                   className="cursor-pointer"
                 >
-                  Delete Selected ({selectedIds.size})
+                  Delete Selected ({selectedCount})
                 </Button>
               )}
               <Button
@@ -512,120 +733,47 @@ export function ManageImagesTab() {
           </div>
         ) : (
           <>
+            <div className="mb-4">
+              <Input
+                placeholder="Search by file, province, port, service, commodity..."
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
             <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox
-                        checked={selectedIds.size === 0 ? false : selectedIds.size === images.length ? true : 'indeterminate'}
-                        onCheckedChange={(checked) => toggleSelectAll(Boolean(checked))}
-                        aria-label="Select all"
-                      />
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">Thumbnail</TableHead>
-                    <TableHead>Province</TableHead>
-                    <TableHead>Port</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Commodities</TableHead>
-                    <TableHead>Uploaded</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id} className={header.id === 'thumbnail' ? 'min-w-[120px]' : header.id === 'select' ? 'w-[40px]' : ''}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
                 </TableHeader>
                 <TableBody>
-                  {images.map((image) => {
-                    const warningType = getDeleteWarningType(image)
-                    const key = `${image.provinceId}_${image.portId}_${image.serviceTypeId}_${image.imageTypeId}`
-                    const count = imageTypeCounts[key] || 0
-
-                    return (
-                      <TableRow key={image.id} className="hover:bg-muted/20">
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedIds.has(image.id)}
-                            onCheckedChange={(checked) => toggleSelectOne(image.id, Boolean(checked))}
-                            aria-label="Select row"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <div className="cursor-pointer hover:opacity-80 transition-opacity inline-block">
-                                <ImageWithFallback
-                                  src={getImageUrl(image.url)}
-                                  alt={image.fileName}
-                                  width={48}
-                                  height={48}
-                                  className="w-12 h-12 object-cover rounded"
-                                />
-                              </div>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl">
-                              <DialogTitle className="sr-only">{image.fileName}</DialogTitle>
-                              <DialogDescription className="sr-only">
-                                {image.portName} - {image.provinceName}
-                              </DialogDescription>
-                              <ImageWithFallback
-                                src={getImageUrl(image.url)}
-                                alt={image.fileName}
-                                width={1200}
-                                height={800}
-                                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-                              />
-                              <div className="mt-4 space-y-2">
-                                <h3 className="text-xl font-semibold">{image.portName}</h3>
-                                <div className="flex gap-2 flex-wrap">
-                                  <Badge variant="secondary">{image.provinceName}</Badge>
-                                  <Badge variant="secondary">{image.serviceTypeName}</Badge>
-                                  <Badge variant="outline">{image.imageTypeName}</Badge>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                        <TableCell className="text-sm">{image.provinceName}</TableCell>
-                        <TableCell className="text-sm">{image.portName}</TableCell>
-                        <TableCell className="text-sm">{image.serviceTypeName}</TableCell>
-                        <TableCell className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <span>{image.imageTypeName}</span>
-                            {warningType === 'over' && (
-                              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                OVER
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground">{count}/18</div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {image.uploadedAt
-                            ? new Date(image.uploadedAt).toLocaleDateString('vi-VN')
-                            : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditClick(image)}
-                              className="text-primary hover:text-primary/90 hover:bg-primary/10 cursor-pointer"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(image)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                  {table.getRowModel().rows.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id} className="hover:bg-muted/20" data-state={row.getIsSelected() && 'selected'}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
                       </TableRow>
-                    )
-                  })}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        No results.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -634,7 +782,7 @@ export function ManageImagesTab() {
             {totalPages > 1 && (
               <div className="flex items-center justify-end space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
-                  {selectedIds.size} of {totalImages} row(s) selected.
+                  {selectedCount} of {totalImages} row(s) selected.
                 </div>
                 <Button
                   variant="outline"

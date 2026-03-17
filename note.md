@@ -1,0 +1,1 @@
+1. Image Filters - src\shared\components\file-upload-card.tsx dùng để gom các component upload ảnh vào manage image

@@ -8,8 +8,8 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Badge } from '@/shared/components/ui/badge'
-import { QuoteData, renderQuoteHtml as renderQuoteHtmlHcm } from '@/modules/inquiries/components/common/Quote-hcm'
-import { renderQuoteHtml as renderQuoteHtmlQn } from '@/modules/inquiries/components/common/Quote-qn'
+import { type QuoteData as HcmQuoteData, renderQuoteHtml as renderQuoteHtmlHcm } from '@/modules/inquiries/components/common/Quote-hcm'
+import { renderQuoteHtml as renderQuoteHtmlQn, type QuoteData as QnQuoteData } from '@/modules/inquiries/components/common/Quote-qn'
 import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 import { authService } from '@/modules/auth/services/authService'
 import { AlertCircle, ArrowLeft, Download, FileText, Loader2, RefreshCw } from 'lucide-react'
@@ -80,7 +80,9 @@ const formatDate = (value?: string, fallback = '—') => {
 const toStringOrDash = (value?: string | number | null) =>
   value === undefined || value === null || value === '' ? '—' : String(value)
 
-const mapToQuoteData = (inquiry: ShippingAgencyInquiry): QuoteData => {
+type InvoiceQuoteData = HcmQuoteData & QnQuoteData
+
+const mapToQuoteData = (inquiry: ShippingAgencyInquiry): InvoiceQuoteData => {
   const cargoName = inquiry.cargoNameOther || inquiry.cargoName || inquiry.cargoType
   const port = inquiry.portOfCall || inquiry.dischargeLoadingLocation
   const dlLocation = (inquiry.dischargeLoadingLocation || '').trim().toLowerCase()
@@ -160,7 +162,7 @@ export default function ShippingAgencyPdfPage() {
       // Load hours from database, fallback to defaults
       const berth = res.data.berthHours ?? 96
       const anchorage = res.data.anchorageHours ?? 24
-      const pilotage = res.data.pilotage3rdMiles ?? 17
+      const pilotage = res.data.pilotage3rdMiles ?? (formValue === 'QN' ? 1 : 17)
       
       setBerthHours(berth)
       setBerthHoursInput(String(berth))
@@ -205,7 +207,8 @@ export default function ShippingAgencyPdfPage() {
           ...mapToQuoteData(inquiry),
           berth_hours: berthHours,
           anchorage_hours: anchorageHours,
-          pilotage_third_miles: pilotageThirdMiles,
+          pilotage_miles: quoteForm === 'QN' ? pilotageThirdMiles : undefined,
+          pilotage_third_miles: quoteForm === 'HCM' ? pilotageThirdMiles : undefined,
         })
         setQuoteHtml(html)
       } catch (err) {

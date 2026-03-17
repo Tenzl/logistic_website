@@ -10,8 +10,13 @@ import { authService } from '@/modules/auth/services/authService'
 import { documentService } from '@/modules/inquiries/services/documentService'
 import { Button } from '@/shared/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { QuoteData, QuoteRow, QuotePreview, renderQuoteHtml as renderQuoteHtmlHcm } from '@/modules/inquiries/components/common/Quote-hcm'
-import { renderQuoteHtml as renderQuoteHtmlQn } from '@/modules/inquiries/components/common/Quote-qn'
+import {
+  type QuoteData as HcmQuoteData,
+  QuoteRow,
+  QuotePreview,
+  renderQuoteHtml as renderQuoteHtmlHcm,
+} from '@/modules/inquiries/components/common/Quote-hcm'
+import { renderQuoteHtml as renderQuoteHtmlQn, type QuoteData as QnQuoteData } from '@/modules/inquiries/components/common/Quote-qn'
 import { formatInvoiceDate, formatCheckMark, formatCargoDescription } from '@/shared/utils/invoiceFormatters'
 import { apiClient } from '@/shared/utils/apiClient'
 import { API_CONFIG } from '@/shared/config/api.config'
@@ -89,6 +94,8 @@ interface PageResponse<T> {
   size: number
   number: number
 }
+
+type InvoiceQuoteData = HcmQuoteData & QnQuoteData
 
 export function UserInquiryHistoryTab() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
@@ -195,11 +202,12 @@ export function UserInquiryHistoryTab() {
     return [] as QuoteRow[]
   }
 
-  const buildQuoteData = (inquiry: Inquiry): QuoteData => {
+  const buildQuoteData = (inquiry: Inquiry): InvoiceQuoteData => {
     // Parse details JSON for quote-specific fields (AA_ROWS, BB_ROWS, totals, bank info)
     const map = normalizeDetails(inquiry.details)
+    const isQnForm = (inquiry.quoteForm || '').toUpperCase() === 'QN'
 
-    const data: QuoteData = {
+    const data: InvoiceQuoteData = {
       to_shipowner: inquiry.toName || inquiry.fullName,
       date: pickValue(map, ['quote_date', 'date'], formatInvoiceDate(inquiry.submittedAt)),
       ref: pickValue(map, ['ref', 'reference', 'quotation_ref'], `INQ-${inquiry.id}`),
@@ -229,7 +237,8 @@ export function UserInquiryHistoryTab() {
       // Map hours from database with fallback to defaults
       berth_hours: inquiry.berthHours ?? 96,
       anchorage_hours: inquiry.anchorageHours ?? 24,
-      pilotage_third_miles: inquiry.pilotage3rdMiles ?? 17,
+      pilotage_miles: isQnForm ? inquiry.pilotage3rdMiles ?? 1 : undefined,
+      pilotage_third_miles: isQnForm ? undefined : inquiry.pilotage3rdMiles ?? 17,
     }
 
     return data
