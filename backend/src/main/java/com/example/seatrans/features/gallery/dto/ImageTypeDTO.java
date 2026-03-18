@@ -1,7 +1,5 @@
 package com.example.seatrans.features.gallery.dto;
 
-import com.example.seatrans.features.gallery.model.CargoType;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +15,6 @@ public class ImageTypeDTO {
     private String displayName;
     private String description;
     private Integer requiredImageCount;
-    private CargoType cargoType;
+    private String cargoType;
     private Boolean isActive;
 }

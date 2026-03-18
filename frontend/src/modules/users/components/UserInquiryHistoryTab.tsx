@@ -55,6 +55,8 @@ interface Inquiry {
   cargoQuantity?: number
   portOfCall?: string
   dischargeLoadingLocation?: string
+  frtTaxType?: string
+  purposeOfCalling?: string
   transportLs?: string
   boatHireAmount?: number
   tallyFeeAmount?: number
@@ -220,7 +222,8 @@ export function UserInquiryHistoryTab() {
       cargo_name_upper: formatCargoDescription(inquiry.cargoName, inquiry.cargoType),
       cargo_type: inquiry.cargoType?.toUpperCase(),
       port_upper: (inquiry.portOfCall || inquiry.loadingPort || inquiry.dischargingPort)?.toUpperCase(),
-      loading_term: inquiry.dischargeLoadingLocation || inquiry.deliveryTerm,
+      loading_term: inquiry.frtTaxType || inquiry.deliveryTerm,
+      purpose_of_calling: inquiry.purposeOfCalling,
       transport_ls: inquiry.transportLs,
       at_anchorage: inquiry.dischargeLoadingLocation?.toLowerCase().includes('anchorage') ? 'x' : formatCheckMark(pickValue(map, ['at_anchorage', 'anchorage'])),
       at_berth: inquiry.dischargeLoadingLocation?.toLowerCase().includes('berth') ? 'x' : formatCheckMark(pickValue(map, ['at_berth', 'berth'])),

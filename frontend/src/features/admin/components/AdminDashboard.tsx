@@ -69,7 +69,7 @@ type AdminSection =
   | 'manage-images'
   | 'services'
   | 'ports'
-  | 'commodities'
+  | 'cargo-types'
   | 'categories'
   | 'posts'
   | 'offices'
@@ -103,7 +103,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
     { id: 'services' as AdminSection, label: 'Services', icon: Cog, category: 'Data Management' },
     { id: 'ports' as AdminSection, label: 'Ports', icon: Anchor, category: 'Data Management' },
     { id: 'offices' as AdminSection, label: 'Offices', icon: LayoutDashboard, category: 'Data Management' },
-    { id: 'commodities' as AdminSection, label: 'Commodities', icon: Package, category: 'Data Management' },
+    { id: 'cargo-types' as AdminSection, label: 'Cargo Types', icon: Package, category: 'Data Management' },
     { id: 'categories' as AdminSection, label: 'Categories', icon: Database, category: 'Content Management' },
     { id: 'posts' as AdminSection, label: 'Posts', icon: FileText, category: 'Content Management' },
   ]
@@ -210,7 +210,7 @@ export function AdminPage({ onNavigateHome, initialSection = 'profile' }: AdminP
           {activeSection === 'services' && <ManageServices />}
           {activeSection === 'ports' && <ManagePorts />}
           {activeSection === 'offices' && <ManageOffices />}
-          {activeSection === 'commodities' && <ManageImageTypes />}
+          {activeSection === 'cargo-types' && <ManageImageTypes />}
           
           {activeSection === 'categories' && <ManageCategories />}
           {activeSection === 'posts' && <ManagePosts />}

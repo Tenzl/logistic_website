@@ -465,6 +465,7 @@ public class PublicInquiryController {
             .transportLs(request.getTransportLs())
             .transportQuarantine(request.getTransportQuarantine())
             .frtTaxType(request.getFrtTaxType())
+            .purposeOfCalling(request.getPurposeOfCalling())
             .boatHireAmount(request.getBoatHireAmount())
             .tallyFeeAmount(request.getTallyFeeAmount())
             .otherInfo(null)

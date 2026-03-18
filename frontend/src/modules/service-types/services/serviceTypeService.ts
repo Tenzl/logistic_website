@@ -5,6 +5,7 @@ import type { ApiResponse } from '@/shared/types/api.types'
 interface ServiceType {
   id: number
   name: string
+  displayName?: string
   description?: string
   isActive: boolean
   createdAt?: string

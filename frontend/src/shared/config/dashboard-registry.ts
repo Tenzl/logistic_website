@@ -33,7 +33,7 @@ export type DashboardSection =
   | "services"
   | "ports"
   | "offices"
-  | "commodities"
+  | "cargo-types"
   | "categories"
   | "posts"
   | "inquiry"
@@ -190,15 +190,15 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     category: "Data Management",
     title: "Manage Offices",
   },
-  commodities: {
-    id: "commodities",
-    label: "Commodities",
+  "cargo-types": {
+    id: "cargo-types",
+    label: "Cargo",
     icon: Package,
     component: ManageImageTypes,
     roles: ["ADMIN", "EMPLOYEE"],
     roleGroups: ["INTERNAL"],
     category: "Data Management",
-    title: "Manage Commodities",
+    title: "Manage Cargo",
   },
   categories: {
     id: "categories",

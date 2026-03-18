@@ -482,7 +482,7 @@ export function ManageImagesTab() {
           className="px-0 hover:bg-transparent"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Commodities
+          Cargo Types
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -605,7 +605,7 @@ export function ManageImagesTab() {
                 <Filter className="h-5 w-5 text-primary" />
                 Image Filters
               </CardTitle>
-              <CardDescription>Filter images by province, port, service and commodity. Data updates automatically.</CardDescription>
+              <CardDescription>Filter images by province, port, service and cargo type. Data updates automatically.</CardDescription>
             </div>
             {hasActiveFilters && (
               <Button variant="outline" onClick={handleClearAll} className="cursor-pointer">
@@ -735,7 +735,7 @@ export function ManageImagesTab() {
           <>
             <div className="mb-4">
               <Input
-                placeholder="Search by file, province, port, service, commodity..."
+                placeholder="Search by file, province, port, service, cargo..."
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 className="max-w-md"
@@ -815,7 +815,7 @@ export function ManageImagesTab() {
         <DialogContent className="max-w-xl">
           <DialogTitle>Edit Image Information</DialogTitle>
           <DialogDescription>
-            Update province, port, service type, and commodity for this image.
+            Update province, port, service type, and cargo type for this image.
           </DialogDescription>
 
           <div className="grid gap-4 py-2">
@@ -882,15 +882,15 @@ export function ManageImagesTab() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Commodity</label>
+              <label className="block text-sm font-medium mb-2">Cargo Type</label>
               <select
                 value={editForm.imageTypeId || ''}
                 onChange={(e) => setEditForm(prev => ({ ...prev, imageTypeId: e.target.value ? Number(e.target.value) : null }))}
                 disabled={!editForm.serviceTypeId}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
-                title="Commodity"
+                title="Cargo Type"
               >
-                <option value="">Select commodity</option>
+                <option value="">Select cargo type</option>
                 {editImageTypes.map(t => (
                   <option key={t.id} value={t.id}>{t.displayName}</option>
                 ))}

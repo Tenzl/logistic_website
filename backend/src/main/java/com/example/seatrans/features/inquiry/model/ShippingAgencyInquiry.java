@@ -114,6 +114,9 @@ public class ShippingAgencyInquiry {
     @Column(name = "frt_tax_type", length = 64)
     private String frtTaxType;
 
+    @Column(name = "purpose_of_calling", length = 64)
+    private String purposeOfCalling;
+
     @Column(name = "boat_hire_amount", precision = 15, scale = 2)
     private BigDecimal boatHireAmount;
 

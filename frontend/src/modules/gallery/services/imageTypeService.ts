@@ -15,7 +15,19 @@ interface ImageType {
   updatedAt?: string
 }
 
-type CargoType = 'IN_BULK' | 'IN_BAG_PACK'
+type CargoType = string
+
+interface CargoTypeCatalogItem {
+  code: string
+  displayLabel: string
+  serviceTypeType: string
+}
+
+interface CargoTypeCatalogUpsertRequest {
+  serviceTypeId: number
+  code: string
+  displayLabel: string
+}
 
 interface CreateImageTypeRequest {
   name: string
@@ -65,6 +77,42 @@ export const imageTypeService = {
     return result.data
   },
 
+  getCargoTypesByServiceType: async (serviceTypeId: number): Promise<CargoTypeCatalogItem[]> => {
+    const params = new URLSearchParams({ serviceTypeId: serviceTypeId.toString() })
+    const response = await apiClient.get<ApiResponse<CargoTypeCatalogItem[]>>(
+      `${API_CONFIG.IMAGE_TYPES.ADMIN_CARGO_TYPES}?${params.toString()}`
+    )
+    const result = await response.json()
+    return result.data || []
+  },
+
+  createCargoType: async (data: CargoTypeCatalogUpsertRequest): Promise<CargoTypeCatalogItem> => {
+    const response = await apiClient.post<ApiResponse<CargoTypeCatalogItem>>(
+      API_CONFIG.IMAGE_TYPES.ADMIN_CARGO_TYPES,
+      data,
+    )
+    const result = await response.json()
+    return result.data
+  },
+
+  updateCargoType: async (data: CargoTypeCatalogUpsertRequest): Promise<CargoTypeCatalogItem> => {
+    const response = await apiClient.put<ApiResponse<CargoTypeCatalogItem>>(
+      API_CONFIG.IMAGE_TYPES.ADMIN_CARGO_TYPES,
+      data,
+    )
+    const result = await response.json()
+    return result.data
+  },
+
+  deleteCargoType: async (serviceTypeId: number, code: string): Promise<void> => {
+    const params = new URLSearchParams({ serviceTypeId: serviceTypeId.toString(), code })
+    const response = await apiClient.delete(`${API_CONFIG.IMAGE_TYPES.ADMIN_CARGO_TYPES}?${params.toString()}`)
+
+    if (!response.ok) {
+      throw new Error('Failed to delete cargo type')
+    }
+  },
+
   createImageType: async (data: CreateImageTypeRequest): Promise<ImageType> => {
     const response = await apiClient.post<ApiResponse<ImageType>>(API_CONFIG.IMAGE_TYPES.ADMIN_BASE, data)
     const result = await response.json()
@@ -90,4 +138,11 @@ export const imageTypeService = {
   },
 }
 
-export type { CargoType, ImageType, CreateImageTypeRequest, ImageCountDTO }
+export type {
+  CargoType,
+  CargoTypeCatalogItem,
+  CargoTypeCatalogUpsertRequest,
+  ImageType,
+  CreateImageTypeRequest,
+  ImageCountDTO,
+}

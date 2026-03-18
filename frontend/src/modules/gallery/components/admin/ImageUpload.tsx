@@ -319,7 +319,7 @@ export function AddImageTab() {
             <div>
               <label className="block font-semibold mb-2 flex items-center gap-2">
                 <ImageIcon className="h-4 w-4 text-primary" />
-                4. Select Commodity <span className="text-red-500">*</span>
+                4. Select Cargo Type <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedImageType || ''}

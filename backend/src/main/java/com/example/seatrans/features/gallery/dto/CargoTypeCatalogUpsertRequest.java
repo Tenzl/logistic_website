@@ -7,11 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateImageTypeRequest {
+public class CargoTypeCatalogUpsertRequest {
     private Long serviceTypeId;
-    private String name;
-    private String displayName;
-    private String description;
-    private Integer requiredImageCount;
-    private String cargoType;
+    private String code;
+    private String displayLabel;
 }

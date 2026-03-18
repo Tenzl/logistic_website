@@ -22,8 +22,12 @@ export type QuoteData = {
   cargo_qty_mt?: string
   cargo_name_upper?: string
   cargo_type?: string
+  ship_type?: string
+  purpose_of_calling?: string
   port_upper?: string
   loading_term?: string
+  ocean_frt_rate_usd_per_mt?: string | number
+  garbage_cbm_amount?: string | number
   at_anchorage?: string
   at_berth?: string
   total_a?: string
@@ -37,6 +41,7 @@ export type QuoteData = {
   berth_hours?: string | number
   anchorage_hours?: string | number
   transport_quarantine?: string | number
+  quarantine_cargo_trips?: string | number
   transport_ls?: string | number
   boat_hire_entry?: string | number
   tally_fee?: string | number
@@ -85,6 +90,46 @@ const isMeaningfulQuoteRow = (row: QuoteRow) => {
 
 const normalizeCustomRows = (rows: QuoteRow[]) => rows.filter(isMeaningfulQuoteRow)
 
+const normalizePurpose = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+
+const shouldShowOceanFrtTax = (purposeOfCalling?: string, frtTaxType?: string) => {
+  const normalizedPurpose = normalizePurpose(purposeOfCalling)
+  if (normalizedPurpose === 'NHAP_XUAT' || normalizedPurpose === 'CHUYEN_CANG_XUAT') {
+    return true
+  }
+  return (frtTaxType || '').toLowerCase() === 'export'
+}
+
+const normalizeCargoType = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+
+const isTallyFeeEligibleCargo = (cargoType?: string) => {
+  const normalized = normalizeCargoType(cargoType)
+  return normalized.includes('IN_BAGS') || normalized.includes('EQUIPMENT')
+}
+
+const isTankerShip = (value?: string) => {
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+  return normalized === 'TANKER_SHIP'
+}
+
+const getShipQuarantineTrips = (purposeOfCalling?: string) => {
+  const normalized = normalizePurpose(purposeOfCalling)
+  if (normalized === 'NHAP_XUAT') return 2
+  if (normalized === 'NHAP_CHUYEN_CANG' || normalized === 'CHUYEN_CANG_XUAT') return 1
+  return 0
+}
+
 const buildAARows = (
   rows: QuoteRow[],
   grt?: string | number,
@@ -92,11 +137,19 @@ const buildAARows = (
     berthHours?: string | number
     anchorageHours?: string | number
     frtTaxType?: string
+    purposeOfCalling?: string
+    shipType?: string
     transportQuarantine?: string | number
     boatHire?: string | number
     tallyFee?: string | number
+    cargoType?: string
     loa?: string | number
     pilotageMiles?: string | number
+    mooringLocation?: 'berth' | 'anchorage'
+    cargoQtyMt?: string | number
+    quarantineCargoTrips?: string | number
+    oceanFrtRateUsdPerMt?: string | number
+    garbageCbmAmount?: string | number
   },
 ): { html: string; total?: string } => {
   const customRows = normalizeCustomRows(rows)
@@ -140,10 +193,12 @@ const buildAARows = (
     const anchorageDays = anchorageHoursValue > 0 ? Math.ceil(anchorageHoursValue / 24).toFixed(1) : '0.0'
     const anchorageRemark = anchorageHoursValue ? `abt. ${anchorageDays} days` : ''
 
-    const tonnageValue = grtNumeric === null ? null : 0.034 * grtNumeric * 2
+    const shipRateFactor = isTankerShip(options?.shipType) ? 0.85 : 1
+
+    const tonnageValue = grtNumeric === null ? null : 0.034 * grtNumeric * 2 * shipRateFactor
     const tonnage = tonnageValue === null ? `0.034*${grtDisplay}*2` : formatAmount(tonnageValue)
 
-    const navigationDueValue = grtNumeric === null ? null : 0.058 * grtNumeric * 2
+    const navigationDueValue = grtNumeric === null ? null : 0.058 * grtNumeric * 2 * shipRateFactor
     const navigationDue = navigationDueValue === null ? `0.058*${grtDisplay}*2` : formatAmount(navigationDueValue)
 
     const pilotageMilesNumeric = toNumber(options?.pilotageMiles)
@@ -156,11 +211,11 @@ const buildAARows = (
     const loaNumeric = toNumber(options?.loa)
     const pickTugRate = (loa?: number | null) => {
       if (loa === null || loa === undefined) return { amount: undefined }
-      if (loa >= 175) return { amount: 9916 }
-      if (loa >= 135) return { amount: 6792 }
-      if (loa >= 90) return { amount: 3956 }
-      if (loa >= 80) return { amount: 2308 }
-      return { amount:  1154 }
+      if (loa >= 200) return { amount: 9916 }
+      if (loa >= 175) return { amount: 6792 }
+      if (loa >= 135) return { amount: 3956 }
+      if (loa >= 90) return { amount: 2308 }
+      return { amount: 1154 }
     }
 
     const tugRate = pickTugRate(loaNumeric)
@@ -185,29 +240,60 @@ const buildAARows = (
     const anchorageFeesValue = grtNumeric === null ? null : 0.0005 * anchorageHoursValue * grtNumeric
     const anchorageFees = anchorageFeesValue === null ? `0.0005*${grtDisplay}*${anchorageHoursValue}` : formatAmount(anchorageFeesValue)
     
-    const quarantineFeeValue = 220
+    const shipQuarantineTrips = getShipQuarantineTrips(options?.purposeOfCalling)
+    const shipQuarantineUnit = grtNumeric !== null && grtNumeric >= 10000 ? 110 : 95
+    const shipQuarantineFeeValue = shipQuarantineTrips * shipQuarantineUnit
+
+    const purposeNormalized = normalizePurpose(options?.purposeOfCalling)
+    const cargoQtyNumeric = toNumber(options?.cargoQtyMt)
+    const cargoTripsNumeric = toNumber(options?.quarantineCargoTrips)
+    const cargoQuarantineTrips = cargoTripsNumeric !== null && cargoTripsNumeric > 0 ? cargoTripsNumeric : 1
+    const cargoQuarantineFeeValue =
+      purposeNormalized === 'MUC_DICH_KHAC' || cargoQtyNumeric === null || cargoQtyNumeric <= 0
+        ? 0
+        : 100 * cargoQuarantineTrips
+
+    const quarantineFeeValue = shipQuarantineFeeValue + cargoQuarantineFeeValue
     const quarantineFee = formatAmount(quarantineFeeValue)
     
-    const showOceanFrtTax = (options?.frtTaxType || '').toLowerCase() === 'export'
-    const oceanFrtTax = 'PLS ADVISE'
+    const showOceanFrtTax = shouldShowOceanFrtTax(options?.purposeOfCalling, options?.frtTaxType)
+    const oceanFrtRateInput = toNumber(options?.oceanFrtRateUsdPerMt)
+    const oceanFrtRate = oceanFrtRateInput !== null && oceanFrtRateInput > 0 ? oceanFrtRateInput : 16
+    const cargoQtyForFrtTax = cargoQtyNumeric !== null && cargoQtyNumeric > 0 ? cargoQtyNumeric : 0
+    const oceanFrtTaxValue = oceanFrtRate * cargoQtyForFrtTax * 0.02
+    const oceanFrtRateText = oceanFrtRate.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
+    const oceanFrtQtyText = cargoQtyForFrtTax.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
+    const oceanFrtTaxDetail = `Frt USD${oceanFrtRateText}/mt x abt ${oceanFrtQtyText}mts x 2%`
 
     const transportQuarantineNumeric = toNumber(options?.transportQuarantine)
     const hasTransportQuarantine = transportQuarantineNumeric !== null && transportQuarantineNumeric > 0
     const transportQuarantineAmount = hasTransportQuarantine ? transportQuarantineNumeric : undefined
+
+    const mooringLocation = (options?.mooringLocation || '').toLowerCase() === 'anchorage' ? 'anchorage' : 'berth'
 
     const boatHireNumeric = toNumber(options?.boatHire)
     const hasBoatHire = boatHireNumeric !== null && boatHireNumeric > 0
     const boatHireAmount = hasBoatHire ? boatHireNumeric : undefined
 
     const tallyFeeNumeric = toNumber(options?.tallyFee)
-    const hasTallyFee = tallyFeeNumeric !== null && tallyFeeNumeric > 0
+    const hasTallyFee =
+      isTallyFeeEligibleCargo(options?.cargoType) && tallyFeeNumeric !== null && tallyFeeNumeric > 0
     const tallyFeeAmount = hasTallyFee ? tallyFeeNumeric : undefined
 
     const clearanceFeesValue = 100
     const clearanceFees = formatAmount(clearanceFeesValue)
 
     const berthDaysNumeric = berthHoursValue / 24
-    const garbageRemovalValue = Math.ceil(berthDaysNumeric / 2) * 17
+    const garbageCbmNumeric = toNumber(options?.garbageCbmAmount)
+    const garbageCbmAmount = garbageCbmNumeric !== null && garbageCbmNumeric > 0 ? garbageCbmNumeric : 1
+    const garbageRemovalValue = Math.ceil(berthDaysNumeric / 2) * 17 * garbageCbmAmount
+    const garbageCbmAddText = garbageCbmAmount > 1 ? `${garbageCbmAmount} cbm` : ''
     const garbageRemoval = formatAmount(garbageRemovalValue)
     
     const defaultRows: QuoteRow[] = [
@@ -235,21 +321,20 @@ const buildAARows = (
         remark: anchorageRemark,
         amount: anchorageFees,
       },
-      { item: 'Quarantine fee', details: '(In+Out)', amount: quarantineFee },
+      { item: 'Quarantine fee', details: '', amount: quarantineFee },
     ]
 
     if (showOceanFrtTax) {
       defaultRows.push({
         item: 'Ocean Frt Tax',
-        details: 'Total Frt x 2% tax rate',
-        remark: 'PLS ADVISE',
-        amount: oceanFrtTax,
+        details: oceanFrtTaxDetail,
+        amount: oceanFrtTaxValue,
       })
     }
 
     if (hasTransportQuarantine && transportQuarantineAmount !== undefined) {
       defaultRows.push({
-        item: 'Transport for entry quarantine formality',
+        item: 'Boat hired for quarantine',
         details: '',
         amount: transportQuarantineAmount,
         mergeItemDetails: true,
@@ -258,7 +343,7 @@ const buildAARows = (
 
     if (hasBoatHire && boatHireAmount !== undefined) {
       defaultRows.push({
-        item: "Boat-hire for entry quarantine",
+        item: 'Boat-hire for agency service',
         details: '',
         amount: boatHireAmount,
         mergeItemDetails: true,
@@ -274,7 +359,12 @@ const buildAARows = (
     }
 
     defaultRows.push({ item: 'Clearance fees', details: '(In/Outward clearance)', amount: clearanceFees })
-    defaultRows.push({ item: 'Garbage removal fee', details: 'USD17/cbm/2 days/time', amount: garbageRemoval })
+    defaultRows.push({
+      item: 'Garbage removal fee',
+      details: 'USD17/cbm/2 days/time',
+      add: garbageCbmAddText,
+      amount: garbageRemoval,
+    })
 
     const totalNumeric = defaultRows.reduce((sum, row) => {
       const n = toNumber(row.amount)
@@ -386,7 +476,7 @@ const buildBBRows = (
 
     if (transportLsAmount !== null && transportLsAmount > 0) {
       autoRows.push({
-        item: 'Transport/Communication in L/S',
+        item: 'Taxi/Courrier/Communication for agency service',
         details: '',
         amount: transportLsAmount,
       })
@@ -433,11 +523,19 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     berthHours: normalizedData.berth_hours,
     anchorageHours: normalizedData.anchorage_hours,
     frtTaxType: normalizedData.loading_term,
+    purposeOfCalling: normalizedData.purpose_of_calling,
+    shipType: normalizedData.ship_type,
     transportQuarantine: normalizedData.transport_quarantine,
     boatHire: normalizedData.boat_hire_entry,
     tallyFee: normalizedData.tally_fee,
+    cargoType: normalizedData.cargo_type,
     loa: normalizedData.loa,
     pilotageMiles: normalizedData.pilotage_miles ?? normalizedData.pilotage_third_miles,
+    mooringLocation: (normalizedData.at_anchorage || '').trim() ? 'anchorage' : 'berth',
+    cargoQtyMt: normalizedData.cargo_qty_mt,
+    quarantineCargoTrips: normalizedData.quarantine_cargo_trips,
+    oceanFrtRateUsdPerMt: normalizedData.ocean_frt_rate_usd_per_mt,
+    garbageCbmAmount: normalizedData.garbage_cbm_amount,
   })
 
   const bb = buildBBRows(

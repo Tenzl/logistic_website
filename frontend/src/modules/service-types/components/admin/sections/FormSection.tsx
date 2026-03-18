@@ -226,6 +226,17 @@ export function FormSection({
     const isFreight = serviceTypeSlug === 'freight-forwarding'
     const isLogistics = serviceTypeSlug === 'total-logistics'
 
+    const normalizeCargoTypeCode = (value?: string) =>
+      (value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_')
+
+    const isTallyFeeEligibleCargo = (value?: string) => {
+      const normalized = normalizeCargoTypeCode(value)
+      return normalized.includes('IN_BAGS') || normalized.includes('EQUIPMENT')
+    }
+
     // Map to backend DTO shape for shipping agency
     const shippingAgencyPayload = isShippingAgency
       ? {
@@ -247,10 +258,11 @@ export function FormSection({
           cargoNameOther: formData.cargoNameOther,
           quantityTons: toDecimal(formData.quantityTons),
           frtTaxType: formData.frtTaxType,
+          purposeOfCalling: formData.purposeOfCalling,
           portOfCall: formData.portOfCall,
           dischargeLoadingLocation: formData.dischargeLoadingLocation,
-          boatHireAmount: toDecimal(formData.boatHireAmount),
-          tallyFeeAmount: toDecimal(formData.tallyFeeAmount),
+          boatHireAmount: formData.dischargeLoadingLocation === 'Anchorage' ? toDecimal(formData.boatHireAmount) : null,
+          tallyFeeAmount: isTallyFeeEligibleCargo(formData.cargoType) ? toDecimal(formData.tallyFeeAmount) : null,
           transportLs: toDecimal(formData.transportLs),
           transportQuarantine: toDecimal(formData.transportQuarantine),
         }

@@ -122,6 +122,7 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
           title: 'Trade & Port',
           fields: [
             { id: 'frtTaxType', label: 'Frt tax type (import/export)', type: 'select', required: true, options: ['Import', 'Export'], gridSpan: 1, helperText: 'Export may incur freight tax; import may not.', enableSearch: false },
+            { id: 'purposeOfCalling', label: 'Purpose of calling', type: 'select', required: true, options: ['NHAP_XUAT', 'NHAP_CHUYEN_CANG', 'CHUYEN_CANG_XUAT', 'CHUYEN_CANG_CHUYEN_CANG', 'MUC_DICH_KHAC'], gridSpan: 1, enableSearch: false },
             { id: 'portOfCall', label: 'Port of call', type: 'port', required: true, placeholder: 'e.g., Quy Nhon, HCM...', gridSpan: 1 },
             { id: 'dischargeLoadingLocation', label: 'Discharge/Loading at', type: 'select', required: true, options: ['Berth', 'Anchorage'], gridSpan: 1, enableSearch: false }
           ]
@@ -129,9 +130,9 @@ export function ShippingAgency({ onNavigateHome }: ShippingAgencyProps) {
         {
           title: 'Service options',
           fields: [
-            { id: 'boatHireAmount', label: 'Boat-hire for entry quarantine (USD)', type: 'number', placeholder: '0', gridSpan: 1, required: false },
-            { id: 'tallyFeeAmount', label: "Ship's side tally fee (USD)", type: 'number', placeholder: '0', gridSpan: 1, required: false },
-            { id: 'transportLs', label: 'Transport/Communication in L/S (optional)', type: 'number', placeholder: '0', gridSpan: 2 },
+            { id: 'boatHireAmount', label: 'Boat-hire for agency service (USD)', type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'dischargeLoadingLocation', value: 'Anchorage' } },
+            { id: 'tallyFeeAmount', label: "Ship's side tally fee (USD)", type: 'number', placeholder: '0', gridSpan: 1, required: false, showWhen: { field: 'cargoType', value: ['IN BAGS', 'IN EQUIPMENT'] } },
+            { id: 'transportLs', label: 'Taxi/Courrier/Communication for agency service', type: 'number', placeholder: '0', gridSpan: 2 },
             { id: 'transportQuarantine', label: 'Transport for entry quarantine formality (optional)', type: 'number', placeholder: '0', gridSpan: 2 },
           ]
         }

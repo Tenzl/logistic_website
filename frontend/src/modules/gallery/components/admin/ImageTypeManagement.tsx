@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Package, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
+import { Badge } from '@/shared/components/ui/badge'
+import BadgeButtonCombo from '../../../../shared/components/ui/badge-button-combo'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,17 +16,43 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
 import { serviceTypeService, ServiceType } from '@/modules/service-types/services/serviceTypeService'
-import { imageTypeService, CargoType, ImageType, CreateImageTypeRequest } from '@/modules/gallery/services/imageTypeService'
+import {
+  imageTypeService,
+  CargoType,
+  CargoTypeCatalogItem,
+  ImageType,
+  CreateImageTypeRequest,
+} from '@/modules/gallery/services/imageTypeService'
 import { toast } from '@/shared/utils/toast'
 
-const CARGO_TYPE_OPTIONS: { value: CargoType; label: string }[] = [
-  { value: 'IN_BULK', label: 'in bulk' },
-  { value: 'IN_BAG_PACK', label: 'in bag/pack' },
-]
+const normalizeToken = (value?: string | null): string => {
+  if (!value) return ''
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+}
 
-const getCargoTypeLabel = (cargoType: CargoType): string => {
-  const matched = CARGO_TYPE_OPTIONS.find((option) => option.value === cargoType)
+const prettifyToken = (value: string): string => {
+  if (!value) return ''
+  return value.toLowerCase().replace(/_/g, ' ')
+}
+
+const getCargoTypeLabel = (cargoType: CargoType, options: { value: CargoType; label: string }[]): string => {
+  const matched = options.find((option) => option.value === cargoType)
   return matched?.label ?? cargoType
+}
+
+type CargoTypeOption = {
+  id: string
+  value: CargoType
+  label: string
+  originalValue?: CargoType
+  isCustom?: boolean
+  isEditing?: boolean
+  isPersisted?: boolean
 }
 
 export function ManageImageTypes() {
@@ -32,6 +60,9 @@ export function ManageImageTypes() {
   const [selectedServiceType, setSelectedServiceType] = useState<number | null>(null)
   const [imageTypes, setImageTypes] = useState<ImageType[]>([])
   const [loading, setLoading] = useState(false)
+  const [cargoTypeOptions, setCargoTypeOptions] = useState<CargoTypeOption[]>([])
+  const [selectedCargoType, setSelectedCargoType] = useState<CargoType>('IN_BULK')
+  const [isTypeEditMode, setIsTypeEditMode] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; type: ImageType | null }>({
     isOpen: false,
     type: null,
@@ -39,16 +70,39 @@ export function ManageImageTypes() {
   
   const [newImageType, setNewImageType] = useState({
     displayName: '',
-    requiredImageCount: 18,
-    cargoType: 'IN_BULK' as CargoType,
   })
   
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null)
   const [editingData, setEditingData] = useState({
     displayName: '',
     requiredImageCount: 18,
-    cargoType: 'IN_BULK' as CargoType,
   })
+
+  const mergedCargoTypeOptions = (() => {
+    const options: CargoTypeOption[] = [...cargoTypeOptions]
+
+    imageTypes.forEach((item) => {
+      if (!options.find((opt) => opt.value === item.cargoType)) {
+        options.push({
+          id: item.cargoType,
+          value: item.cargoType,
+          label: prettifyToken(item.cargoType),
+        })
+      }
+    })
+
+    return options
+  })()
+
+  const filteredImageTypes = imageTypes.filter((type) => {
+    return type.cargoType === selectedCargoType
+  })
+
+  const cargoTypeCounts = mergedCargoTypeOptions.reduce<Record<CargoType, number>>((acc, option) => {
+    acc[option.value] = imageTypes.filter((item) => item.cargoType === option.value).length
+    return acc
+  }, {} as Record<CargoType, number>)
+
   useEffect(() => {
     loadServiceTypes()
   }, [])
@@ -56,10 +110,36 @@ export function ManageImageTypes() {
   useEffect(() => {
     if (selectedServiceType) {
       loadImageTypes(selectedServiceType)
+      loadCargoTypes(selectedServiceType)
     } else {
       setImageTypes([])
+      setCargoTypeOptions([])
+      setSelectedCargoType('IN_BULK')
+      setIsTypeEditMode(false)
     }
-  }, [selectedServiceType])
+  }, [selectedServiceType, serviceTypes])
+
+  useEffect(() => {
+    if (!selectedServiceType) return
+
+    setCargoTypeOptions((prev) => {
+      const next = [...prev]
+
+      imageTypes.forEach((item) => {
+        if (!next.some((option) => option.value === item.cargoType)) {
+          next.push({
+            id: item.cargoType,
+            value: item.cargoType,
+            originalValue: item.cargoType,
+            label: prettifyToken(item.cargoType),
+            isPersisted: false,
+          })
+        }
+      })
+
+      return next
+    })
+  }, [imageTypes, selectedServiceType])
 
   const loadServiceTypes = async () => {
     try {
@@ -82,6 +162,172 @@ export function ManageImageTypes() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadCargoTypes = async (serviceTypeId: number) => {
+    try {
+      const data = await imageTypeService.getCargoTypesByServiceType(serviceTypeId)
+      const mappedOptions: CargoTypeOption[] = (data || []).map((item: CargoTypeCatalogItem) => ({
+        id: `${item.serviceTypeType}_${item.code}`,
+        value: item.code,
+        originalValue: item.code,
+        label: item.displayLabel,
+        isPersisted: true,
+      }))
+
+      const deduped = mappedOptions.filter(
+        (item, index, arr) => arr.findIndex((candidate) => candidate.value === item.value) === index,
+      )
+
+      setCargoTypeOptions(deduped)
+      setIsTypeEditMode(false)
+
+      if (deduped.length > 0 && !deduped.some((opt) => opt.value === selectedCargoType)) {
+        setSelectedCargoType(deduped[0].value)
+      }
+    } catch (error) {
+      console.error('Error loading cargo type catalog:', error)
+      setCargoTypeOptions([])
+      setIsTypeEditMode(false)
+    }
+  }
+
+  const handleToggleOrAddType = () => {
+    const tempId = `custom_${Date.now()}`
+    const tempValue = `CUSTOM_${Date.now()}`
+    setCargoTypeOptions((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        value: tempValue,
+        originalValue: tempValue,
+        label: '',
+        isCustom: true,
+        isEditing: true,
+        isPersisted: false,
+      },
+    ])
+    setSelectedCargoType(tempValue)
+  }
+
+  const handleCustomTypeLabelChange = (id: string, nextLabel: string) => {
+    setCargoTypeOptions((prev) =>
+      prev.map((option) => {
+        if (option.id !== id) return option
+
+        const nextValue = option.isPersisted
+          ? option.value
+          : normalizeToken(nextLabel) || option.value
+
+        if (selectedCargoType === option.value && nextValue !== option.value) {
+          setSelectedCargoType(nextValue)
+        }
+
+        return {
+          ...option,
+          label: nextLabel,
+          value: nextValue,
+        }
+      }),
+    )
+  }
+
+  const handleCustomTypeBlur = async (id: string) => {
+    if (!selectedServiceType) return
+
+    const target = cargoTypeOptions.find((option) => option.id === id)
+    if (!target) return
+
+    const normalizedLabel = target.label.trim()
+    if (!normalizedLabel) {
+      setCargoTypeOptions((prev) => {
+        const filtered = prev.filter((option) => option.id !== id)
+        if (selectedCargoType === target.value) {
+          setSelectedCargoType(filtered[0]?.value || 'IN_BULK')
+        }
+        return filtered
+      })
+      return
+    }
+
+    try {
+      if (!target.isPersisted) {
+        await imageTypeService.createCargoType({
+          serviceTypeId: selectedServiceType,
+          code: normalizeToken(target.value) || normalizeToken(target.label),
+          displayLabel: normalizedLabel,
+        })
+      } else {
+        await imageTypeService.updateCargoType({
+          serviceTypeId: selectedServiceType,
+          code: normalizeToken(target.originalValue || target.value),
+          displayLabel: normalizedLabel,
+        })
+      }
+
+      setCargoTypeOptions((prev) =>
+        prev.map((option) =>
+          option.id === id
+            ? {
+                ...option,
+                label: normalizedLabel,
+                value: option.isPersisted
+                  ? option.value
+                  : normalizeToken(option.value) || normalizeToken(normalizedLabel),
+                originalValue: option.originalValue || option.value,
+                isEditing: false,
+                isPersisted: true,
+              }
+            : option,
+        ),
+      )
+    } catch (error) {
+      console.error('Error saving cargo type badge:', error)
+      showToast('error', 'Failed to save type')
+    }
+  }
+
+  const handleDeleteTypeBadge = async (value: CargoType) => {
+    if (!selectedServiceType) return
+
+    if ((cargoTypeCounts[value] || 0) > 1) {
+      showToast('error', 'Cannot delete type with more than 1 cargo')
+      return
+    }
+
+    const target = cargoTypeOptions.find((option) => option.value === value)
+    if (!target) return
+
+    try {
+      if (target.isPersisted) {
+        await imageTypeService.deleteCargoType(selectedServiceType, target.originalValue || target.value)
+      }
+
+      setCargoTypeOptions((prev) => {
+        const filtered = prev.filter((option) => option.value !== value)
+        if (selectedCargoType === value) {
+          setSelectedCargoType(filtered[0]?.value || 'IN_BULK')
+        }
+        return filtered
+      })
+    } catch (error) {
+      console.error('Error deleting cargo type badge:', error)
+      showToast('error', 'Failed to delete type')
+    }
+  }
+
+  const handleEnableCustomRename = (id: string) => {
+    setCargoTypeOptions((prev) =>
+      prev.map((option) => (option.id === id ? { ...option, isEditing: true } : option)),
+    )
+  }
+
+  const handleSaveTypeEditMode = async () => {
+    const editingIds = cargoTypeOptions.filter((option) => option.isEditing).map((option) => option.id)
+    for (const id of editingIds) {
+      await handleCustomTypeBlur(id)
+    }
+    setIsTypeEditMode(false)
   }
 
   const showToast = (type: 'success' | 'error', message: string) => {
@@ -108,14 +354,13 @@ export function ManageImageTypes() {
       return
     }
     if (!newImageType.displayName.trim()) {
-      showToast('error', 'Display Name is required')
+      showToast('error', 'Cargo Name is required')
       return
     }
-    if (newImageType.requiredImageCount < 1) {
-      showToast('error', 'Required count must be at least 1')
+    if (!mergedCargoTypeOptions.some((option) => option.value === selectedCargoType)) {
+      showToast('error', 'Please create/select a cargo type first')
       return
     }
-
     const normalizedName = deriveImageTypeName(newImageType.displayName)
     
     // Check for duplicate name
@@ -129,21 +374,21 @@ export function ManageImageTypes() {
       const requestData: CreateImageTypeRequest = {
         name: normalizedName,
         displayName: newImageType.displayName.trim(),
-        requiredImageCount: newImageType.requiredImageCount,
+        requiredImageCount: 18,
         serviceTypeId: selectedServiceType,
-        cargoType: newImageType.cargoType,
+        cargoType: selectedCargoType,
       }
       
       const newType = await imageTypeService.createImageType(requestData)
       if (!newType) {
-        throw new Error('Empty response when creating commodity type')
+        throw new Error('Empty response when creating cargo type')
       }
       setImageTypes(sanitizeImageTypes([...imageTypes, newType]))
-      setNewImageType({ displayName: '', requiredImageCount: 18, cargoType: 'IN_BULK' })
-      showToast('success', `Commodity type "${newType.displayName}" added successfully`)
+      setNewImageType({ displayName: '' })
+      showToast('success', `Cargo type "${newType.displayName}" added successfully`)
     } catch (error) {
       console.error('Error adding image type:', error)
-      showToast('error', 'Failed to add commodity type')
+      showToast('error', 'Failed to add cargo type')
     } finally {
       setLoading(false)
     }
@@ -154,13 +399,12 @@ export function ManageImageTypes() {
     setEditingData({
       displayName: type.displayName,
       requiredImageCount: type.requiredImageCount,
-      cargoType: type.cargoType,
     })
   }
 
   const handleSaveImageType = async (typeId: number) => {
     if (!editingData.displayName.trim()) {
-      showToast('error', 'Display Name is required')
+      showToast('error', 'Cargo Name is required')
       return
     }
     if (editingData.requiredImageCount < 1) {
@@ -182,12 +426,12 @@ export function ManageImageTypes() {
         displayName: editingData.displayName.trim(),
         requiredImageCount: editingData.requiredImageCount,
         serviceTypeId: selectedServiceType,
-        cargoType: editingData.cargoType,
+        cargoType: imageTypes.find((item) => item.id === typeId)?.cargoType || 'IN_BULK',
       }
       
       const updatedType = await imageTypeService.updateImageType(typeId, requestData)
       if (!updatedType) {
-        throw new Error('Empty response when updating commodity type')
+        throw new Error('Empty response when updating cargo type')
       }
       setImageTypes(
         sanitizeImageTypes(
@@ -195,10 +439,10 @@ export function ManageImageTypes() {
         )
       )
       setEditingTypeId(null)
-      showToast('success', 'Commodity type updated successfully')
+      showToast('success', 'Cargo type updated successfully')
     } catch (error) {
       console.error('Error updating image type:', error)
-      showToast('error', 'Failed to update commodity type')
+      showToast('error', 'Failed to update cargo type')
     } finally {
       setLoading(false)
     }
@@ -206,7 +450,7 @@ export function ManageImageTypes() {
 
   const handleCancelEdit = () => {
     setEditingTypeId(null)
-    setEditingData({ displayName: '', requiredImageCount: 18, cargoType: 'IN_BULK' })
+    setEditingData({ displayName: '', requiredImageCount: 18 })
   }
 
   const handleDeleteImageType = (type: ImageType) => {
@@ -220,13 +464,13 @@ export function ManageImageTypes() {
       setLoading(true)
       await imageTypeService.deleteImageType(deleteDialog.type.id)
       setImageTypes(imageTypes.filter(t => t.id !== deleteDialog.type!.id))
-      showToast('success', `Commodity type "${deleteDialog.type.displayName}" deleted successfully`)
+      showToast('success', `Cargo type "${deleteDialog.type.displayName}" deleted successfully`)
     } catch (error) {
       console.error('Error deleting image type:', error)
       const message =
         error instanceof Error && /constraint|foreign key/i.test(error.message)
-          ? 'Cannot delete this commodity type because images are using it. Remove those images first.'
-          : 'Failed to delete commodity type'
+          ? 'Cannot delete this cargo type because images are using it. Remove those images first.'
+          : 'Failed to delete cargo type'
       showToast('error', message)
     } finally {
       setLoading(false)
@@ -240,22 +484,42 @@ export function ManageImageTypes() {
       <div className="bg-card border rounded-lg p-6">
         <h2 className="mb-4 flex items-center gap-2">
           <Package className="h-5 w-5 text-primary" />
-          Manage Commodity Types
+          Manage Cargo
         </h2>
         
-        <div>
-          <label className="block text-sm font-medium mb-2">Select Service Type</label>
-          <select
-            value={selectedServiceType || ''}
-            onChange={(e) => setSelectedServiceType(e.target.value ? Number(e.target.value) : null)}
-            aria-label="Select service type"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">-- Select Service Type --</option>
-            {serviceTypes.map(service => (
-              <option key={service.id} value={service.id}>{service.name}</option>
-            ))}
-          </select>
+        <div className="grid md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-sm font-medium mb-2">Select Service Type</label>
+            <select
+              value={selectedServiceType || ''}
+              onChange={(e) => setSelectedServiceType(e.target.value ? Number(e.target.value) : null)}
+              aria-label="Select service type"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">-- Select Service Type --</option>
+              {serviceTypes.map(service => (
+                <option key={service.id} value={service.id}>{service.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Cargo Name *</label>
+            <input
+              type="text"
+              value={newImageType.displayName}
+              onChange={(e) => setNewImageType({ displayName: e.target.value })}
+              placeholder="e.g., Bulk Carrier"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <Button onClick={handleAddImageType} className="w-full md:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Cargo
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -263,96 +527,120 @@ export function ManageImageTypes() {
       {!selectedServiceType ? (
         <div className="bg-card border rounded-lg p-12 text-center">
           <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Select a service type to manage its commodity types</p>
+          <p className="text-muted-foreground">Select a service type to manage its cargo types</p>
         </div>
       ) : (
         <>
-          {/* Add New Image Type */}
-          <div className="bg-card border rounded-lg p-6">
-            <h3 className="mb-4 font-semibold">Add New Commodity Type</h3>
-
-            <div className="grid md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Display Name *</label>
-                <input
-                  type="text"
-                  value={newImageType.displayName}
-                  onChange={(e) => setNewImageType({ ...newImageType, displayName: e.target.value })}
-                  placeholder="e.g., Bulk Carrier"
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Name tự tạo: {deriveImageTypeName(newImageType.displayName) || 'BULK_CARRIER'}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Required Image Count *</label>
-                <input
-                  type="number"
-                  value={newImageType.requiredImageCount}
-                  onChange={(e) => setNewImageType({ ...newImageType, requiredImageCount: parseInt(e.target.value) || 18 })}
-                  min="1"
-                  aria-label="Required image count"
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Cargo Type *</label>
-                <select
-                  value={newImageType.cargoType}
-                  onChange={(e) => setNewImageType({ ...newImageType, cargoType: e.target.value as CargoType })}
-                  aria-label="Select cargo type"
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {CARGO_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <Button onClick={handleAddImageType}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Commodity Type
-            </Button>
-          </div>
-
           {/* Image Types List */}
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="p-4 border-b bg-muted/30">
-              <h3 className="font-semibold">
-                Commodity Types for {serviceTypes.find(s => s.id === selectedServiceType)?.name} ({imageTypes.length})
-              </h3>
+              <div className="flex flex-wrap items-center gap-3">
+                {mergedCargoTypeOptions.map((option) => (
+                  <div key={option.id} className="inline-flex items-center">
+                    {option.isEditing ? (
+                      <div className="inline-flex items-center rounded-md border bg-card px-2 py-1 h-9">
+                        <input
+                          value={option.label}
+                          autoFocus
+                          onChange={(e) => handleCustomTypeLabelChange(option.id, e.target.value)}
+                          onBlur={() => handleCustomTypeBlur(option.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleCustomTypeBlur(option.id)
+                            }
+                          }}
+                          placeholder="type name"
+                          className="w-28 bg-transparent outline-none text-sm"
+                        />
+                      </div>
+                    ) : (
+                      <BadgeButtonCombo
+                        label={option.label}
+                        badge={
+                          isTypeEditMode ? (
+                            <span className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                aria-label={`Edit type ${option.label}`}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  setSelectedCargoType(option.value)
+                                  handleEnableCustomRename(option.id)
+                                }}
+                                className="inline-flex items-center justify-center rounded-sm"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Delete type ${option.label}`}
+                                disabled={(cargoTypeCounts[option.value] || 0) > 1}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteTypeBadge(option.value)
+                                }}
+                                className="inline-flex items-center justify-center rounded-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </span>
+                          ) : (
+                            <span>{cargoTypeCounts[option.value] || 0}</span>
+                          )
+                        }
+                        size="sm"
+                        variant={selectedCargoType === option.value ? 'default' : 'outline'}
+                        onClick={() => setSelectedCargoType(option.value)}
+                        buttonClassName={(cargoTypeCounts[option.value] || 0) === 0 ? 'bg-red-500 text-white border-red-500 hover:bg-red-400 hover:text-white' : ''}
+                        badgeClassName={(cargoTypeCounts[option.value] || 0) === 0 ? 'bg-red-500 text-white border-red-500' : ''}
+                      />
+                    )}
+                  </div>
+                ))}
+                <div className="ml-auto flex items-center gap-2">
+                  {isTypeEditMode ? (
+                    <>
+                      <Button size="sm" variant="outline" onClick={handleToggleOrAddType}>
+                        + type
+                      </Button>
+                      <Button size="sm" onClick={handleSaveTypeEditMode}>
+                        save
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => setIsTypeEditMode(true)}>
+                      edit type
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {loading ? (
               <div className="p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading commodity types...</p>
+                <p className="text-muted-foreground">Loading cargo types...</p>
               </div>
-            ) : imageTypes.length === 0 ? (
+            ) : filteredImageTypes.length === 0 ? (
               <div className="p-12 text-center">
                 <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No commodity types found. Add one above.</p>
+                <p className="text-muted-foreground">No cargo types found for this cargo type.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left py-3 px-4 font-medium">Name</th>
-                      <th className="text-left py-3 px-4 font-medium">Display Name</th>
+                      <th className="text-left py-3 px-4 font-medium">Code</th>
+                      <th className="text-left py-3 px-4 font-medium">Cargo Name</th>
                       <th className="text-left py-3 px-4 font-medium">Required Count</th>
                       <th className="text-left py-3 px-4 font-medium">Cargo Type</th>
                       <th className="text-right py-3 px-4 font-medium w-32">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {imageTypes.map((type) => (
+                    {filteredImageTypes.map((type) => (
                       <tr key={type.id} className="border-t hover:bg-muted/20">
                         <td className="py-3 px-4">
                           {editingTypeId === type.id ? (
@@ -361,13 +649,13 @@ export function ManageImageTypes() {
                             <span className="font-mono text-sm">{type.name}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4">  
                           {editingTypeId === type.id ? (
                             <input
                               type="text"
                               value={editingData.displayName}
                               onChange={(e) => setEditingData({ ...editingData, displayName: e.target.value })}
-                              aria-label="Edit display name"
+                              aria-label="Edit cargo name"
                               className="w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                           ) : (
@@ -389,22 +677,7 @@ export function ManageImageTypes() {
                           )}
                         </td>
                         <td className="py-3 px-4">
-                          {editingTypeId === type.id ? (
-                            <select
-                              value={editingData.cargoType}
-                              onChange={(e) => setEditingData({ ...editingData, cargoType: e.target.value as CargoType })}
-                              aria-label="Edit cargo type"
-                              className="w-full px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                            >
-                              {CARGO_TYPE_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span>{getCargoTypeLabel(type.cargoType)}</span>
-                          )}
+                          <Badge variant="outline">{getCargoTypeLabel(type.cargoType, mergedCargoTypeOptions)}</Badge>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex gap-2 justify-end">
@@ -464,7 +737,7 @@ export function ManageImageTypes() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete commodity type "<strong>{deleteDialog.type?.displayName}</strong>"? 
+              Are you sure you want to delete cargo type "<strong>{deleteDialog.type?.displayName}</strong>"? 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

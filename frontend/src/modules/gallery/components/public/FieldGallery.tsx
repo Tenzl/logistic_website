@@ -17,7 +17,7 @@ interface GalleryImage {
   id: number
   imageUrl: string
   portName: string
-  commodities: string
+  cargoTypeName: string
   province: string
   serviceTypeId?: number
   serviceTypeName: string
@@ -73,7 +73,7 @@ export function FieldGallery() {
             id: image.id,
             imageUrl: image.url,
             portName: image.portName,
-            commodities: image.imageTypeName,
+            cargoTypeName: image.imageTypeName,
             province: image.provinceName,
             serviceTypeId: image.serviceTypeId,
             serviceTypeName: image.serviceTypeName,
@@ -165,7 +165,7 @@ export function FieldGallery() {
                             <div className="space-y-2">
                               <div className="flex gap-2 flex-wrap">
                                 <Badge variant="secondary" className="bg-white/90 text-primary text-xs font-semibold">
-                                  {item.commodities}
+                                  {item.cargoTypeName}
                                 </Badge>
                                 <Badge variant="secondary" className="bg-white/90 text-primary text-xs font-semibold">
                                   {item.province}
@@ -183,7 +183,7 @@ export function FieldGallery() {
 
                   <DialogContent className="max-w-4xl">
                     <DialogTitle className="sr-only">{item.portName}</DialogTitle>
-                    <DialogDescription className="sr-only">{`${item.commodities} - ${item.province}`}</DialogDescription>
+                    <DialogDescription className="sr-only">{`${item.cargoTypeName} - ${item.province}`}</DialogDescription>
                     <ImageWithFallback
                       src={getImageUrl(item.imageUrl)}
                       alt={item.portName}

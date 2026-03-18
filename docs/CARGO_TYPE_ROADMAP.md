@@ -34,6 +34,28 @@ This roadmap is split into phases so the rollout is safe and testable end-to-end
   - Automated tests for backend/frontend
   - Production rollout sequence
 
+## Progress Update (2026-03-17)
+- Status: In progress (new UX flow)
+- Phase A (done):
+  - Added cargo type catalog SQL script: `docs/sql/2026-03-17_create_cargo_type_catalog.sql`
+  - Catalog now includes `service_type_type` discriminator for separating cargo type sets by service
+  - Added migration helper for existing catalog table: `docs/sql/2026-03-17_alter_cargo_types_add_service_type_type.sql`
+  - Added migration to expand `image_types.cargo_type` to dynamic string: `docs/sql/2026-03-17_expand_image_type_cargo_type_to_varchar.sql`
+  - Added ready-to-run seed by service type type: `docs/sql/2026-03-17_seed_cargo_types_by_service_type.sql`
+- Phase B (done):
+  - Admin commodity UI removed cargo type input from add/edit form in `ImageTypeManagement`
+  - Cargo type is now shown as badge in table rows (read-only from existing record)
+- Phase C (done):
+  - Replaced commodity list heading with cargo-type badge controls
+  - Clicking each cargo-type badge filters commodity list by selected cargo type
+  - Added `All` badge to clear cargo-type filter
+- Phase D (done):
+  - Backend removed fixed `CargoType` enum and now stores cargo type as dynamic string
+  - Added admin API `GET /api/v1/admin/image-types/cargo-types` with `serviceTypeId` / `serviceTypeType` filtering
+  - Frontend now fetches cargo type badges dynamically from catalog API by selected service type
+- Phase E (pending):
+  - Add tests for badge filter flow and create/update behavior after removing cargo type input
+
 ---
 
 ## Phase 0 - Design Lock

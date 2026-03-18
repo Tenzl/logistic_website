@@ -90,6 +90,7 @@ export const API_CONFIG = {
     BY_SERVICE_TYPE: (serviceTypeId: number) => `/image-types/service-type/${serviceTypeId}`,
     PUBLIC_BY_SERVICE: (serviceTypeId: number) => `/image-types/public/service-type/${serviceTypeId}`,
     ADMIN_BASE: '/admin/image-types',
+    ADMIN_CARGO_TYPES: '/admin/image-types/cargo-types',
     ADMIN_BY_ID: (id: number) => `/admin/image-types/${id}`,
   },
 

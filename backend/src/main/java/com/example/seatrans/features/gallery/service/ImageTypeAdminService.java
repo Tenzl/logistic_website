@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.seatrans.features.gallery.dto.CreateImageTypeRequest;
 import com.example.seatrans.features.gallery.dto.ImageTypeDTO;
-import com.example.seatrans.features.gallery.model.CargoType;
 import com.example.seatrans.features.gallery.model.ImageTypeEntity;
 import com.example.seatrans.features.gallery.repository.ImageTypeRepository;
 import com.example.seatrans.features.logistics.model.ServiceTypeEntity;
@@ -65,7 +64,7 @@ public class ImageTypeAdminService {
         imageType.setDescription(request.getDescription());
         Integer requiredImageCount = request.getRequiredImageCount();
         imageType.setRequiredImageCount(requiredImageCount != null ? requiredImageCount : 18);
-        imageType.setCargoType(request.getCargoType() != null ? request.getCargoType() : CargoType.IN_BULK);
+        imageType.setCargoType(normalizeCargoType(request.getCargoType()));
         imageType.setIsActive(true);
 
         ImageTypeEntity savedImageType = imageTypeRepository.save(imageType);
@@ -92,7 +91,7 @@ public class ImageTypeAdminService {
             imageType.setRequiredImageCount(request.getRequiredImageCount());
         }
         if (request.getCargoType() != null) {
-            imageType.setCargoType(request.getCargoType());
+            imageType.setCargoType(normalizeCargoType(request.getCargoType()));
         }
 
         ImageTypeEntity updatedImageType = imageTypeRepository.save(imageType);
@@ -105,5 +104,17 @@ public class ImageTypeAdminService {
 
     public long getImageTypeCount() {
         return imageTypeRepository.count();
+    }
+
+    private String normalizeCargoType(String cargoType) {
+        if (cargoType == null || cargoType.isBlank()) {
+            return "IN_BULK";
+        }
+
+        return cargoType.trim()
+                .toUpperCase()
+                .replaceAll("[^A-Z0-9]+", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_|_$", "");
     }
 }

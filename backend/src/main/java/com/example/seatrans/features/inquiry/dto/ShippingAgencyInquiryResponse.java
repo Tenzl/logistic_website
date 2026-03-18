@@ -45,6 +45,7 @@ public class ShippingAgencyInquiryResponse {
     private String transportLs;
     private String transportQuarantine;
     private String frtTaxType;
+    private String purposeOfCalling;
     private BigDecimal boatHireAmount;
     private BigDecimal tallyFeeAmount;
     private String quoteForm;
@@ -76,6 +77,7 @@ public class ShippingAgencyInquiryResponse {
             .transportLs(inquiry.getTransportLs())
             .transportQuarantine(inquiry.getTransportQuarantine())
             .frtTaxType(inquiry.getFrtTaxType())
+            .purposeOfCalling(inquiry.getPurposeOfCalling())
             .boatHireAmount(inquiry.getBoatHireAmount())
             .tallyFeeAmount(inquiry.getTallyFeeAmount())
             .quoteForm(inquiry.getQuoteForm())

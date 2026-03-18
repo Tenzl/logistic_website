@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
@@ -31,6 +29,7 @@ public class PublicInquiryRequest {
     private String cargoNameOther;
     private BigDecimal quantityTons;
     private String frtTaxType;
+    private String purposeOfCalling;
     private String portOfCall;
     private String dischargeLoadingLocation;
     private BigDecimal boatHireAmount;
