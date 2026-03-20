@@ -7,12 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PortDTO {
-    private Long id;
-    private String name;
-    private String portOfCall;
-    private Long provinceId;
-    private String provinceName;
-    private Boolean isActive;
+public class UpdatePortHasInfoRequest {
     private Integer hasInfo;
 }

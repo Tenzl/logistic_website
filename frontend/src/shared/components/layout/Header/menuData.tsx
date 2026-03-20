@@ -54,4 +54,9 @@ export const menuData: MenuItem[] = [
     title: 'Contact',
     path: '/contact',
   },
+  {
+    id: 4,
+    title: 'Port Information',
+    path: '/port-information',
+  },
 ]

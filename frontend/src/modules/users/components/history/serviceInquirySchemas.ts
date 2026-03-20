@@ -55,7 +55,7 @@ export const SERVICE_SCHEMAS: Record<string, InquiryFieldSchema[]> = {
     { key: 'transportLs', label: 'Transport L/S', type: 'text', format: formatText },
     { key: 'boatHireAmount', label: 'Boat Hire Amount', type: 'number', format: formatNumber },
     { key: 'tallyFeeAmount', label: 'Tally Fee Amount', type: 'number', format: formatNumber },
-    { key: 'berthHours', label: 'Berth Hours', type: 'number', format: formatNumber },
+    { key: 'berthHours', label: 'Berth Due (hours)', type: 'number', format: formatNumber },
     { key: 'anchorageHours', label: 'Anchorage Hours', type: 'number', format: formatNumber },
     { key: 'pilotage3rdMiles', label: 'Pilotage 3rd Miles', type: 'number', format: formatNumber },
   ],

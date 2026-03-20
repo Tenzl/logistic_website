@@ -151,7 +151,8 @@ public class EntityMapper {
                 entity.getPortOfCall(),
                 entity.getProvince() != null ? entity.getProvince().getId() : null,
                 provinceName,
-                entity.getIsActive()
+            entity.getIsActive(),
+            entity.getHasInfo()
         );
     }
 

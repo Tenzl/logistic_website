@@ -34,6 +34,7 @@ interface Port {
   name: string
   portOfCall?: string
   provinceId: number
+  hasInfo?: number
 }
 
 export function ManagePorts() {
@@ -190,6 +191,30 @@ export function ManagePorts() {
     }
   }
 
+  const handleToggleHasInfo = async (port: Port) => {
+    const nextHasInfo = port.hasInfo === 1 ? 0 : 1
+
+    try {
+      setLoading(true)
+      const response = await apiClient.patch<ApiResponse<Port>>(
+        `${API_CONFIG.PORTS.BY_ID(port.id)}/has-info`,
+        { hasInfo: nextHasInfo }
+      )
+
+      if (response.ok) {
+        const result = await response.json()
+        setPorts(ports.map((p) => (p.id === port.id ? result.data : p)))
+        toast.success(`Has info set to ${nextHasInfo === 1 ? 'Active' : 'Inactive'}`)
+      } else {
+        throw new Error('Failed to update has info')
+      }
+    } catch (error) {
+      toast.error('Failed to update has info')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const provincesByArea = provinces.filter((province) => province.area === selectedArea)
   const selectedProvince = provinces.find((p) => p.id === selectedProvinceId)
 
@@ -303,6 +328,7 @@ export function ManagePorts() {
                     <TableRow>
                       <TableHead>Port Name</TableHead>
                       <TableHead>Port of Call</TableHead>
+                      <TableHead className="w-40">Has Info</TableHead>
                       <TableHead className="text-right w-32">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -321,6 +347,7 @@ export function ManagePorts() {
                             port.name
                           )}
                         </TableCell>
+
                         <TableCell>
                           {editingPortId === port.id ? (
                             <Input
@@ -333,6 +360,18 @@ export function ManagePorts() {
                             port.portOfCall || '-'
                           )}
                         </TableCell>
+
+                        <TableCell>
+                          <Button
+                            variant={port.hasInfo === 1 ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handleToggleHasInfo(port)}
+                            disabled={loading || editingPortId === port.id}
+                          >
+                            {port.hasInfo === 1 ? 'Active' : 'Inactive'}
+                          </Button>
+                        </TableCell>
+
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {editingPortId === port.id ? (

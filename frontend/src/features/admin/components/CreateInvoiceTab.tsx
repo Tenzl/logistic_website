@@ -51,6 +51,13 @@ const SHIP_TYPE_OPTIONS = [
 ] as const
 type ShipTypeOption = typeof SHIP_TYPE_OPTIONS[number]['value']
 
+const FRT_TAX_TYPE_OPTIONS = [
+  { value: 'Import', label: 'Import' },
+  { value: 'Export - Pls Advise', label: 'Export - Pls Advise' },
+  { value: 'Export - Total Amount', label: 'Export - Total Amount' },
+] as const
+type FrtTaxTypeOption = typeof FRT_TAX_TYPE_OPTIONS[number]['value']
+
 const QUARANTINE_CARGO_OPTIONS = [
   { value: 'ONE_LEG', label: 'Chỉ xếp hoặc dở hàng', fee: 100, trips: 1 },
   { value: 'BOTH_LEGS', label: 'Xếp và dở hàng', fee: 200, trips: 2 },
@@ -81,6 +88,13 @@ const getShipQuarantineTrips = (purpose: string) => {
 const formatUsdAmount = (value: number) =>
   value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+const normalizeFrtTaxType = (value: string) => value.trim().toUpperCase().replace(/[\s-]+/g, '_')
+
+const isExportTotalAmountMode = (value: string) => {
+  const normalized = normalizeFrtTaxType(value)
+  return normalized === 'EXPORT' || normalized === 'EXPORT_TOTAL_AMOUNT'
+}
+
 function getCargoTypeLabel(value: EpdaCargoType, options: CargoTypeCatalogItem[]): string {
   return options.find((option) => option.code === value)?.displayLabel ?? value
 }
@@ -109,7 +123,7 @@ export function CreateInvoiceTab() {
   const [cargoType, setCargoType] = useState<EpdaCargoType | ''>('')
   const [cargoQty, setCargoQty] = useState('')
   const [cargoName, setCargoName] = useState('')
-  const [frtTaxType, setFrtTaxType] = useState('')
+  const [frtTaxType, setFrtTaxType] = useState<FrtTaxTypeOption | ''>('')
   const [oceanFrtRateUsdPerMt, setOceanFrtRateUsdPerMt] = useState('')
   const [garbageCbmAmount, setGarbageCbmAmount] = useState('1')
   const [purposeOfCalling, setPurposeOfCalling] = useState<PurposeOption | ''>('')
@@ -297,7 +311,7 @@ export function CreateInvoiceTab() {
         port_upper: port.toUpperCase(),
         loading_term: frtTaxType,
         ocean_frt_rate_usd_per_mt:
-          frtTaxType.toLowerCase() === 'export' && oceanFrtRateUsdPerMt
+          isExportTotalAmountMode(frtTaxType) && oceanFrtRateUsdPerMt
             ? Number(oceanFrtRateUsdPerMt)
             : undefined,
         garbage_cbm_amount: garbageCbmAmount ? Number(garbageCbmAmount) : undefined,
@@ -541,13 +555,19 @@ export function CreateInvoiceTab() {
 
                     <div className="grid gap-2">
                       <Label htmlFor="loa">LOA (meters)</Label>
-                      <Input
-                        id="loa"
-                        type="number"
-                        value={loa}
-                        onChange={(e) => setLoa(e.target.value)}
-                        placeholder="Length Overall"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="loa"
+                          type="number"
+                          value={loa}
+                          onChange={(e) => setLoa(e.target.value)}
+                          placeholder="Length Overall"
+                          className="pr-8"
+                        />
+                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          M
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid gap-2">
@@ -669,19 +689,22 @@ export function CreateInvoiceTab() {
 
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="frtTaxType">Frt tax type (import/export) *</Label>
-                      <Select value={frtTaxType} onValueChange={setFrtTaxType}>
+                      <Label htmlFor="frtTaxType">Frt tax type *</Label>
+                      <Select value={frtTaxType} onValueChange={(value) => setFrtTaxType(value as FrtTaxTypeOption)}>
                         <SelectTrigger id="frtTaxType">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Import">Import</SelectItem>
-                          <SelectItem value="Export">Export</SelectItem>
+                          {FRT_TAX_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {frtTaxType.toLowerCase() === 'export' && (
+                    {isExportTotalAmountMode(frtTaxType) && (
                       <div className="grid gap-2">
                         <p className="text-xs text-muted-foreground">
                           Frt USD{oceanFrtRateUsdPerMt || '16'}/mt x abt {cargoQty || '0'}mts x 2%
@@ -719,7 +742,7 @@ export function CreateInvoiceTab() {
 
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="berthHours">Berth Hours</Label>
+                      <Label htmlFor="berthHours">Berth Due (hours)</Label>
                       <Input
                         id="berthHours"
                         type="number"
@@ -905,13 +928,19 @@ export function CreateInvoiceTab() {
 
                     <div className="grid gap-2">
                       <Label htmlFor="loa">LOA (meters)</Label>
-                      <Input
-                        id="loa"
-                        type="number"
-                        value={loa}
-                        onChange={(e) => setLoa(e.target.value)}
-                        placeholder="Length Overall"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="loa"
+                          type="number"
+                          value={loa}
+                          onChange={(e) => setLoa(e.target.value)}
+                          placeholder="Length Overall"
+                          className="pr-8"
+                        />
+                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          M
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid gap-2">
@@ -1033,19 +1062,22 @@ export function CreateInvoiceTab() {
 
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="frtTaxType">Frt tax type (import/export) *</Label>
-                      <Select value={frtTaxType} onValueChange={setFrtTaxType}>
+                      <Label htmlFor="frtTaxType">Frt tax type *</Label>
+                      <Select value={frtTaxType} onValueChange={(value) => setFrtTaxType(value as FrtTaxTypeOption)}>
                         <SelectTrigger id="frtTaxType">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Import">Import</SelectItem>
-                          <SelectItem value="Export">Export</SelectItem>
+                          {FRT_TAX_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {frtTaxType.toLowerCase() === 'export' && (
+                    {isExportTotalAmountMode(frtTaxType) && (
                       <div className="grid gap-2">
                         <p className="text-xs text-muted-foreground">
                           Frt USD{oceanFrtRateUsdPerMt || '16'}/mt x abt {cargoQty || '0'}mts x 2%
@@ -1084,7 +1116,7 @@ export function CreateInvoiceTab() {
 
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="berthHours">Berth Hours</Label>
+                        <Label htmlFor="berthHours">Berth Due (hours)</Label>
                         <Input
                           id="berthHours"
                           type="number"
@@ -1178,6 +1210,8 @@ export function CreateInvoiceTab() {
                           onChange={(e) => setTransportLs(e.target.value)}
                           placeholder="0"
                         />
+                      </div>
+
                       <div className="grid gap-2">
                         <Label htmlFor="boatHireAmount">Boat hired for agency service (USD)</Label>
                         <Input
@@ -1201,7 +1235,6 @@ export function CreateInvoiceTab() {
                       </div>
                     </div>
                   </div>
-                </div>
               </>
             )}
 

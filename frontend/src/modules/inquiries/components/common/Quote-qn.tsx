@@ -79,6 +79,13 @@ const formatAmount = (value: unknown) => {
   return rounded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const formatLoaDisplay = (value: unknown) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (/[a-zA-Z]$/.test(raw)) return raw.toUpperCase()
+  return `${raw}M`
+}
+
 const hasText = (value: unknown) => {
   if (value === undefined || value === null) return false
   return String(value).trim() !== ''
@@ -88,7 +95,13 @@ const isMeaningfulQuoteRow = (row: QuoteRow) => {
   return [row.item, row.details, row.add, row.remark, row.amount].some(hasText)
 }
 
-const normalizeCustomRows = (rows: QuoteRow[]) => rows.filter(isMeaningfulQuoteRow)
+const shouldIncludeFeeRow = (row: QuoteRow) => {
+  const amountNumeric = toNumber(row.amount)
+  if (amountNumeric !== null && amountNumeric <= 0) return false
+  return true
+}
+
+const normalizeCustomRows = (rows: QuoteRow[]) => rows.filter(isMeaningfulQuoteRow).filter(shouldIncludeFeeRow)
 
 const normalizePurpose = (value: unknown) =>
   String(value || '')
@@ -96,12 +109,25 @@ const normalizePurpose = (value: unknown) =>
     .toUpperCase()
     .replace(/[\s-]+/g, '_')
 
+const normalizeFrtTaxType = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+
+const isExportPlsAdviseMode = (frtTaxType?: string) => normalizeFrtTaxType(frtTaxType) === 'EXPORT_PLS_ADVISE'
+
+const isExportTotalAmountMode = (frtTaxType?: string) => {
+  const normalized = normalizeFrtTaxType(frtTaxType)
+  return normalized === 'EXPORT' || normalized === 'EXPORT_TOTAL_AMOUNT'
+}
+
 const shouldShowOceanFrtTax = (purposeOfCalling?: string, frtTaxType?: string) => {
   const normalizedPurpose = normalizePurpose(purposeOfCalling)
   if (normalizedPurpose === 'NHAP_XUAT' || normalizedPurpose === 'CHUYEN_CANG_XUAT') {
     return true
   }
-  return (frtTaxType || '').toLowerCase() === 'export'
+  return isExportTotalAmountMode(frtTaxType) || isExportPlsAdviseMode(frtTaxType)
 }
 
 const normalizeCargoType = (value: unknown) =>
@@ -140,7 +166,6 @@ const buildAARows = (
     purposeOfCalling?: string
     shipType?: string
     transportQuarantine?: string | number
-    boatHire?: string | number
     tallyFee?: string | number
     cargoType?: string
     loa?: string | number
@@ -269,17 +294,17 @@ const buildAARows = (
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     })
-    const oceanFrtTaxDetail = `Frt USD${oceanFrtRateText}/mt x abt ${oceanFrtQtyText}mts x 2%`
+    const isExportPlsAdvise = isExportPlsAdviseMode(options?.frtTaxType)
+    const oceanFrtTaxDetail = isExportPlsAdvise
+      ? 'Total Frt x 2% tax rate'
+      : `Frt USD${oceanFrtRateText}/mt x abt ${oceanFrtQtyText}mts x 2%`
+    const oceanFrtTaxAmount: string | number = isExportPlsAdvise ? 'PLS ADVISE' : oceanFrtTaxValue
 
     const transportQuarantineNumeric = toNumber(options?.transportQuarantine)
     const hasTransportQuarantine = transportQuarantineNumeric !== null && transportQuarantineNumeric > 0
     const transportQuarantineAmount = hasTransportQuarantine ? transportQuarantineNumeric : undefined
 
     const mooringLocation = (options?.mooringLocation || '').toLowerCase() === 'anchorage' ? 'anchorage' : 'berth'
-
-    const boatHireNumeric = toNumber(options?.boatHire)
-    const hasBoatHire = boatHireNumeric !== null && boatHireNumeric > 0
-    const boatHireAmount = hasBoatHire ? boatHireNumeric : undefined
 
     const tallyFeeNumeric = toNumber(options?.tallyFee)
     const hasTallyFee =
@@ -328,7 +353,7 @@ const buildAARows = (
       defaultRows.push({
         item: 'Ocean Frt Tax',
         details: oceanFrtTaxDetail,
-        amount: oceanFrtTaxValue,
+        amount: oceanFrtTaxAmount,
       })
     }
 
@@ -337,15 +362,6 @@ const buildAARows = (
         item: 'Boat hired for quarantine',
         details: '',
         amount: transportQuarantineAmount,
-        mergeItemDetails: true,
-      })
-    }
-
-    if (hasBoatHire && boatHireAmount !== undefined) {
-      defaultRows.push({
-        item: 'Boat-hire for agency service',
-        details: '',
-        amount: boatHireAmount,
         mergeItemDetails: true,
       })
     }
@@ -366,12 +382,14 @@ const buildAARows = (
       amount: garbageRemoval,
     })
 
-    const totalNumeric = defaultRows.reduce((sum, row) => {
+    const visibleRows = defaultRows.filter(shouldIncludeFeeRow)
+
+    const totalNumeric = visibleRows.reduce((sum, row) => {
       const n = toNumber(row.amount)
       return n === null ? sum : sum + n
     }, 0)
 
-    const html = defaultRows.map(renderRow).join('\n')
+    const html = visibleRows.map(renderRow).join('\n')
 
     return { html, total: totalNumeric ? formatAmount(totalNumeric) : undefined }
   }
@@ -393,6 +411,7 @@ const buildBBRows = (
   cargoName?: string,
   cargoType?: string,
   transportLs?: string | number,
+  boatHire?: string | number,
 ): { html: string; total?: string } => {
   const customRows = normalizeCustomRows(rows)
 
@@ -427,6 +446,7 @@ const buildBBRows = (
   const cargoAmount = cargoRate !== undefined && cargoQty !== null ? cargoRate * cargoQty : undefined
 
   const transportLsAmount = toNumber(transportLs)
+  const boatHireAmount = toNumber(boatHire)
 
   const grtNumeric = toNumber(grt)
   const pickAgencyFee = (value?: number | null) => {
@@ -482,6 +502,14 @@ const buildBBRows = (
       })
     }
 
+    if (boatHireAmount !== null && boatHireAmount > 0) {
+      autoRows.push({
+        item: 'Boat-hire for agency service',
+        details: '',
+        amount: boatHireAmount,
+      })
+    }
+
     const totalNumeric = autoRows.reduce((sum, row) => {
       const n = toNumber(row.amount)
       return n === null ? sum : sum + n
@@ -494,6 +522,7 @@ const buildBBRows = (
     const isCargoFee = (row.item || '').toLowerCase().includes('agency fee on cargo')
     const isGrtFee = (row.item || '').toLowerCase().includes('agency fee on grt')
     const isTransportLs = (row.item || '').toLowerCase().includes('transport')
+    const isBoatHire = (row.item || '').toLowerCase().includes('boat-hire for agency service')
     if (isCargoFee && (row.amount === undefined || row.amount === '')) {
       return { ...row, details: cargoDetail || row.details, amount: cargoAmount ?? row.amount }
     }
@@ -503,10 +532,13 @@ const buildBBRows = (
     if (isTransportLs && (row.amount === undefined || row.amount === '') && transportLsAmount !== null && transportLsAmount > 0) {
       return { ...row, amount: transportLsAmount }
     }
+    if (isBoatHire && (row.amount === undefined || row.amount === '') && boatHireAmount !== null && boatHireAmount > 0) {
+      return { ...row, amount: boatHireAmount }
+    }
     return row
   })
 
-  const finalRows = adjustedRows.filter(isMeaningfulQuoteRow)
+  const finalRows = adjustedRows.filter(isMeaningfulQuoteRow).filter(shouldIncludeFeeRow)
 
   const totalNumeric = finalRows.reduce((sum, row) => {
     const n = toNumber(row.amount)
@@ -526,7 +558,6 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     purposeOfCalling: normalizedData.purpose_of_calling,
     shipType: normalizedData.ship_type,
     transportQuarantine: normalizedData.transport_quarantine,
-    boatHire: normalizedData.boat_hire_entry,
     tallyFee: normalizedData.tally_fee,
     cargoType: normalizedData.cargo_type,
     loa: normalizedData.loa,
@@ -545,6 +576,7 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     normalizedData.cargo_name_upper,
     normalizedData.cargo_type,
     normalizedData.transport_ls,
+    normalizedData.boat_hire_entry,
   )
 
   const totalAValue = escapeHtml(normalizedData.total_a || aa.total)
@@ -562,7 +594,7 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     mv: escapeHtml(normalizedData.mv),
     dwt: escapeHtml(normalizedData.dwt),
     grt: escapeHtml(normalizedData.grt),
-    loa: escapeHtml(normalizedData.loa),
+    loa: escapeHtml(formatLoaDisplay(normalizedData.loa)),
     eta: escapeHtml(normalizedData.eta || 'TBN'),
     cargo_qty_mt: escapeHtml(normalizedData.cargo_qty_mt),
     cargo_name_upper: escapeHtml(formatCargoNameWithType(normalizedData.cargo_name_upper, normalizedData.cargo_type)),

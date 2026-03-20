@@ -107,6 +107,7 @@ public class PortService {
         port.setPortOfCall(normalizedPortOfCall);
         port.setProvince(provinceOpt.get());
         port.setIsActive(true);
+        port.setHasInfo(0);
 
         Port savedPort = portRepository.save(port);
         return entityMapper.toPortDTO(savedPort);
@@ -130,6 +131,19 @@ public class PortService {
         port.setName(normalizedName);
         port.setPortOfCall(normalizedPortOfCall);
         port.setProvince(provinceOpt.get());
+
+        Port updatedPort = portRepository.save(port);
+        return entityMapper.toPortDTO(updatedPort);
+    }
+
+    public PortDTO updatePortHasInfo(Long id, Integer hasInfo) {
+        Optional<Port> existingOpt = portRepository.findById(id);
+        if (existingOpt.isEmpty()) {
+            return null;
+        }
+
+        Port port = existingOpt.get();
+        port.setHasInfo(hasInfo);
 
         Port updatedPort = portRepository.save(port);
         return entityMapper.toPortDTO(updatedPort);
