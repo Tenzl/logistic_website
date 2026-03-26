@@ -119,10 +119,16 @@ const isExportPlsAdviseMode = (frtTaxType?: string) => normalizeFrtTaxType(frtTa
 
 const isExportTotalAmountMode = (frtTaxType?: string) => {
   const normalized = normalizeFrtTaxType(frtTaxType)
-  return normalized === 'EXPORT' || normalized === 'EXPORT_TOTAL_AMOUNT'
+  return (
+    normalized === 'EXPORT' ||
+    normalized === 'EXPORT_FREIGHT_RATE_DECLARATION'
+  )
 }
 
 const shouldShowOceanFrtTax = (purposeOfCalling?: string, frtTaxType?: string) => {
+  const normalizedFrtTaxType = normalizeFrtTaxType(frtTaxType)
+  if (normalizedFrtTaxType === 'IMPORT') return false
+
   const normalizedPurpose = normalizePurpose(purposeOfCalling)
   if (normalizedPurpose === 'NHAP_XUAT' || normalizedPurpose === 'CHUYEN_CANG_XUAT') {
     return true
@@ -272,7 +278,7 @@ const buildAARows = (
     const purposeNormalized = normalizePurpose(options?.purposeOfCalling)
     const cargoQtyNumeric = toNumber(options?.cargoQtyMt)
     const cargoTripsNumeric = toNumber(options?.quarantineCargoTrips)
-    const cargoQuarantineTrips = cargoTripsNumeric !== null && cargoTripsNumeric > 0 ? cargoTripsNumeric : 1
+    const cargoQuarantineTrips = cargoTripsNumeric !== null && cargoTripsNumeric >= 0 ? cargoTripsNumeric : 1
     const cargoQuarantineFeeValue =
       purposeNormalized === 'MUC_DICH_KHAC' || cargoQtyNumeric === null || cargoQtyNumeric <= 0
         ? 0
@@ -298,7 +304,8 @@ const buildAARows = (
     const oceanFrtTaxDetail = isExportPlsAdvise
       ? 'Total Frt x 2% tax rate'
       : `Frt USD${oceanFrtRateText}/mt x abt ${oceanFrtQtyText}mts x 2%`
-    const oceanFrtTaxAmount: string | number = isExportPlsAdvise ? 'PLS ADVISE' : oceanFrtTaxValue
+    const oceanFrtTaxRemark = isExportPlsAdvise ? 'PLS ADVICE' : ''
+    const oceanFrtTaxAmount: string | number = isExportPlsAdvise ? 'xxx' : oceanFrtTaxValue
 
     const transportQuarantineNumeric = toNumber(options?.transportQuarantine)
     const hasTransportQuarantine = transportQuarantineNumeric !== null && transportQuarantineNumeric > 0
@@ -322,8 +329,8 @@ const buildAARows = (
     const garbageRemoval = formatAmount(garbageRemovalValue)
     
     const defaultRows: QuoteRow[] = [
-      { item: 'Tonnage', details: 'USD 0.034 / GRT x 2 (out)', amount: tonnage },
-      { item: 'Navigation due', details: 'USD 0.058 / GRT x 2 (in + out)', amount: navigationDue },
+      { item: 'Tonnage', details: 'USD 0.034 / GRT x 2 (in & out)', amount: tonnage },
+      { item: 'Navigation due', details: 'USD 0.058 / GRT x 2 (in & out)', amount: navigationDue },
       {
         item: 'Pilotage',
         details: 'USD0.0034 / GRT x 2 (in & out)',
@@ -353,6 +360,7 @@ const buildAARows = (
       defaultRows.push({
         item: 'Ocean Frt Tax',
         details: oceanFrtTaxDetail,
+        remark: oceanFrtTaxRemark,
         amount: oceanFrtTaxAmount,
       })
     }

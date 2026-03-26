@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { format } from "date-fns"
-import { ChevronDownIcon } from "lucide-react"
+import { ChevronDownIcon, X } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/components/ui/button"
@@ -58,6 +58,14 @@ export function DatePicker({
     }
   }, [value])
 
+  const handleClearClick = (event: React.MouseEvent<HTMLSpanElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!disabled && date) {
+      handleSelect(undefined)
+    }
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -73,7 +81,19 @@ export function DatePicker({
           disabled={disabled}
         >
           {date ? date.toLocaleDateString() : placeholder}
-          <ChevronDownIcon />
+          {date ? (
+            <span
+              role="button"
+              aria-label="Clear selected date"
+              className="-mr-3 ml-2 inline-flex min-h-9 min-w-10 items-center justify-center border-l border-input px-3 text-red-500 hover:text-red-600"
+              onMouseDown={handleClearClick}
+              onClick={handleClearClick}
+            >
+              <X className="h-4 w-4" />
+            </span>
+          ) : (
+            <ChevronDownIcon />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto overflow-hidden p-0" align="start">
