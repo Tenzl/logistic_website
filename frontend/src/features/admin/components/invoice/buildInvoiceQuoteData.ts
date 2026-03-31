@@ -36,9 +36,13 @@ export interface BuildInvoiceQuoteDataParams {
   quarantineCargoMode: string
   quarantineCargoOptions: readonly QuarantineCargoOptionConfig[]
   boatHireAmount: string
+  agencyFeeMode: string
+  agencyDiscountPercent: string
+  agencyLumpsumAmount: string
   isTallyFeeEligible: boolean
   tallyFeeAmount: string
   berthHours: string
+  buoyDueHours: string
   anchorageHours: string
   qnPilotageMiles: string
   pilotageThirdMiles: string
@@ -82,6 +86,9 @@ export function buildInvoiceQuoteData(params: BuildInvoiceQuoteDataParams): Invo
     quarantine_cargo_trips:
       params.quarantineCargoOptions.find((option) => option.value === params.quarantineCargoMode)?.trips ?? 1,
     boat_hire_entry: toNumberOrUndefined(params.boatHireAmount),
+    agency_fee_mode: params.agencyFeeMode,
+    agency_discount_percent: toNumberOrUndefined(params.agencyDiscountPercent),
+    agency_lumpsum_amount: toNumberOrUndefined(params.agencyLumpsumAmount),
     tally_fee: params.isTallyFeeEligible && params.tallyFeeAmount ? Number(params.tallyFeeAmount) : undefined,
     total_a: undefined,
     total_b: undefined,
@@ -94,6 +101,7 @@ export function buildInvoiceQuoteData(params: BuildInvoiceQuoteDataParams): Invo
     AA_ROWS: [],
     BB_ROWS: [],
     berth_hours: Number(params.berthHours),
+    buoy_due_hours: Number(params.buoyDueHours),
     anchorage_hours: Number(params.anchorageHours),
     pilotage_miles: params.quoteForm === 'QN' ? Number(params.qnPilotageMiles || '5') : undefined,
     pilotage_third_miles: params.quoteForm === 'HCM' ? Number(params.pilotageThirdMiles) : undefined,

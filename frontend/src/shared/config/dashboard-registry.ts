@@ -13,6 +13,7 @@ import {
   Cog,
   LayoutDashboard,
   Database,
+  BriefcaseBusiness,
 } from "lucide-react"
 
 import { RoleGroup } from "@/shared/types/dashboard"
@@ -36,6 +37,7 @@ export type DashboardSection =
   | "cargo-types"
   | "categories"
   | "posts"
+  | "booking-partners"
   | "inquiry"
 
 export interface SectionConfig {
@@ -66,6 +68,7 @@ const ManageOffices = lazy(() => import("@/features/admin/components/ManageOffic
 const ManageImageTypes = lazy(() => import("@/modules/gallery/components/admin/ImageTypeManagement").then(m => ({ default: m.ManageImageTypes })))
 const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
 const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
+const PartnerManagementTab = lazy(() => import("@/features/admin/components/PartnerManagementTab").then(m => ({ default: m.PartnerManagementTab })))
 
 const UserInquiriesPage = lazy(() => import("@/features/user/component/UserInquiriesPage").then(m => ({ default: m.UserInquiriesPage })))
 
@@ -219,6 +222,16 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     roleGroups: ["INTERNAL"],
     category: "Content Management",
     title: "Manage Posts",
+  },
+  "booking-partners": {
+    id: "booking-partners",
+    label: "Partner",
+    icon: BriefcaseBusiness,
+    component: PartnerManagementTab,
+    roles: ["ADMIN", "EMPLOYEE"],
+    roleGroups: ["INTERNAL"],
+    category: "Booking Management",
+    title: "Partner Management",
   },
   inquiry: {
     id: "inquiry",

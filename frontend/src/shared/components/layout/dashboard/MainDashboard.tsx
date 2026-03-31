@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState, Suspense } from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { QueryClientProvider } from "@tanstack/react-query"
 import type { LucideIcon } from "lucide-react"
-import { ChevronRight, Database, FileText, Image as ImageIcon, ListChecks, ReceiptText, User as UserIcon } from "lucide-react"
+import { BriefcaseBusiness, ChevronRight, Database, FileText, Image as ImageIcon, ListChecks, ReceiptText, User as UserIcon } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible"
 import Image from "next/image"
 
@@ -59,6 +60,7 @@ const CATEGORY_ICONS: Record<string, CategoryIcon> = {
   "Image Management": ImageIcon,
   "Data Management": Database,
   "Content Management": FileText,
+  "Booking Management": BriefcaseBusiness,
 }
 
 function mapUserRole(role?: string, roleGroup?: RoleGroup): SectionRole | undefined {
@@ -80,6 +82,7 @@ function buildCategories(sections: ReturnType<typeof listSectionsByRoleGroup>): 
     "Image Management": 3,
     "Data Management": 4,
     "Content Management": 5,
+    "Booking Management": 6,
   }
 
   const grouped = sections.reduce<Record<string, { id: DashboardSection; label: string }[]>>((acc, s) => {
@@ -178,14 +181,16 @@ export function MainDashboard({ initialSection, roleGroup: roleGroupOverride, on
   return (
     <QueryClientProvider client={queryClient}>
       <SidebarProvider>
-        <DashboardShell
-          categories={categories}
-          sections={sections}
-          userRole={userRole}
-          defaultSection={defaultSection}
-          onNavigateHome={onNavigateHome}
-          user={user}
-        />
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center">Loading dashboard...</div>}>
+          <DashboardShell
+            categories={categories}
+            sections={sections}
+            userRole={userRole}
+            defaultSection={defaultSection}
+            onNavigateHome={onNavigateHome}
+            user={user}
+          />
+        </Suspense>
       </SidebarProvider>
     </QueryClientProvider>
   )
@@ -206,8 +211,22 @@ function DashboardShell({
   onNavigateHome?: () => void
   user?: any
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const { state: sidebarState } = useSidebar()
-  const [activeSection, setActiveSection] = useState<DashboardSection | undefined>(defaultSection)
+  
+  const querySection = searchParams.get("section") as DashboardSection | null
+  const isValidSection = querySection && sections.some((s) => s.id === querySection)
+  const activeSection = isValidSection ? querySection : defaultSection
+
+  const setActiveSection = (sectionId: DashboardSection) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("section", sectionId)
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
     categories.forEach((cat) => {
@@ -215,16 +234,6 @@ function DashboardShell({
     })
     return initial
   })
-
-  // Sync activeSection with defaultSection when sections change
-  useEffect(() => {
-    if (!activeSection && defaultSection) {
-      setActiveSection(defaultSection)
-    } else if (activeSection && !sections.some((s) => s.id === activeSection)) {
-      // If current activeSection is no longer valid, reset to defaultSection
-      setActiveSection(defaultSection)
-    }
-  }, [defaultSection, activeSection, sections])
 
   useEffect(() => {
     if (sidebarState === "collapsed") {

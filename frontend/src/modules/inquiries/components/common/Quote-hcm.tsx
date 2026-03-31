@@ -40,11 +40,15 @@ export type QuoteData = {
   usd_account?: string
   swift?: string
   berth_hours?: string | number
+  buoy_due_hours?: string | number
   anchorage_hours?: string | number
   transport_quarantine?: string | number
   quarantine_cargo_trips?: string | number
   transport_ls?: string | number
   boat_hire_entry?: string | number
+  agency_fee_mode?: string
+  agency_discount_percent?: string | number
+  agency_lumpsum_amount?: string | number
   tally_fee?: string | number
   pilotage_third_miles?: string | number
   AA_ROWS?: QuoteRow[]
@@ -108,6 +112,14 @@ const normalizeCustomRows = (rows: QuoteRow[]) => {
     .map((row, index) => ({ ...row, no: index + 1 }))
 }
 
+const reindexNumberedRows = (rows: QuoteRow[]) => {
+  let currentNo = 1
+  return rows.map((row) => {
+    if (row.no === '') return row
+    return { ...row, no: currentNo++ }
+  })
+}
+
 const normalizePurpose = (value: unknown) =>
   String(value || '')
     .trim()
@@ -115,6 +127,12 @@ const normalizePurpose = (value: unknown) =>
     .replace(/[\s-]+/g, '_')
 
 const normalizeFrtTaxType = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+
+const normalizeAgencyFeeMode = (value: unknown) =>
   String(value || '')
     .trim()
     .toUpperCase()
@@ -172,6 +190,7 @@ const buildAARows = (
   grt?: string | number,
   options?: {
     berthHours?: string | number
+    buoyDueHours?: string | number
     anchorageHours?: string | number
     frtTaxType?: string
     purposeOfCalling?: string
@@ -304,8 +323,13 @@ const buildAARows = (
     const berthDueValue = grtNumeric === null ? null : 0.0031 * berthHoursValue * grtNumeric
     const berthDue = berthDueValue === null ? `0.0031*${grtDisplay}*${berthHoursValue}` : formatAmount(berthDueValue)
 
-    const buoyDueValue = grtNumeric === null ? null : 0.0013 * anchorageHoursValue * grtNumeric
-    const buoyDue = buoyDueValue === null ? `0.0013*${grtDisplay}*${anchorageHoursValue}` : formatAmount(buoyDueValue)
+    const buoyDueHoursNumeric = toNumber(options?.buoyDueHours)
+    const buoyDueHoursValue = buoyDueHoursNumeric === null ? anchorageHoursValue : buoyDueHoursNumeric
+    const buoyDueHoursText = `${buoyDueHoursValue} hrs`
+    const buoyDueDays = buoyDueHoursValue > 0 ? Math.ceil(buoyDueHoursValue / 24).toFixed(1) : '0.0'
+    const buoyDueRemark = buoyDueHoursValue ? `abt. ${buoyDueDays} days` : ''
+    const buoyDueValue = grtNumeric === null ? null : 0.0013 * buoyDueHoursValue * grtNumeric
+    const buoyDue = buoyDueValue === null ? `0.0013*${grtDisplay}*${buoyDueHoursValue}` : formatAmount(buoyDueValue)
 
     const anchorageFeesValue = grtNumeric === null ? null : 0.0005 * anchorageHoursValue * grtNumeric
     const anchorageFees =
@@ -403,8 +427,8 @@ const buildAARows = (
       pushNumbered({
         item: 'Buoy due',
         details: 'USD 0.0013 / GRT / hour x',
-        add: anchorageHoursText,
-        remark: anchorageRemark,
+        add: buoyDueHoursText,
+        remark: buoyDueRemark,
         amount: buoyDue,
       })
     } else {
@@ -461,7 +485,7 @@ const buildAARows = (
       amount: garbageRemoval,
     })
 
-    const visibleRows = defaultRows.filter(shouldIncludeFeeRow)
+    const visibleRows = reindexNumberedRows(defaultRows.filter(shouldIncludeFeeRow))
 
     const totalNumeric = visibleRows.reduce((sum, row) => {
       const n = toNumber(row.amount)
@@ -491,13 +515,19 @@ const buildBBRows = (
   cargoType?: string,
   transportLs?: string | number,
   boatHire?: string | number,
+  agencyFeeMode?: string,
+  agencyDiscountPercent?: string | number,
+  agencyLumpsumAmount?: string | number,
 ): { html: string; total?: string } => {
   const customRows = normalizeCustomRows(rows)
 
   const formatUsd = (value?: number) =>
     value === undefined
       ? ''
-      : `USD${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+      : `USD ${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+
+  const formatPercent = (value: number) =>
+    value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 
   const pickCargoFee = (name?: string) => {
     const normalized = (name || '').toUpperCase()
@@ -522,47 +552,76 @@ const buildBBRows = (
   
   const cargoRate = pickCargoFee(cargoType || cargoName)
   const cargoQty = toNumber(cargoQtyMt)
-  const cargoAmount = cargoRate !== undefined && cargoQty !== null ? cargoRate * cargoQty : undefined
+  const cargoBaseAmount = cargoRate !== undefined && cargoQty !== null ? cargoRate * cargoQty : undefined
+  const agencyDiscountNumeric = toNumber(agencyDiscountPercent)
+  const normalizedAgencyDiscount =
+    agencyDiscountNumeric === null ? 0 : Math.min(100, Math.max(0, agencyDiscountNumeric))
+  const agencyDiscountFactor = (100 - normalizedAgencyDiscount) / 100
+  const subAgencyPercent = 100 - normalizedAgencyDiscount
+  const subAgencyText =
+    normalizedAgencyDiscount === 0 ? '' : `${formatPercent(subAgencyPercent)}%(sub-agency)`
+  const cargoAmount = cargoBaseAmount === undefined ? undefined : cargoBaseAmount * agencyDiscountFactor
 
   const transportLsAmount = toNumber(transportLs)
   const boatHireAmount = toNumber(boatHire)
+  const agencyLumpsumNumeric = toNumber(agencyLumpsumAmount)
+  const isAgencyInLumpsumMode = normalizeAgencyFeeMode(agencyFeeMode) === 'AGENCY_IN_LUMPSUM'
+
+  if (isAgencyInLumpsumMode) {
+    const lumpsumAmount = agencyLumpsumNumeric ?? 0
+    const lumpsumRow: QuoteRow = {
+      details: `USD ${lumpsumAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })} in LUMPSUM including transportation`,
+      amount: lumpsumAmount,
+    }
+
+    return {
+      html: [lumpsumRow].map(renderRow).join('\n'),
+      total: formatAmount(lumpsumAmount),
+    }
+  }
 
   const grtNumeric = toNumber(grt)
   const pickAgencyFee = (value?: number | null) => {
     if (value === null || value === undefined) return { amount: undefined, label: '' }
-    if (value <= 1000) return { amount: undefined, label: '' }
-    if (value <= 3000) return { amount: 500, label: '1,001-3,000' }
-    if (value <= 6000) return { amount: 600, label: '3,001-6,000' }
-    if (value <= 10000) return { amount: 700, label: '6,001-10,000' }
-    if (value <= 15000) return { amount: 850, label: '10,001-15,000' }
-    if (value <= 25000) return { amount: 1000, label: '15,001-25,000' }
-    if (value <= 50000) return { amount: 1150, label: '25,001-50,000' }
-    return { amount: 1300, label: '>50,000' }
+    if (value <= 1000) return { amount: 0, label: '0 - 1,000' }
+    if (value <= 3000) return { amount: 500, label: '1,001 - 3,000' }
+    if (value <= 6000) return { amount: 600, label: '3,001 - 6,000' }
+    if (value <= 10000) return { amount: 700, label: '6,001 - 10,000' }
+    if (value <= 15000) return { amount: 850, label: '10,001 - 15,000' }
+    if (value <= 25000) return { amount: 1000, label: '15,001 - 25,000' }
+    if (value <= 50000) return { amount: 1150, label: '25,001 - 50,000' }
+    return { amount: 1300, label: '50,001+' }
   }
 
   const agencyFee = pickAgencyFee(grtNumeric)
+  const agencyFeeAmount = agencyFee.amount === undefined ? undefined : agencyFee.amount * agencyDiscountFactor
   const detailParts = [] as string[]
   if (agencyFee.label) detailParts.push(`On GRT: ${agencyFee.label}`)
-  const agencyAmountText = formatUsd(agencyFee.amount)
+  const agencyAmountText = agencyFee.amount === undefined
+    ? ''
+    : `${formatUsd(agencyFee.amount)}${subAgencyText ? ` x ${subAgencyText}` : ''}`
   if (agencyAmountText) detailParts.push(agencyAmountText)
   const detail = detailParts.join(': ')
 
   const cargoRateText = cargoRate !== undefined ? `USD${cargoRate.toFixed(2)}/mt` : ''
   const cargoQtyText = cargoQty !== null ? `${cargoQty.toLocaleString('en-US')}mts` : ''
-  const cargoDetail = [
-    cargoRateText || cargoQtyText ? 'On cargo' : '',
-    [cargoRateText, cargoQtyText].filter(Boolean).join(' x '),
-  ]
-    .filter(Boolean)
-    .join(': ')
+  const isEquipmentCargoForAgency = normalizeCargoType(cargoType || cargoName).includes('EQUIPMENT')
+  const cargoBasisText = [cargoRateText, cargoQtyText].filter(Boolean).join(' x ')
+  const cargoSubAgencyText = cargoBasisText && subAgencyText ? ` x ${subAgencyText}` : ''
+  const cargoDetail = isEquipmentCargoForAgency
+    ? `${cargoBasisText ? `Equipment: ${cargoBasisText}` : ''}${cargoSubAgencyText}`
+    : `${cargoBasisText ? `On cargo: ${cargoBasisText}` : ''}${cargoSubAgencyText}`
 
   if (!customRows.length) {
     const autoRows: QuoteRow[] = []
 
-    if (agencyFee.amount !== undefined || detail) {
+    if (agencyFeeAmount !== undefined || detail) {
       autoRows.push({
         details: detail,
-        amount: agencyFee.amount,
+        amount: agencyFeeAmount,
       })
     }
 
@@ -605,6 +664,13 @@ const buildBBRows = (
     if (isCargoFee && (row.amount === undefined || row.amount === '')) {
       return { ...row, details: cargoDetail || row.details, amount: cargoAmount ?? row.amount }
     }
+    if (isGrtFee && (row.amount === undefined || row.amount === '')) {
+      return {
+        ...row,
+        details: row.details || detail,
+        amount: agencyFeeAmount ?? row.amount,
+      }
+    }
     if (isGrtFee && (row.details === undefined || row.details === '')) {
       return { ...row, details: detail || row.details }
     }
@@ -635,6 +701,7 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
 
   const aa = buildAARows(normalizedData.AA_ROWS || [], normalizedData.grt, {
     berthHours: normalizedData.berth_hours,
+    buoyDueHours: normalizedData.buoy_due_hours,
     anchorageHours: normalizedData.anchorage_hours,
     frtTaxType: normalizedData.loading_term,
     purposeOfCalling: normalizedData.purpose_of_calling,
@@ -659,6 +726,9 @@ export const renderQuoteHtml = (template: string, data: QuoteData) => {
     normalizedData.cargo_type,
     normalizedData.transport_ls,
     normalizedData.boat_hire_entry,
+    normalizedData.agency_fee_mode,
+    normalizedData.agency_discount_percent,
+    normalizedData.agency_lumpsum_amount,
   )
 
   const totalAValue = escapeHtml(normalizedData.total_a || aa.total)

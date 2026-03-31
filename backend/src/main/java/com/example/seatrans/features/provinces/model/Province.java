@@ -39,8 +39,8 @@ public class Province {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
-    @Column(length = 10, unique = true)
-    private String code;
+    @Column(unique = true)
+    private Integer code;
 
     @Column(length = 50)
     private String area;

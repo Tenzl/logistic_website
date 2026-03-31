@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 public class CreateProvinceRequest {
     private String name;
     private String displayName;
-    private String code;
+    private Integer code;
     private String area;
 }

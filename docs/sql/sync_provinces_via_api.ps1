@@ -1,31 +1,31 @@
 $approved = @{
-  'HA NOI'      = @{ area = 'NORTHERN'; code = '01'; displayName = 'Ha Noi' }
-  'LAO CAI'     = @{ area = 'NORTHERN'; code = '10'; displayName = 'Lao Cai' }
-  'THAI NGUYEN' = @{ area = 'NORTHERN'; code = '26'; displayName = 'Thai Nguyen' }
-  'LANG SON'    = @{ area = 'NORTHERN'; code = '20'; displayName = 'Lang Son' }
-  'QUANG NINH'  = @{ area = 'NORTHERN'; code = '22'; displayName = 'Quang Ninh' }
-  'BAC NINH'    = @{ area = 'NORTHERN'; code = '24'; displayName = 'Bac Ninh' }
-  'PHU THO'     = @{ area = 'NORTHERN'; code = '25'; displayName = 'Phu Tho' }
-  'HAI PHONG'   = @{ area = 'NORTHERN'; code = '31'; displayName = 'Hai Phong' }
-  'HUNG YEN'    = @{ area = 'NORTHERN'; code = '33'; displayName = 'Hung Yen' }
-  'NINH BINH'   = @{ area = 'NORTHERN'; code = '37'; displayName = 'Ninh Binh' }
-  'THANH HOA'   = @{ area = 'MIDDLE';   code = '38'; displayName = 'Thanh Hoa' }
-  'NGHE AN'     = @{ area = 'MIDDLE';   code = '40'; displayName = 'Nghe An' }
-  'HA TINH'     = @{ area = 'MIDDLE';   code = '42'; displayName = 'Ha Tinh' }
-  'QUANG TRI'   = @{ area = 'MIDDLE';   code = '44'; displayName = 'Quang Tri' }
-  'HUE'         = @{ area = 'MIDDLE';   code = '46'; displayName = 'Hue' }
-  'DA NANG'     = @{ area = 'MIDDLE';   code = '48'; displayName = 'Da Nang' }
-  'QUANG NGAI'  = @{ area = 'MIDDLE';   code = '51'; displayName = 'Quang Ngai' }
-  'GIA LAI'     = @{ area = 'MIDDLE';   code = '52'; displayName = 'Gia Lai' }
-  'KHANH HOA'   = @{ area = 'MIDDLE';   code = '56'; displayName = 'Khanh Hoa' }
-  'DONG NAI'    = @{ area = 'SOUTHERN'; code = '75'; displayName = 'Dong Nai' }
-  'HO CHI MINH' = @{ area = 'SOUTHERN'; code = '79'; displayName = 'Ho Chi Minh' }
-  'TAY NINH'    = @{ area = 'SOUTHERN'; code = '80'; displayName = 'Tay Ninh' }
-  'DONG THAP'   = @{ area = 'SOUTHERN'; code = '82'; displayName = 'Dong Thap' }
-  'VINH LONG'   = @{ area = 'SOUTHERN'; code = '86'; displayName = 'Vinh Long' }
-  'AN GIANG'    = @{ area = 'SOUTHERN'; code = '89'; displayName = 'An Giang' }
-  'CAN THO'     = @{ area = 'SOUTHERN'; code = '92'; displayName = 'Can Tho' }
-  'CA MAU'      = @{ area = 'SOUTHERN'; code = '96'; displayName = 'Ca Mau' }
+  'HA NOI'      = @{ area = 'NORTHERN'; code = 1; displayName = 'Ha Noi' }
+  'LAO CAI'     = @{ area = 'NORTHERN'; code = 15; displayName = 'Lao Cai' }
+  'THAI NGUYEN' = @{ area = 'NORTHERN'; code = 19; displayName = 'Thai Nguyen' }
+  'LANG SON'    = @{ area = 'NORTHERN'; code = 20; displayName = 'Lang Son' }
+  'QUANG NINH'  = @{ area = 'NORTHERN'; code = 22; displayName = 'Quang Ninh' }
+  'BAC NINH'    = @{ area = 'NORTHERN'; code = 24; displayName = 'Bac Ninh' }
+  'PHU THO'     = @{ area = 'NORTHERN'; code = 25; displayName = 'Phu Tho' }
+  'HAI PHONG'   = @{ area = 'NORTHERN'; code = 31; displayName = 'Hai Phong' }
+  'HUNG YEN'    = @{ area = 'NORTHERN'; code = 33; displayName = 'Hung Yen' }
+  'NINH BINH'   = @{ area = 'NORTHERN'; code = 37; displayName = 'Ninh Binh' }
+  'THANH HOA'   = @{ area = 'MIDDLE';   code = 38; displayName = 'Thanh Hoa' }
+  'NGHE AN'     = @{ area = 'MIDDLE';   code = 40; displayName = 'Nghe An' }
+  'HA TINH'     = @{ area = 'MIDDLE';   code = 42; displayName = 'Ha Tinh' }
+  'QUANG TRI'   = @{ area = 'MIDDLE';   code = 44; displayName = 'Quang Tri' }
+  'HUE'         = @{ area = 'MIDDLE';   code = 46; displayName = 'Hue' }
+  'DA NANG'     = @{ area = 'MIDDLE';   code = 48; displayName = 'Da Nang' }
+  'QUANG NGAI'  = @{ area = 'MIDDLE';   code = 51; displayName = 'Quang Ngai' }
+  'GIA LAI'     = @{ area = 'MIDDLE';   code = 52; displayName = 'Gia Lai' }
+  'KHANH HOA'   = @{ area = 'MIDDLE';   code = 56; displayName = 'Khanh Hoa' }
+  'DONG NAI'    = @{ area = 'SOUTHERN'; code = 75; displayName = 'Dong Nai' }
+  'HO CHI MINH' = @{ area = 'SOUTHERN'; code = 79; displayName = 'Ho Chi Minh' }
+  'TAY NINH'    = @{ area = 'SOUTHERN'; code = 80; displayName = 'Tay Ninh' }
+  'DONG THAP'   = @{ area = 'SOUTHERN'; code = 82; displayName = 'Dong Thap' }
+  'VINH LONG'   = @{ area = 'SOUTHERN'; code = 86; displayName = 'Vinh Long' }
+  'AN GIANG'    = @{ area = 'SOUTHERN'; code = 91; displayName = 'An Giang' }
+  'CAN THO'     = @{ area = 'SOUTHERN'; code = 92; displayName = 'Can Tho' }
+  'CA MAU'      = @{ area = 'SOUTHERN'; code = 96; displayName = 'Ca Mau' }
 }
 
 $alias = @{
@@ -58,6 +58,19 @@ function Norm([string]$s) {
   return (Remove-Diacritics($s)).Trim().ToUpperInvariant()
 }
 
+function To-NullableInt($value) {
+  if ($null -eq $value) { return $null }
+  $text = "$value".Trim()
+  if ([string]::IsNullOrWhiteSpace($text)) { return $null }
+
+  $parsed = 0
+  if ([int]::TryParse($text, [ref]$parsed)) {
+    return $parsed
+  }
+
+  return $null
+}
+
 $base = 'http://localhost:8081/api/v1/provinces'
 $resp = Invoke-RestMethod -Uri $base -Method Get
 $items = @($resp.data)
@@ -83,7 +96,7 @@ foreach ($p in $items) {
     $displayName = $approved[$canonical].displayName
     $null = $existingApproved.Add($canonical)
 
-    if ((Norm $p.name) -ne $canonical -or (Norm $p.area) -ne $area -or ("$($p.code)" -ne $code) -or ("$($p.displayName)" -ne $displayName)) {
+    if ((Norm $p.name) -ne $canonical -or (Norm $p.area) -ne $area -or ((To-NullableInt $p.code) -ne [int]$code) -or ("$($p.displayName)" -ne $displayName)) {
       $body = @{ name = $canonical; displayName = $displayName; code = $code; area = $area } | ConvertTo-Json
       Invoke-RestMethod -Uri "$base/$($p.id)" -Method Put -ContentType 'application/json' -Body $body | Out-Null
       $updated++

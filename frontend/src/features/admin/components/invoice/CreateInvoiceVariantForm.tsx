@@ -24,6 +24,7 @@ export type ShipTypeOption = 'BULK_SHIP' | 'TANKER_SHIP'
 export type FrtTaxTypeOption = 'Import' | 'Export - Pls Advise' | 'Export - Freight rate declaration'
 
 export type QuarantineCargoOption = 'ONE_LEG' | 'BOTH_LEGS' | 'OTHER'
+export type AgencyFeeModeOption = 'TARRIF_AGENCY' | 'AGENCY_IN_LUMPSUM'
 
 export interface SelectOption {
   value: string
@@ -57,6 +58,9 @@ export interface InvoiceVariantFormProps {
     transportLs: string
     boatHireAmount: string
     boatHireQuarantineAmount: string
+    agencyFeeMode: AgencyFeeModeOption
+    agencyDiscountPercent: string
+    agencyLumpsumAmount: string
   }
   handlers: {
     setToShipowner: (value: string) => void
@@ -83,6 +87,9 @@ export interface InvoiceVariantFormProps {
     setTransportLs: (value: string) => void
     setBoatHireAmount: (value: string) => void
     setBoatHireQuarantineAmount: (value: string) => void
+    setAgencyFeeMode: (value: AgencyFeeModeOption) => void
+    setAgencyDiscountPercent: (value: string) => void
+    setAgencyLumpsumAmount: (value: string) => void
   }
   options: {
     cargoTypeOptions: CargoTypeCatalogItem[]
@@ -91,14 +98,17 @@ export interface InvoiceVariantFormProps {
     purposeOptions: SelectOption[]
     quarantineCargoOptions: SelectOption[]
     frtTaxTypeOptions: SelectOption[]
+    agencyFeeModeOptions: SelectOption[]
   }
   computed: {
     isLoadingCargoCatalog: boolean
     isTallyFeeEligibleCargo: boolean
     shipQuarantineFee: string
     cargoQuarantineFee: string
+    canEnableFreightTaxDeclaration: boolean
     isImportFrtTaxType: boolean
     isExportPlsAdviseMode: boolean
+    isOceanFreightInputDisabled: boolean
     frtHint: string
   }
   getRequiredState: (value: string | null | undefined) => { labelClass: string; fieldClass: string }
@@ -112,6 +122,60 @@ export function CreateInvoiceVariantForm({
   computed,
   getRequiredState,
 }: InvoiceVariantFormProps) {
+  const disabledFieldTextClass = 'disabled:text-muted-foreground disabled:placeholder:text-muted-foreground'
+  const isBoatHireForAgencyEnabled = values.dischargeLoadingLocation === 'Anchorage'
+  const isHcmAnchorage = variant === 'HCM' && values.dischargeLoadingLocation === 'Anchorage'
+  const normalizeCargoType = (value: string) => value.trim().toUpperCase().replace(/[\s-]+/g, '_')
+  const grtNumeric = Number(values.grt)
+  const cargoQtyNumeric = Number(values.cargoQty)
+  const discountNumeric = Number(values.agencyDiscountPercent)
+  const agencyDiscountPercent = Number.isFinite(discountNumeric)
+    ? Math.min(100, Math.max(0, discountNumeric))
+    : 0
+  const agencyDiscountFactor = (100 - agencyDiscountPercent) / 100
+  const subAgencyPercent = agencyDiscountFactor * 100
+  const subAgencyPercentDisplay = subAgencyPercent.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+  const subAgencySuffix = agencyDiscountPercent === 0
+    ? ''
+    : ` x ${subAgencyPercentDisplay}%(sub-agency)`
+
+  const getAgencyFeeByGrt = (grt: number): { amount: number; label: string } => {
+    if (grt <= 1000) return { amount: 0, label: '0 - 1,000' }
+    if (grt <= 3000) return { amount: 500, label: '1,001 - 3,000' }
+    if (grt <= 6000) return { amount: 600, label: '3,001 - 6,000' }
+    if (grt <= 10000) return { amount: 700, label: '6,001 - 10,000' }
+    if (grt <= 15000) return { amount: 850, label: '10,001 - 15,000' }
+    if (grt <= 25000) return { amount: 1000, label: '15,001 - 25,000' }
+    if (grt <= 50000) return { amount: 1150, label: '25,001 - 50,000' }
+    return { amount: 1300, label: '50,001+' }
+  }
+
+  const agencyFeeByGrt = Number.isFinite(grtNumeric) && grtNumeric > 0
+    ? getAgencyFeeByGrt(grtNumeric)
+    : { amount: 0, label: '0 - 1,000' }
+  const cargoQtyForDisplay = Number.isFinite(cargoQtyNumeric) && cargoQtyNumeric > 0 ? cargoQtyNumeric : 0
+  const normalizedCargoType = normalizeCargoType(values.cargoType || '')
+  const isEquipmentCargo = normalizedCargoType.includes('EQUIPMENT')
+  const isInBagsCargo = normalizedCargoType.includes('IN_BAGS')
+  const onCargoRate = isEquipmentCargo ? 0.1 : isInBagsCargo ? 0.06 : 0.05
+  const onCargoBaseAmount = onCargoRate * cargoQtyForDisplay
+
+  const onGrtLabel = `On GRT: ${agencyFeeByGrt.label}`
+  const onGrtAmountDisplay = `USD ${agencyFeeByGrt.amount.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}${subAgencySuffix}`
+  const onCargoAmountDisplay = `USD ${onCargoBaseAmount.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}${subAgencySuffix}`
+  const onCargoLabel = isEquipmentCargo
+    ? `Equipment: USD 0.1/MT X ${cargoQtyForDisplay} MTS`
+    : `On Cargo: USD${onCargoRate.toFixed(2)}/MT X ${cargoQtyForDisplay}MTS`
+
   return (
     <>
       <div className="rounded-lg border p-4 space-y-6">
@@ -229,7 +293,23 @@ export function CreateInvoiceVariantForm({
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="shipType">Ship Type</Label>
+            <Select value={values.shipType} onValueChange={(value) => handlers.setShipType(value as ShipTypeOption)}>
+              <SelectTrigger id="shipType">
+                <SelectValue placeholder="Select ship type" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.shipTypeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="cargoType" className={getRequiredState(values.cargoType).labelClass}>
               Cargo Type *
@@ -239,7 +319,10 @@ export function CreateInvoiceVariantForm({
               onValueChange={(value) => handlers.setCargoType(value as CargoType)}
               disabled={computed.isLoadingCargoCatalog || options.cargoTypeOptions.length === 0}
             >
-              <SelectTrigger id="cargoType" className={getRequiredState(values.cargoType).fieldClass}>
+              <SelectTrigger
+                id="cargoType"
+                className={`${getRequiredState(values.cargoType).fieldClass} disabled:text-muted-foreground`}
+              >
                 <SelectValue
                   placeholder={
                     computed.isLoadingCargoCatalog
@@ -287,33 +370,15 @@ export function CreateInvoiceVariantForm({
           </div>
         </div>
 
-        <div className="grid md:grid-cols-1 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="shipType">Ship Type</Label>
-            <Select value={values.shipType} onValueChange={(value) => handlers.setShipType(value as ShipTypeOption)}>
-              <SelectTrigger id="shipType">
-                <SelectValue placeholder="Select ship type" />
-              </SelectTrigger>
-              <SelectContent>
-                {options.shipTypeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
         <div className="grid md:grid-cols-1 gap-4" />
       </div>
 
       <div className="rounded-lg border p-4 space-y-6">
-        <h3 className="text-sm font-bold tracking-wide uppercase text-primary">Port Due and Charge</h3>
+        <h3 className="text-sm font-bold tracking-wide uppercase text-primary">Port Dues and Charges</h3>
 
         <div className="grid md:grid-cols-4 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="berthHours">Berth Due (hours)</Label>
+            <Label htmlFor="berthHours">{isHcmAnchorage ? 'Buoy Due (hours)' : 'Berth Due (hours)'}</Label>
             <Input
               id="berthHours"
               type="number"
@@ -324,7 +389,7 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="anchorageHours">Anchorage Hours</Label>
+            <Label htmlFor="anchorageHours">Anchorage Fee (Hours)</Label>
             <Input
               id="anchorageHours"
               type="number"
@@ -410,11 +475,25 @@ export function CreateInvoiceVariantForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="frtTaxType" className={getRequiredState(values.frtTaxType).labelClass}>
+            <Label
+              htmlFor="frtTaxType"
+              className={
+                computed.canEnableFreightTaxDeclaration
+                  ? getRequiredState(values.frtTaxType).labelClass
+                  : 'text-muted-foreground'
+              }
+            >
               Freight tax declaration *
             </Label>
-            <Select value={values.frtTaxType} onValueChange={(value) => handlers.setFrtTaxType(value as FrtTaxTypeOption)}>
-              <SelectTrigger id="frtTaxType" className={getRequiredState(values.frtTaxType).fieldClass}>
+            <Select
+              value={values.frtTaxType}
+              onValueChange={(value) => handlers.setFrtTaxType(value as FrtTaxTypeOption)}
+              disabled={!computed.canEnableFreightTaxDeclaration}
+            >
+              <SelectTrigger
+                id="frtTaxType"
+                className={`${getRequiredState(values.frtTaxType).fieldClass} disabled:text-muted-foreground`}
+              >
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -427,28 +506,28 @@ export function CreateInvoiceVariantForm({
             </Select>
           </div>
 
-          {computed.isTallyFeeEligibleCargo && (
-            <div className="grid gap-2">
-              <Label htmlFor="tallyFeeAmount">Ship's side tally fee (USD)</Label>
-              <Input
-                id="tallyFeeAmount"
-                type="number"
-                value={values.tallyFeeAmount}
-                onChange={(e) => handlers.setTallyFeeAmount(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="quarantineShipFeeDisplay">Quarantine for ship (USD)</Label>
-            <Input id="quarantineShipFeeDisplay" value={computed.shipQuarantineFee} readOnly disabled />
+            <Label htmlFor="quarantineShipFeeDisplay" className="text-muted-foreground">Quarantine for ship (USD)</Label>
+            <Input
+              id="quarantineShipFeeDisplay"
+              value={computed.shipQuarantineFee}
+              readOnly
+              disabled
+              className={disabledFieldTextClass}
+            />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="quarantineCargoFeeDisplay">Quarantine for cargo (USD)</Label>
-            <Input id="quarantineCargoFeeDisplay" value={computed.cargoQuarantineFee} readOnly disabled />
+            <Label htmlFor="quarantineCargoFeeDisplay" className="text-muted-foreground">Quarantine for cargo (USD)</Label>
+            <Input
+              id="quarantineCargoFeeDisplay"
+              value={computed.cargoQuarantineFee}
+              readOnly
+              disabled
+              className={disabledFieldTextClass}
+            />
           </div>
 
           <div className="grid gap-2">
@@ -467,35 +546,8 @@ export function CreateInvoiceVariantForm({
               }
               min="0"
               aria-label="Frt amount (USD/mt)"
-              disabled={computed.isExportPlsAdviseMode || computed.isImportFrtTaxType}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border p-4 space-y-6">
-        <h3 className="text-sm font-bold tracking-wide uppercase text-primary">Agency Fee</h3>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="transportLs">Taxi/Courrier/Communication for agency service</Label>
-            <Input
-              id="transportLs"
-              type="number"
-              value={values.transportLs}
-              onChange={(e) => handlers.setTransportLs(e.target.value)}
-              placeholder="0"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="boatHireAmount">Boat hired for agency service (USD)</Label>
-            <Input
-              id="boatHireAmount"
-              type="number"
-              value={values.boatHireAmount}
-              onChange={(e) => handlers.setBoatHireAmount(e.target.value)}
-              placeholder="0"
+              disabled={computed.isOceanFreightInputDisabled}
+              className={disabledFieldTextClass}
             />
           </div>
 
@@ -506,10 +558,136 @@ export function CreateInvoiceVariantForm({
               type="number"
               value={values.boatHireQuarantineAmount}
               onChange={(e) => handlers.setBoatHireQuarantineAmount(e.target.value)}
-              placeholder="200"
+              placeholder="0"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label
+              htmlFor="tallyFeeAmount"
+              className={computed.isTallyFeeEligibleCargo ? '' : 'text-muted-foreground'}
+            >
+              Ship's side tally fee (USD)
+            </Label>
+            <Input
+              id="tallyFeeAmount"
+              type="number"
+              value={values.tallyFeeAmount}
+              onChange={(e) => handlers.setTallyFeeAmount(e.target.value)}
+              placeholder={computed.isTallyFeeEligibleCargo ? '0' : 'Nil'}
+              disabled={!computed.isTallyFeeEligibleCargo}
+              className={disabledFieldTextClass}
             />
           </div>
         </div>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h3 className="text-sm font-bold tracking-wide uppercase text-primary">Agency fees and expenses</h3>
+          <div className="w-full md:w-72">
+            <Select
+              value={values.agencyFeeMode}
+              onValueChange={(value) => handlers.setAgencyFeeMode(value as AgencyFeeModeOption)}
+            >
+              <SelectTrigger id="agencyFeeMode">
+                <SelectValue placeholder="Select agency fee mode" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.agencyFeeModeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {values.agencyFeeMode === 'AGENCY_IN_LUMPSUM' ? (
+          <div className="grid md:grid-cols-1 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="agencyLumpsumAmount">
+                USD {values.agencyLumpsumAmount || '0'} in LUMPSUM including transportation
+              </Label>
+              <Input
+                id="agencyLumpsumAmount"
+                type="number"
+                value={values.agencyLumpsumAmount}
+                onChange={(e) => handlers.setAgencyLumpsumAmount(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="agencyDiscountPercent">Discount (%)</Label>
+              <Input
+                id="agencyDiscountPercent"
+                type="number"
+                min="0"
+                max="100"
+                value={values.agencyDiscountPercent}
+                onChange={(e) => handlers.setAgencyDiscountPercent(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="agencyOnGrtDisplay" className="text-muted-foreground">{onGrtLabel}</Label>
+              <Input
+                id="agencyOnGrtDisplay"
+                value={onGrtAmountDisplay}
+                readOnly
+                disabled
+                className={disabledFieldTextClass}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="agencyOnCargoDisplay" className="text-muted-foreground">{onCargoLabel}</Label>
+              <Input
+                id="agencyOnCargoDisplay"
+                value={onCargoAmountDisplay}
+                readOnly
+                disabled
+                className={disabledFieldTextClass}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label
+                htmlFor="boatHireAmount"
+                className={isBoatHireForAgencyEnabled ? '' : 'text-muted-foreground'}
+              >
+                Boat hired for agency service (USD)
+              </Label>
+              <Input
+                id="boatHireAmount"
+                type="number"
+                value={values.boatHireAmount}
+                onChange={(e) => handlers.setBoatHireAmount(e.target.value)}
+                placeholder={isBoatHireForAgencyEnabled ? '0' : 'Enable when Discharge/Loading at is Anchorage'}
+                disabled={!isBoatHireForAgencyEnabled}
+                className={disabledFieldTextClass}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="transportLs">Taxi/Courrier/Communication for agency service</Label>
+              <Input
+                id="transportLs"
+                type="number"
+                value={values.transportLs}
+                onChange={(e) => handlers.setTransportLs(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="grid gap-2" />
+          </div>
+        )}
       </div>
     </>
   )

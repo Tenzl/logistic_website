@@ -7,6 +7,17 @@ export interface Port {
   name: string
   portOfCall?: string
   provinceId: number
+
+  // Optional new columns on `ports`
+  code?: string
+  zoneCode?: string
+  countryCode?: string
+  latitude?: number
+  longitude?: number
+  hasInfo?: number
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export const portService = {

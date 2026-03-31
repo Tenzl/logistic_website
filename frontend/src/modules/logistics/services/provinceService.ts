@@ -6,7 +6,7 @@ export interface Province {
   id: number
   name: string
   displayName?: string
-  code?: string
+  code?: number
   area?: string
 }
 

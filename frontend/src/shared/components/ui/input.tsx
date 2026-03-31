@@ -3,7 +3,7 @@ import * as React from "react"
 import { cn } from "@/shared/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, onKeyDown, ...props }, ref) => {
+  ({ className, type, onKeyDown, onWheel, ...props }, ref) => {
     const isNumberInput = type === "number"
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -12,6 +12,13 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 
       if (event.key === "ArrowUp" || event.key === "ArrowDown") {
         event.preventDefault()
+      }
+    }
+
+    const handleWheel = (event: React.WheelEvent<HTMLInputElement>) => {
+      onWheel?.(event)
+      if (isNumberInput) {
+        event.currentTarget.blur()
       }
     }
 
@@ -25,6 +32,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         onKeyDown={handleKeyDown}
+        onWheel={handleWheel}
         ref={ref}
         {...props}
       />

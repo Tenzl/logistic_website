@@ -84,6 +84,10 @@ public class PortService {
     }
 
     public PortDTO createPort(CreatePortRequest request) {
+        if (request.getProvinceId() == null) {
+            return null;
+        }
+
         // Check if province exists
         Optional<Province> provinceOpt = provinceRepository.findById(request.getProvinceId());
         if (provinceOpt.isEmpty()) {
@@ -106,8 +110,29 @@ public class PortService {
         port.setName(normalizedName);
         port.setPortOfCall(normalizedPortOfCall);
         port.setProvince(provinceOpt.get());
-        port.setIsActive(true);
-        port.setHasInfo(0);
+
+        // Optional columns
+        if (request.getZoneCode() != null) {
+            port.setZoneCode(request.getZoneCode().trim());
+        }
+        if (request.getCode() != null) {
+            port.setCode(request.getCode().trim());
+        }
+        if (request.getCountryCode() != null) {
+            port.setCountryCode(request.getCountryCode().trim().toUpperCase());
+        }
+        if (request.getLongitude() != null) {
+            port.setLongitude(request.getLongitude());
+        }
+        if (request.getLatitude() != null) {
+            port.setLatitude(request.getLatitude());
+        }
+        if (request.getIsActive() != null) {
+            port.setIsActive(request.getIsActive());
+        }
+        if (request.getHasInfo() != null) {
+            port.setHasInfo(request.getHasInfo());
+        }
 
         Port savedPort = portRepository.save(port);
         return entityMapper.toPortDTO(savedPort);
@@ -119,31 +144,59 @@ public class PortService {
             return null;
         }
 
-        Optional<Province> provinceOpt = provinceRepository.findById(request.getProvinceId());
-        if (provinceOpt.isEmpty()) {
-            return null;
-        }
-
         String normalizedName = normalizePortName(request.getName());
         String normalizedPortOfCall = normalizePortOfCall(request.getPortOfCall(), normalizedName);
 
         Port port = existingOpt.get();
         port.setName(normalizedName);
         port.setPortOfCall(normalizedPortOfCall);
-        port.setProvince(provinceOpt.get());
+
+        // province_id is optional in update payload: keep existing if not provided
+        if (request.getProvinceId() != null) {
+            Optional<Province> provinceOpt = provinceRepository.findById(request.getProvinceId());
+            if (provinceOpt.isEmpty()) {
+                return null;
+            }
+            port.setProvince(provinceOpt.get());
+        }
+
+        // Optional columns (only update if payload provides them)
+        if (request.getZoneCode() != null) {
+            port.setZoneCode(request.getZoneCode().trim());
+        }
+        if (request.getCode() != null) {
+            port.setCode(request.getCode().trim());
+        }
+        if (request.getCountryCode() != null) {
+            port.setCountryCode(request.getCountryCode().trim().toUpperCase());
+        }
+        if (request.getLongitude() != null) {
+            port.setLongitude(request.getLongitude());
+        }
+        if (request.getLatitude() != null) {
+            port.setLatitude(request.getLatitude());
+        }
+        if (request.getIsActive() != null) {
+            port.setIsActive(request.getIsActive());
+        }
+        if (request.getHasInfo() != null) {
+            port.setHasInfo(request.getHasInfo());
+        }
 
         Port updatedPort = portRepository.save(port);
         return entityMapper.toPortDTO(updatedPort);
     }
 
-    public PortDTO updatePortHasInfo(Long id, Integer hasInfo) {
+    public PortDTO updateHasInfo(Long id, Integer hasInfo) {
         Optional<Port> existingOpt = portRepository.findById(id);
         if (existingOpt.isEmpty()) {
             return null;
         }
 
         Port port = existingOpt.get();
-        port.setHasInfo(hasInfo);
+        if (hasInfo != null) {
+            port.setHasInfo(hasInfo);
+        }
 
         Port updatedPort = portRepository.save(port);
         return entityMapper.toPortDTO(updatedPort);

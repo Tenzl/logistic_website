@@ -31,6 +31,10 @@ export interface CreateInvoiceRequiredValues {
   frtTaxType: string
 }
 
+export interface RequiredFieldOptions {
+  requireFrtTaxType?: boolean
+}
+
 const REQUIRED_FIELD_CONFIG: Array<{ key: RequiredFieldKey; label: string }> = [
   { key: 'toShipowner', label: 'To (Ship Owner/Company)' },
   { key: 'mv', label: 'M/V (Vessel Name)' },
@@ -45,12 +49,16 @@ const REQUIRED_FIELD_CONFIG: Array<{ key: RequiredFieldKey; label: string }> = [
   { key: 'frtTaxType', label: 'Freight tax declaration' },
 ]
 
-export function buildRequiredFields(values: CreateInvoiceRequiredValues): RequiredField[] {
-  return REQUIRED_FIELD_CONFIG.map((field) => ({
+export function buildRequiredFields(values: CreateInvoiceRequiredValues, options?: RequiredFieldOptions): RequiredField[] {
+  const requireFrtTaxType = options?.requireFrtTaxType ?? true
+
+  return REQUIRED_FIELD_CONFIG
+    .filter((field) => (field.key === 'frtTaxType' ? requireFrtTaxType : true))
+    .map((field) => ({
     key: field.key,
     label: field.label,
     value: values[field.key],
-  }))
+    }))
 }
 
 export function getMissingRequiredFields(fields: RequiredField[]): RequiredField[] {

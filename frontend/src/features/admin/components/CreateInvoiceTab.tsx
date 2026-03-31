@@ -29,6 +29,7 @@ import {
 } from '@/shared/components/ui/select'
 import { CreateInvoiceQnForm } from '@/features/admin/components/invoice/CreateInvoiceQnForm'
 import { CreateInvoiceHcmForm } from '@/features/admin/components/invoice/CreateInvoiceHcmForm'
+import type { AgencyFeeModeOption } from '@/features/admin/components/invoice/CreateInvoiceVariantForm'
 import {
   buildRequiredFields,
   getMissingRequiredFields,
@@ -63,6 +64,11 @@ const FRT_TAX_TYPE_OPTIONS = [
 ] as const
 type FrtTaxTypeOption = typeof FRT_TAX_TYPE_OPTIONS[number]['value']
 
+const AGENCY_FEE_MODE_OPTIONS = [
+  { value: 'TARRIF_AGENCY', label: 'TARRIF AGENCY' },
+  { value: 'AGENCY_IN_LUMPSUM', label: 'AGENCY IN LUMPSUM' },
+] as const
+
 const QUARANTINE_CARGO_OPTIONS = [
   { value: 'ONE_LEG', label: 'Chỉ xếp hoặc dở hàng', fee: 100, trips: 1 },
   { value: 'BOTH_LEGS', label: 'Xếp và dở hàng', fee: 200, trips: 2 },
@@ -83,6 +89,11 @@ const parseNumeric = (value: string) => {
 }
 
 const normalizePurpose = (value: string) => value.trim().toUpperCase().replace(/[\s-]+/g, '_')
+
+const canEnableFreightTaxByPurpose = (purpose: string) => {
+  const normalized = normalizePurpose(purpose)
+  return normalized === 'NHAP_XUAT' || normalized === 'CHUYEN_CANG_XUAT'
+}
 
 const getShipQuarantineTrips = (purpose: string) => {
   const normalized = normalizePurpose(purpose)
@@ -143,12 +154,19 @@ export function CreateInvoiceTab() {
   const [pilotageThirdMiles, setPilotageThirdMiles] = useState('17')
   const [qnPilotageMiles, setQnPilotageMiles] = useState('5')
   const [boatHireAmount, setBoatHireAmount] = useState('')
-  const [boatHireQuarantineAmount, setBoatHireQuarantineAmount] = useState('200')
+  const [boatHireQuarantineAmount, setBoatHireQuarantineAmount] = useState('0')
   const [tallyFeeAmount, setTallyFeeAmount] = useState('')
   const [transportLs, setTransportLs] = useState('')
   const [quarantineCargoMode, setQuarantineCargoMode] = useState<QuarantineCargoOption>('ONE_LEG')
+  const [agencyFeeMode, setAgencyFeeMode] = useState<AgencyFeeModeOption>('TARRIF_AGENCY')
+  const [agencyDiscountPercent, setAgencyDiscountPercent] = useState('0')
+  const [agencyLumpsumAmount, setAgencyLumpsumAmount] = useState('')
 
   const getRequiredState = (value: string | null | undefined) => getRequiredFieldState(value, showValidationErrors)
+  const canEnableFreightTaxDeclaration = useMemo(
+    () => canEnableFreightTaxByPurpose(purposeOfCalling),
+    [purposeOfCalling]
+  )
 
   const requiredFields = useMemo(
     () =>
@@ -164,7 +182,7 @@ export function CreateInvoiceTab() {
         cargoName,
         purposeOfCalling,
         frtTaxType,
-      }),
+      }, { requireFrtTaxType: canEnableFreightTaxDeclaration }),
     [toShipowner, mv, dischargeLoadingLocation, dwt, grt, loa, cargoQty, cargoType, cargoName, purposeOfCalling, frtTaxType]
   )
 
@@ -309,12 +327,35 @@ export function CreateInvoiceTab() {
   }, [cargoType])
 
   useEffect(() => {
+    if (dischargeLoadingLocation !== 'Anchorage') {
+      setBoatHireAmount('')
+    }
+  }, [dischargeLoadingLocation])
+
+  useEffect(() => {
+    if (agencyFeeMode === 'AGENCY_IN_LUMPSUM') {
+      setTransportLs('')
+      setBoatHireAmount('')
+      return
+    }
+
+    setAgencyLumpsumAmount('')
+  }, [agencyFeeMode])
+
+  useEffect(() => {
     if (!cargoType) return
     const stillValid = cargoTypeOptions.some((item) => item.code === cargoType)
     if (!stillValid) {
       setCargoType('')
     }
   }, [cargoType, cargoTypeOptions])
+
+  useEffect(() => {
+    if (!canEnableFreightTaxDeclaration) {
+      setFrtTaxType('')
+      setOceanFrtRateUsdPerMt('')
+    }
+  }, [canEnableFreightTaxDeclaration])
 
   useEffect(() => {
     if (!frtTaxType) {
@@ -373,9 +414,13 @@ export function CreateInvoiceTab() {
         quarantineCargoMode,
         quarantineCargoOptions: QUARANTINE_CARGO_OPTIONS,
         boatHireAmount,
+        agencyFeeMode,
+        agencyDiscountPercent,
+        agencyLumpsumAmount,
         isTallyFeeEligible: Boolean(cargoType && isTallyFeeEligibleCargo(cargoType)),
         tallyFeeAmount,
         berthHours,
+        buoyDueHours: quoteForm === 'HCM' && dischargeLoadingLocation === 'Anchorage' ? berthHours : '',
         anchorageHours,
         qnPilotageMiles,
         pilotageThirdMiles,
@@ -457,10 +502,13 @@ export function CreateInvoiceTab() {
     setPilotageThirdMiles('17')
     setQnPilotageMiles('5')
     setBoatHireAmount('')
-    setBoatHireQuarantineAmount('200')
+    setBoatHireQuarantineAmount('0')
     setTallyFeeAmount('')
     setTransportLs('')
     setQuarantineCargoMode('ONE_LEG')
+    setAgencyFeeMode('TARRIF_AGENCY')
+    setAgencyDiscountPercent('0')
+    setAgencyLumpsumAmount('')
     setPreviewHtml(null)
     setShowPreview(false)
   }
@@ -515,6 +563,9 @@ export function CreateInvoiceTab() {
     transportLs,
     boatHireAmount,
     boatHireQuarantineAmount,
+    agencyFeeMode,
+    agencyDiscountPercent,
+    agencyLumpsumAmount,
   }
 
   const formHandlers = {
@@ -542,6 +593,9 @@ export function CreateInvoiceTab() {
     setTransportLs,
     setBoatHireAmount,
     setBoatHireQuarantineAmount,
+    setAgencyFeeMode: (value: AgencyFeeModeOption) => setAgencyFeeMode(value),
+    setAgencyDiscountPercent,
+    setAgencyLumpsumAmount,
   }
 
   const formOptions = {
@@ -551,6 +605,7 @@ export function CreateInvoiceTab() {
     purposeOptions: PURPOSE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
     quarantineCargoOptions: QUARANTINE_CARGO_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
     frtTaxTypeOptions: FRT_TAX_TYPE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+    agencyFeeModeOptions: AGENCY_FEE_MODE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
   }
 
   const formComputed = {
@@ -560,7 +615,11 @@ export function CreateInvoiceTab() {
     cargoQuarantineFee: formatUsdAmount(cargoQuarantineFee),
     isImportFrtTaxType: isImportFrtTaxType(frtTaxType),
     isExportPlsAdviseMode: isExportPlsAdviseMode(frtTaxType),
-    frtHint: isImportFrtTaxType(frtTaxType)
+    canEnableFreightTaxDeclaration,
+    isOceanFreightInputDisabled: !canEnableFreightTaxDeclaration || isExportPlsAdviseMode(frtTaxType) || isImportFrtTaxType(frtTaxType),
+    frtHint: !canEnableFreightTaxDeclaration
+      ? 'N/A'
+      : isImportFrtTaxType(frtTaxType)
       ? '0'
       : isExportPlsAdviseMode(frtTaxType)
         ? 'pls advise'

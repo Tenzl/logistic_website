@@ -35,6 +35,12 @@ interface Port {
   portOfCall?: string
   provinceId: number
   hasInfo?: number
+
+  code?: string
+  zoneCode?: string
+  countryCode?: string
+  latitude?: number
+  longitude?: number
 }
 
 export function ManagePorts() {
@@ -44,9 +50,19 @@ export function ManagePorts() {
   const [ports, setPorts] = useState<Port[]>([])
   const [loading, setLoading] = useState(false)
   const [newPortName, setNewPortName] = useState('')
+  const [newCode, setNewCode] = useState('')
+  const [newZoneCode, setNewZoneCode] = useState('')
+  const [newCountryCode, setNewCountryCode] = useState('')
+  const [newLatitude, setNewLatitude] = useState('')
+  const [newLongitude, setNewLongitude] = useState('')
   const [editingPortId, setEditingPortId] = useState<number | null>(null)
   const [editingPortName, setEditingPortName] = useState('')
   const [editingPortOfCall, setEditingPortOfCall] = useState('')
+  const [editingCode, setEditingCode] = useState('')
+  const [editingZoneCode, setEditingZoneCode] = useState('')
+  const [editingCountryCode, setEditingCountryCode] = useState('')
+  const [editingLatitude, setEditingLatitude] = useState('')
+  const [editingLongitude, setEditingLongitude] = useState('')
 
   useEffect(() => {
     fetchProvinces()
@@ -101,6 +117,17 @@ export function ManagePorts() {
     }
   }
 
+  const parseOptionalNumber = (rawValue: string, fieldLabel: string): number | undefined => {
+    const trimmed = rawValue.trim()
+    if (!trimmed) return undefined
+
+    const value = Number(trimmed)
+    if (!Number.isFinite(value)) {
+      throw new Error(`${fieldLabel} must be a valid number`)
+    }
+    return value
+  }
+
   const handleAddPort = async () => {
     if (!selectedProvinceId) {
       toast.error('Please select a province first')
@@ -114,21 +141,44 @@ export function ManagePorts() {
 
     try {
       setLoading(true)
-      const response = await apiClient.post<ApiResponse<Port>>(API_CONFIG.PORTS.BASE, {
+      const payload: Record<string, unknown> = {
         name: newPortName.trim(),
-        provinceId: selectedProvinceId
-      })
+        provinceId: selectedProvinceId,
+      }
+
+      const maybeCode = newCode.trim()
+      if (maybeCode) payload.code = maybeCode
+
+      const maybeZoneCode = newZoneCode.trim()
+      if (maybeZoneCode) payload.zoneCode = maybeZoneCode
+
+      const maybeCountryCode = newCountryCode.trim()
+      if (maybeCountryCode) payload.countryCode = maybeCountryCode
+
+      const maybeLatitude = parseOptionalNumber(newLatitude, 'Latitude')
+      if (maybeLatitude !== undefined) payload.latitude = maybeLatitude
+
+      const maybeLongitude = parseOptionalNumber(newLongitude, 'Longitude')
+      if (maybeLongitude !== undefined) payload.longitude = maybeLongitude
+
+      const response = await apiClient.post<ApiResponse<Port>>(API_CONFIG.PORTS.BASE, payload)
 
       if (response.ok) {
         const result = await response.json()
         setPorts([...ports, result.data])
         setNewPortName('')
+        setNewCode('')
+        setNewZoneCode('')
+        setNewCountryCode('')
+        setNewLatitude('')
+        setNewLongitude('')
         toast.success('Port added successfully')
       } else {
         throw new Error('Failed to add port')
       }
     } catch (error) {
-      toast.error('Failed to add port')
+      const message = error instanceof Error ? error.message : 'Failed to add port'
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -138,6 +188,12 @@ export function ManagePorts() {
     setEditingPortId(port.id)
     setEditingPortName(port.name)
     setEditingPortOfCall(port.portOfCall || '')
+
+    setEditingCode(port.code || '')
+    setEditingZoneCode(port.zoneCode || '')
+    setEditingCountryCode(port.countryCode || '')
+    setEditingLatitude(port.latitude != null ? String(port.latitude) : '')
+    setEditingLongitude(port.longitude != null ? String(port.longitude) : '')
   }
 
   const handleSavePort = async (portId: number) => {
@@ -145,14 +201,35 @@ export function ManagePorts() {
       toast.error('Port name cannot be empty')
       return
     }
+    if (!selectedProvinceId) {
+      toast.error('Please select a province first')
+      return
+    }
 
     try {
       setLoading(true)
-      const response = await apiClient.put<ApiResponse<Port>>(API_CONFIG.PORTS.BY_ID(portId), {
+      const payload: Record<string, unknown> = {
         name: editingPortName.trim(),
         portOfCall: editingPortOfCall.trim(),
-        provinceId: selectedProvinceId
-      })
+        provinceId: selectedProvinceId,
+      }
+
+      const maybeCode = editingCode.trim()
+      if (maybeCode) payload.code = maybeCode
+
+      const maybeZoneCode = editingZoneCode.trim()
+      if (maybeZoneCode) payload.zoneCode = maybeZoneCode
+
+      const maybeCountryCode = editingCountryCode.trim()
+      if (maybeCountryCode) payload.countryCode = maybeCountryCode
+
+      const maybeLatitude = parseOptionalNumber(editingLatitude, 'Latitude')
+      if (maybeLatitude !== undefined) payload.latitude = maybeLatitude
+
+      const maybeLongitude = parseOptionalNumber(editingLongitude, 'Longitude')
+      if (maybeLongitude !== undefined) payload.longitude = maybeLongitude
+
+      const response = await apiClient.put<ApiResponse<Port>>(API_CONFIG.PORTS.BY_ID(portId), payload)
 
       if (response.ok) {
         const updatedPort = await response.json()
@@ -160,12 +237,20 @@ export function ManagePorts() {
         setEditingPortId(null)
         setEditingPortName('')
         setEditingPortOfCall('')
+
+        setEditingCode('')
+        setEditingZoneCode('')
+        setEditingCountryCode('')
+        setEditingLatitude('')
+        setEditingLongitude('')
+
         toast.success('Port updated successfully')
       } else {
         throw new Error('Failed to update port')
       }
     } catch (error) {
-      toast.error('Failed to update port')
+      const message = error instanceof Error ? error.message : 'Failed to update port'
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -303,6 +388,65 @@ export function ManagePorts() {
                   Add
                 </Button>
               </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="new-code">Code</Label>
+                  <Input
+                    id="new-code"
+                    placeholder="e.g., 123"
+                    value={newCode}
+                    onChange={(e) => setNewCode(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-zone-code">Zone Code</Label>
+                  <Input
+                    id="new-zone-code"
+                    placeholder="e.g., SOUTHERN"
+                    value={newZoneCode}
+                    onChange={(e) => setNewZoneCode(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-country-code">Country Code</Label>
+                  <Input
+                    id="new-country-code"
+                    placeholder="e.g., VN"
+                    value={newCountryCode}
+                    onChange={(e) => setNewCountryCode(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-latitude">Latitude</Label>
+                  <Input
+                    id="new-latitude"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="e.g., 10.73"
+                    value={newLatitude}
+                    onChange={(e) => setNewLatitude(e.target.value)}
+                    disabled={loading}
+                    step="any"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-1">
+                  <Label htmlFor="new-longitude">Longitude</Label>
+                  <Input
+                    id="new-longitude"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="e.g., 106.71"
+                    value={newLongitude}
+                    onChange={(e) => setNewLongitude(e.target.value)}
+                    disabled={loading}
+                    step="any"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -328,6 +472,11 @@ export function ManagePorts() {
                     <TableRow>
                       <TableHead>Port Name</TableHead>
                       <TableHead>Port of Call</TableHead>
+                      <TableHead className="hidden md:table-cell w-32">Code</TableHead>
+                      <TableHead className="hidden lg:table-cell w-32">Zone</TableHead>
+                      <TableHead className="hidden lg:table-cell w-32">Country</TableHead>
+                      <TableHead className="hidden xl:table-cell w-32">Latitude</TableHead>
+                      <TableHead className="hidden xl:table-cell w-32">Longitude</TableHead>
                       <TableHead className="w-40">Has Info</TableHead>
                       <TableHead className="text-right w-32">Actions</TableHead>
                     </TableRow>
@@ -361,6 +510,75 @@ export function ManagePorts() {
                           )}
                         </TableCell>
 
+                        <TableCell className="hidden md:table-cell">
+                          {editingPortId === port.id ? (
+                            <Input
+                              value={editingCode}
+                              onChange={(e) => setEditingCode(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleSavePort(port.id)}
+                              placeholder="Code"
+                            />
+                          ) : (
+                            port.code || '-'
+                          )}
+                        </TableCell>
+
+                        <TableCell className="hidden lg:table-cell">
+                          {editingPortId === port.id ? (
+                            <Input
+                              value={editingZoneCode}
+                              onChange={(e) => setEditingZoneCode(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleSavePort(port.id)}
+                              placeholder="Zone code"
+                            />
+                          ) : (
+                            port.zoneCode || '-'
+                          )}
+                        </TableCell>
+
+                        <TableCell className="hidden lg:table-cell">
+                          {editingPortId === port.id ? (
+                            <Input
+                              value={editingCountryCode}
+                              onChange={(e) => setEditingCountryCode(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleSavePort(port.id)}
+                              placeholder="Country code"
+                            />
+                          ) : (
+                            port.countryCode || '-'
+                          )}
+                        </TableCell>
+
+                        <TableCell className="hidden xl:table-cell">
+                          {editingPortId === port.id ? (
+                            <Input
+                              value={editingLatitude}
+                              onChange={(e) => setEditingLatitude(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleSavePort(port.id)}
+                              type="number"
+                              step="any"
+                              placeholder="Latitude"
+                            />
+                          ) : (
+                            port.latitude != null ? port.latitude : '-'
+                          )}
+                        </TableCell>
+
+                        <TableCell className="hidden xl:table-cell">
+                          {editingPortId === port.id ? (
+                            <Input
+                              value={editingLongitude}
+                              onChange={(e) => setEditingLongitude(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleSavePort(port.id)}
+                              type="number"
+                              step="any"
+                              placeholder="Longitude"
+                            />
+                          ) : (
+                            port.longitude != null ? port.longitude : '-'
+                          )}
+                        </TableCell>
+
                         <TableCell>
                           <Button
                             variant={port.hasInfo === 1 ? 'default' : 'outline'}
@@ -391,6 +609,12 @@ export function ManagePorts() {
                                     setEditingPortId(null)
                                     setEditingPortName('')
                                     setEditingPortOfCall('')
+
+                                  setEditingCode('')
+                                  setEditingZoneCode('')
+                                  setEditingCountryCode('')
+                                  setEditingLatitude('')
+                                  setEditingLongitude('')
                                   }}
                                   disabled={loading}
                                 >

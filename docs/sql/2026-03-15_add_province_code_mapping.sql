@@ -53,8 +53,8 @@ CREATE TEMPORARY TABLE tmp_province_alias (
 
 INSERT INTO tmp_province_code (code, name, display_name, area) VALUES
 ('01', 'HA NOI', 'Ha Noi', 'NORTHERN'),
-('10', 'LAO CAI', 'Lao Cai', 'NORTHERN'),
-('26', 'THAI NGUYEN', 'Thai Nguyen', 'NORTHERN'),
+('15', 'LAO CAI', 'Lao Cai', 'NORTHERN'),
+('19', 'THAI NGUYEN', 'Thai Nguyen', 'NORTHERN'),
 ('20', 'LANG SON', 'Lang Son', 'NORTHERN'),
 ('22', 'QUANG NINH', 'Quang Ninh', 'NORTHERN'),
 ('24', 'BAC NINH', 'Bac Ninh', 'NORTHERN'),
@@ -76,7 +76,7 @@ INSERT INTO tmp_province_code (code, name, display_name, area) VALUES
 ('80', 'TAY NINH', 'Tay Ninh', 'SOUTHERN'),
 ('82', 'DONG THAP', 'Dong Thap', 'SOUTHERN'),
 ('86', 'VINH LONG', 'Vinh Long', 'SOUTHERN'),
-('89', 'AN GIANG', 'An Giang', 'SOUTHERN'),
+('91', 'AN GIANG', 'An Giang', 'SOUTHERN'),
 ('92', 'CAN THO', 'Can Tho', 'SOUTHERN'),
 ('96', 'CA MAU', 'Ca Mau', 'SOUTHERN');
 

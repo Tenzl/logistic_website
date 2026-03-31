@@ -13,7 +13,7 @@ public class ProvinceDTO {
     private Long id;
     private String name;
     private String displayName;
-    private String code;
+    private Integer code;
     private String area;
     private int portCount;
     private List<String> ports;

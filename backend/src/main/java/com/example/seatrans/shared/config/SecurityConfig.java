@@ -92,6 +92,8 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 // Allow CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Explicit deny list for non-admin booking management aliases
+                .requestMatchers("/api/v1/booking-management/**", "/api/v1/inquiries/booking-management/**").denyAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/api/v1/auth/oauth2/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
@@ -113,7 +115,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/inquiries").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/inquiries/**").permitAll()
                 // Admin-only endpoints
-                .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ROLE_INTERNAL", "ADMIN", "EMPLOYEE", "INTERNAL")
                 // Allow static files if served by Spring
                 .requestMatchers("/uploads/**").permitAll()
                 .anyRequest().authenticated()
