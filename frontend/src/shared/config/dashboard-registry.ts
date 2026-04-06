@@ -6,6 +6,7 @@ import {
   ListChecks,
   Package,
   Truck,
+  Ship,
   Anchor,
   FileText,
   Upload,
@@ -38,6 +39,7 @@ export type DashboardSection =
   | "categories"
   | "posts"
   | "booking-partners"
+  | "booking-shipping"
   | "inquiry"
 
 export interface SectionConfig {
@@ -69,6 +71,7 @@ const ManageImageTypes = lazy(() => import("@/modules/gallery/components/admin/I
 const ManageCategories = lazy(() => import("@/modules/categories/components/admin/CategoryManagement").then(m => ({ default: m.ManageCategories })))
 const ManagePosts = lazy(() => import("@/modules/posts/components/admin/PostManagement").then(m => ({ default: m.ManagePosts })))
 const PartnerManagementTab = lazy(() => import("@/features/admin/components/PartnerManagementTab").then(m => ({ default: m.PartnerManagementTab })))
+const BookingShippingTab = lazy(() => import("@/features/admin/components/BookingShippingTab").then(m => ({ default: m.BookingShippingTab })))
 
 const UserInquiriesPage = lazy(() => import("@/features/user/component/UserInquiriesPage").then(m => ({ default: m.UserInquiriesPage })))
 
@@ -232,6 +235,16 @@ export const SECTION_REGISTRY: Record<DashboardSection, SectionConfig> = {
     roleGroups: ["INTERNAL"],
     category: "Booking Management",
     title: "Partner Management",
+  },
+  "booking-shipping": {
+    id: "booking-shipping",
+    label: "Shipping",
+    icon: Ship,
+    component: BookingShippingTab,
+    roles: ["ADMIN", "EMPLOYEE"],
+    roleGroups: ["INTERNAL"],
+    category: "Booking Management",
+    title: "Shipping",
   },
   inquiry: {
     id: "inquiry",

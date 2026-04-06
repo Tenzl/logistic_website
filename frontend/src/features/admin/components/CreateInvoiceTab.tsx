@@ -154,12 +154,12 @@ export function CreateInvoiceTab() {
   const [pilotageThirdMiles, setPilotageThirdMiles] = useState('17')
   const [qnPilotageMiles, setQnPilotageMiles] = useState('5')
   const [boatHireAmount, setBoatHireAmount] = useState('')
-  const [boatHireQuarantineAmount, setBoatHireQuarantineAmount] = useState('0')
+  const [boatHireQuarantineAmount, setBoatHireQuarantineAmount] = useState('')
   const [tallyFeeAmount, setTallyFeeAmount] = useState('')
   const [transportLs, setTransportLs] = useState('')
   const [quarantineCargoMode, setQuarantineCargoMode] = useState<QuarantineCargoOption>('ONE_LEG')
   const [agencyFeeMode, setAgencyFeeMode] = useState<AgencyFeeModeOption>('TARRIF_AGENCY')
-  const [agencyDiscountPercent, setAgencyDiscountPercent] = useState('0')
+  const [agencyDiscountPercent, setAgencyDiscountPercent] = useState('')
   const [agencyLumpsumAmount, setAgencyLumpsumAmount] = useState('')
 
   const getRequiredState = (value: string | null | undefined) => getRequiredFieldState(value, showValidationErrors)
@@ -364,7 +364,7 @@ export function CreateInvoiceTab() {
     }
 
     if (isImportFrtTaxType(frtTaxType)) {
-      setOceanFrtRateUsdPerMt('0')
+      setOceanFrtRateUsdPerMt('')
       return
     }
 
@@ -502,12 +502,12 @@ export function CreateInvoiceTab() {
     setPilotageThirdMiles('17')
     setQnPilotageMiles('5')
     setBoatHireAmount('')
-    setBoatHireQuarantineAmount('0')
+    setBoatHireQuarantineAmount('')
     setTallyFeeAmount('')
     setTransportLs('')
     setQuarantineCargoMode('ONE_LEG')
     setAgencyFeeMode('TARRIF_AGENCY')
-    setAgencyDiscountPercent('0')
+    setAgencyDiscountPercent('')
     setAgencyLumpsumAmount('')
     setPreviewHtml(null)
     setShowPreview(false)

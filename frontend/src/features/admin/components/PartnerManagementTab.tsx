@@ -1,26 +1,29 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
-  ColumnDef,
-  VisibilityState,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Plus, Pencil, Trash2, ChevronDown, FileSpreadsheet } from "lucide-react"
+import { ChevronDown, FileSpreadsheet, Pencil, Plus, Trash2, Users } from "lucide-react"
 
-import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
 import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Checkbox } from "@/shared/components/ui/checkbox"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
+  DataTableContent,
+  DataTablePagination,
+  DataTableSortHeader,
+} from "@/shared/components/ui/data-table"
 import {
   Dialog,
   DialogContent,
@@ -30,23 +33,21 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table"
-import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
-import { Checkbox } from "@/shared/components/ui/checkbox"
-import { toast } from "@/shared/utils/toast"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 import { PartnerImportDialog } from "@/features/admin/components/PartnerImportDialog"
-
 import { partnerManagementService } from "@/features/admin/services/partnerManagementService"
 import type {
   BookingPartnerDetail,
@@ -56,6 +57,13 @@ import type {
   CustomerType,
   PartnerAdditionType,
 } from "@/features/admin/types/partnerManagement.types"
+import { queryKeys } from "@/shared/config/react-query.config"
+import { useQueryListCache } from "@/shared/hooks/useQueryListCache"
+import { toast } from "@/shared/utils/toast"
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const ADDITION_TYPE_OPTIONS: PartnerAdditionType[] = [
   "CUSTOMER",
@@ -72,12 +80,12 @@ const ADDITION_TYPE_OPTIONS: PartnerAdditionType[] = [
 const CUSTOMER_STATUS_OPTIONS: CustomerStatus[] = ["LEAD", "WINCLIENT"]
 const CUSTOMER_TYPE_OPTIONS: CustomerType[] = ["AGENT", "DIRECT", "OTHER"]
 
-const formatAdditionTypeLabel = (type: PartnerAdditionType): string => {
-  if (type === "OTHER_VENDORS") {
-    return "OTHER VENDOR"
-  }
-  return type.replace(/_/g, " ")
-}
+const formatAdditionTypeLabel = (type: PartnerAdditionType): string =>
+  type === "OTHER_VENDORS" ? "OTHER VENDOR" : type.replace(/_/g, " ")
+
+// ---------------------------------------------------------------------------
+// Form helpers
+// ---------------------------------------------------------------------------
 
 type FormState = {
   name: string
@@ -139,61 +147,42 @@ const fromDetail = (detail: BookingPartnerDetail): FormState => ({
   taxNumber: detail.taxNumber || "",
 })
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export function PartnerManagementTab() {
-  const [rows, setRows] = useState<BookingPartnerListItem[]>([])
-  const [loading, setLoading] = useState(false)
+  const partnersKey = queryKeys.partners()
+  const partnersListCache = useQueryListCache<BookingPartnerListItem>(partnersKey)
 
-  const [q, setQ] = useState("")
-  const [customerStatus, setCustomerStatus] = useState<CustomerStatus | "ALL">("ALL")
-  const [customerType, setCustomerType] = useState<CustomerType | "ALL">("ALL")
-  const [selectedAdditionType, setSelectedAdditionType] = useState<PartnerAdditionType | "ALL">("ALL")
+  const { data: allRows = [], isLoading: loading } = useQuery({
+    queryKey: partnersKey,
+    queryFn: () => partnerManagementService.listAll(),
+  })
 
-  const [page, setPage] = useState(0)
-  const [size] = useState(20)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalElements, setTotalElements] = useState(0)
+  // TanStack filter state (kept external so UI can read active values)
+  const [globalFilter, setGlobalFilter] = useState("")
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({ address: false })
 
+  // Derived active filter values for UI button/select highlighting
+  const activeAdditionType =
+    (columnFilters.find((f) => f.id === "additionTypes")?.value as PartnerAdditionType | undefined) ?? "ALL"
+  const activeCustomerStatus =
+    (columnFilters.find((f) => f.id === "customerStatus")?.value as string | undefined) ?? "ALL"
+  const activeCustomerType =
+    (columnFilters.find((f) => f.id === "customerType")?.value as string | undefined) ?? "ALL"
+
+  // Dialog / form state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormState>(initialFormState)
 
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    address: false,
-  })
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const data = await partnerManagementService.list({
-        page,
-        size,
-        sort: "updatedAt,desc",
-        q,
-        customerStatus: customerStatus === "ALL" ? undefined : customerStatus,
-        customerType: customerType === "ALL" ? undefined : customerType,
-        additionTypes: selectedAdditionType === "ALL" ? [] : [selectedAdditionType],
-      })
-      setRows(data.items || [])
-      setTotalPages(data.totalPages || 0)
-      setTotalElements(data.totalElements || 0)
-    } catch (error) {
-      toast.error("Failed to load partners", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, size, selectedAdditionType])
-
-  const onApplyFilters = async () => {
-    setPage(0)
-    await loadData()
-  }
+  // ---------------------------------------------------------------------------
+  // CRUD handlers
+  // ---------------------------------------------------------------------------
 
   const onOpenCreate = () => {
     setEditingId(null)
@@ -238,17 +227,17 @@ export function PartnerManagementTab() {
       setSaving(true)
       const payload = toUpsertRequest(form)
       if (editingId) {
-        await partnerManagementService.update(editingId, payload)
+        const saved = await partnerManagementService.update(editingId, payload)
+        partnersListCache.upsertById(saved)
         toast.success("Partner updated successfully")
       } else {
-        await partnerManagementService.create(payload)
+        const saved = await partnerManagementService.create(payload)
+        partnersListCache.append(saved)
         toast.success("Partner created successfully")
       }
-
       setDialogOpen(false)
       setForm(initialFormState)
       setEditingId(null)
-      await loadData()
     } catch (error) {
       toast.error("Failed to save partner", error)
     } finally {
@@ -258,264 +247,342 @@ export function PartnerManagementTab() {
 
   const onDelete = async (id: number) => {
     if (!confirm("Delete this partner?")) return
-
     try {
       await partnerManagementService.delete(id)
+      partnersListCache.removeById(id)
       toast.success("Partner deleted successfully")
-      await loadData()
     } catch (error) {
       toast.error("Failed to delete partner", error)
     }
   }
 
-  const columns = useMemo<ColumnDef<BookingPartnerListItem>[]>(() => [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => (
-        <span 
-          className="font-medium block truncate w-full" 
-          title={row.original.name}
-        >
-          {row.original.name}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "customerId",
-      header: "Customer ID",
-    },
-    {
-      accessorKey: "additionTypes",
-      header: "Additional Types",
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.additionTypes?.map((type) => (
-            <Badge key={type} variant="outline" className="text-xs">{formatAdditionTypeLabel(type)}</Badge>
-          ))}
-        </div>
-      ),
-    },
-    { accessorKey: "country", header: "Country" },
-    { accessorKey: "city", header: "City" },
-    { accessorKey: "contactEmail", header: "Contact Email" },
-    { accessorKey: "phone", header: "Phone" },
-    { accessorKey: "fax", header: "Fax" },
-    { accessorKey: "trackingUrl", header: "Tracking URL" },
-    { accessorKey: "address", header: "Address" },
-    {
-      accessorKey: "customerStatus",
-      header: "Customer Status",
-      cell: ({ row }) => row.original.customerStatus ? <Badge>{row.original.customerStatus}</Badge> : "-",
-    },
-    { accessorKey: "customerType", header: "Customer Type" },
-    { accessorKey: "taxNumber", header: "Tax Number" },
-    { accessorKey: "updatedBy", header: "Updated By" },
-    { 
-      accessorKey: "updatedAt", 
-      header: "Updated At",
-      cell: ({ row }) => row.original.updatedAt ? new Date(row.original.updatedAt).toLocaleDateString('en-CA') : "-" // en-CA gives YYYY-MM-DD format
-    },
-    { accessorKey: "createdBy", header: "Created By" },
-    { 
-      accessorKey: "createdAt", 
-      header: "Created On",
-      cell: ({ row }) => row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('en-CA') : "-"
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableHiding: false,
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => onOpenEdit(row.original.id)}>
-            <Pencil className="h-3 w-3" />
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => onDelete(row.original.id)}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      ),
-    },
-  ], [])
+  // ---------------------------------------------------------------------------
+  // Column definitions
+  // ---------------------------------------------------------------------------
+
+  const columns = useMemo<ColumnDef<BookingPartnerListItem>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        enableGlobalFilter: true,
+        header: ({ column }) => <DataTableSortHeader column={column}>Name</DataTableSortHeader>,
+        cell: ({ row }) => (
+          <span className="font-medium block truncate w-full" title={row.original.name}>
+            {row.original.name}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "customerId",
+        enableGlobalFilter: true,
+        header: ({ column }) => <DataTableSortHeader column={column}>Customer ID</DataTableSortHeader>,
+      },
+      {
+        accessorKey: "additionTypes",
+        header: "Additional Types",
+        enableSorting: false,
+        enableGlobalFilter: false,
+        filterFn: (row, _columnId, filterValue: PartnerAdditionType) => {
+          if (!filterValue) return true
+          return (row.original.additionTypes ?? []).includes(filterValue)
+        },
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.additionTypes?.map((type) => (
+              <Badge key={type} variant="outline" className="text-xs">
+                {formatAdditionTypeLabel(type)}
+              </Badge>
+            ))}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "country",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>Country</DataTableSortHeader>,
+      },
+      {
+        accessorKey: "city",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>City</DataTableSortHeader>,
+      },
+      {
+        accessorKey: "contactEmail",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>Contact Email</DataTableSortHeader>,
+      },
+      { accessorKey: "phone", header: "Phone", enableSorting: false, enableGlobalFilter: false },
+      { accessorKey: "fax", header: "Fax", enableSorting: false, enableGlobalFilter: false },
+      { accessorKey: "trackingUrl", header: "Tracking URL", enableSorting: false, enableGlobalFilter: false },
+      { accessorKey: "address", header: "Address", enableSorting: false, enableGlobalFilter: false },
+      {
+        accessorKey: "customerStatus",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>Customer Status</DataTableSortHeader>,
+        filterFn: (row, _columnId, filterValue: string) => {
+          if (!filterValue) return true
+          return row.original.customerStatus === filterValue
+        },
+        cell: ({ row }) =>
+          row.original.customerStatus ? <Badge>{row.original.customerStatus}</Badge> : "-",
+      },
+      {
+        accessorKey: "customerType",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>Customer Type</DataTableSortHeader>,
+        filterFn: (row, _columnId, filterValue: string) => {
+          if (!filterValue) return true
+          return row.original.customerType === filterValue
+        },
+      },
+      {
+        accessorKey: "taxNumber",
+        enableGlobalFilter: true,
+        header: ({ column }) => <DataTableSortHeader column={column}>Tax Number</DataTableSortHeader>,
+      },
+      { accessorKey: "updatedBy", header: "Updated By", enableSorting: false, enableGlobalFilter: false },
+      {
+        accessorKey: "updatedAt",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>Updated At</DataTableSortHeader>,
+        cell: ({ row }) =>
+          row.original.updatedAt
+            ? new Date(row.original.updatedAt).toLocaleDateString("en-CA")
+            : "-",
+      },
+      { accessorKey: "createdBy", header: "Created By", enableSorting: false, enableGlobalFilter: false },
+      {
+        accessorKey: "createdAt",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableSortHeader column={column}>Created On</DataTableSortHeader>,
+        cell: ({ row }) =>
+          row.original.createdAt
+            ? new Date(row.original.createdAt).toLocaleDateString("en-CA")
+            : "-",
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableHiding: false,
+        enableSorting: false,
+        enableGlobalFilter: false,
+        cell: ({ row }) => (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => onOpenEdit(row.original.id)}>
+              <Pencil className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onDelete(row.original.id)}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
+  // ---------------------------------------------------------------------------
+  // Table instance
+  // ---------------------------------------------------------------------------
 
   const table = useReactTable({
-    data: rows,
+    data: allRows,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    state: { columnVisibility },
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    state: { globalFilter, columnFilters, columnVisibility },
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    initialState: {
+      pagination: { pageSize: 20, pageIndex: 0 },
+      sorting: [{ id: "updatedAt", desc: true }],
+    },
+    autoResetPageIndex: true,
+    globalFilterFn: (row, columnId, filterValue) => {
+      if (!["name", "customerId", "taxNumber"].includes(columnId)) return false
+      const value = String(row.getValue(columnId) ?? "").toLowerCase()
+      return value.includes(String(filterValue).toLowerCase())
+    },
   })
 
-  const stickyClass = (columnId: string, isHeader: boolean = false) => {
-    const defaultBg = isHeader ? "bg-background sticky top-0 z-20" : ""
+  // ---------------------------------------------------------------------------
+  // Layout helpers
+  // ---------------------------------------------------------------------------
+
+  const stickyClass = (columnId: string, isHeader = false) => {
+    const headerBase = isHeader ? "bg-background sticky top-0 z-20" : ""
     const stickyBg = isHeader ? "bg-background z-40" : "bg-background z-30"
-    if (columnId === "name") return `sticky left-0 ${isHeader ? 'top-0' : ''} ${stickyBg} min-w-[220px] max-w-[220px] shadow-[1px_0_0_0_#e2e8f0]`
-    if (columnId === "actions") return `sticky right-0 ${isHeader ? 'top-0' : ''} ${stickyBg} min-w-[120px] shadow-[-1px_0_0_0_#e2e8f0]`
-    return defaultBg
+    if (columnId === "name")
+      return `sticky left-0 ${isHeader ? "top-0" : ""} ${stickyBg} min-w-[220px] max-w-[220px] shadow-[1px_0_0_0_#e2e8f0]`
+    if (columnId === "actions")
+      return `sticky right-0 ${isHeader ? "top-0" : ""} ${stickyBg} min-w-[120px] shadow-[-1px_0_0_0_#e2e8f0]`
+    return headerBase
   }
 
   const columnWidthClass = (columnId: string) => {
-    if (columnId === "name") return "min-w-[220px] max-w-[220px]"
-    if (columnId === "customerId") return "min-w-[190px]"
-    if (columnId === "additionTypes") return "min-w-[260px]"
-    if (columnId === "country") return "min-w-[140px]"
-    if (columnId === "city") return "min-w-[140px]"
-    if (columnId === "contactEmail") return "min-w-[240px]"
-    if (columnId === "phone") return "min-w-[170px]"
-    if (columnId === "fax") return "min-w-[170px]"
-    if (columnId === "trackingUrl") return "min-w-[280px]"
-    if (columnId === "address") return "min-w-[320px]"
-    if (columnId === "customerStatus") return "min-w-[170px]"
-    if (columnId === "customerType") return "min-w-[160px]"
-    if (columnId === "taxNumber") return "min-w-[190px]"
-    if (columnId === "updatedBy" || columnId === "createdBy") return "min-w-[180px]"
-    if (columnId === "updatedAt" || columnId === "createdAt") return "min-w-[180px]"
-    if (columnId === "actions") return "min-w-[120px]"
-    return "min-w-[140px]"
+    const map: Record<string, string> = {
+      name: "min-w-[220px] max-w-[220px]",
+      customerId: "min-w-[190px]",
+      additionTypes: "min-w-[260px]",
+      country: "min-w-[140px]",
+      city: "min-w-[140px]",
+      contactEmail: "min-w-[240px]",
+      phone: "min-w-[170px]",
+      fax: "min-w-[170px]",
+      trackingUrl: "min-w-[280px]",
+      address: "min-w-[320px]",
+      customerStatus: "min-w-[170px]",
+      customerType: "min-w-[160px]",
+      taxNumber: "min-w-[190px]",
+      updatedBy: "min-w-[180px]",
+      createdBy: "min-w-[180px]",
+      updatedAt: "min-w-[180px]",
+      createdAt: "min-w-[180px]",
+      actions: "min-w-[120px]",
+    }
+    return map[columnId] ?? "min-w-[140px]"
   }
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Partner Management</h2>
-          <p className="text-sm text-muted-foreground">Manage booking partners profile data</p>
+    <>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Partner Management
+            </CardTitle>
+            <CardDescription>Manage booking partners profile data</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              Import Excel
+            </Button>
+            <Button size="sm" onClick={onOpenCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Partner
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Import Excel
-          </Button>
-          <Button onClick={onOpenCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Partner
-          </Button>
-        </div>
-      </div>
+      </CardHeader>
 
-      <div className="rounded-md border p-4 space-y-3">
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          <Button
-            className="h-7 px-2 text-[11px] whitespace-nowrap"
-            variant={selectedAdditionType === "ALL" ? "default" : "outline"}
-            onClick={() => {
-              setSelectedAdditionType("ALL")
-              setPage(0)
-            }}
-          >
-            ALL
-          </Button>
-          {ADDITION_TYPE_OPTIONS.map((type) => (
+      <CardContent>
+        {/* Filter bar */}
+        <div className="space-y-3 pb-4">
+          {/* Addition type tab buttons */}
+          <div className="flex gap-1 overflow-x-auto pb-1">
             <Button
-              key={type}
               className="h-7 px-2 text-[11px] whitespace-nowrap"
-              variant={selectedAdditionType === type ? "default" : "outline"}
-              onClick={() => {
-                setSelectedAdditionType(type)
-                setPage(0)
-              }}
+              variant={activeAdditionType === "ALL" ? "default" : "outline"}
+              onClick={() => table.getColumn("additionTypes")?.setFilterValue(undefined)}
             >
-              {formatAdditionTypeLabel(type)}
+              ALL
             </Button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Input placeholder="Search name / customer id / tax number" value={q} onChange={(e) => setQ(e.target.value)} />
-
-          <Select value={customerStatus} onValueChange={(v) => setCustomerStatus(v as CustomerStatus | "ALL")}>
-            <SelectTrigger><SelectValue placeholder="Customer Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Status</SelectItem>
-              {CUSTOMER_STATUS_OPTIONS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <Select value={customerType} onValueChange={(v) => setCustomerType(v as CustomerType | "ALL")}>
-            <SelectTrigger><SelectValue placeholder="Customer Type" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Types</SelectItem>
-              {CUSTOMER_TYPE_OPTIONS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <Button variant="secondary" onClick={onApplyFilters}>Apply Filters</Button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">Total: {totalElements}</div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table.getAllColumns().filter((column) => column.getCanHide()).map((column) => (
-              <DropdownMenuCheckboxItem
-                key={column.id}
-                checked={column.getIsVisible()}
-                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+            {ADDITION_TYPE_OPTIONS.map((type) => (
+              <Button
+                key={type}
+                className="h-7 px-2 text-[11px] whitespace-nowrap"
+                variant={activeAdditionType === type ? "default" : "outline"}
+                onClick={() => table.getColumn("additionTypes")?.setFilterValue(type)}
               >
-                {column.id}
-              </DropdownMenuCheckboxItem>
+                {formatAdditionTypeLabel(type)}
+              </Button>
             ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          </div>
 
-      <div className="rounded-md border overflow-auto max-h-[450px] relative [&>div]:!overflow-visible shadow-inner">
-        <Table className="w-max min-w-full">
-          <TableHeader className="shadow-[0_1px_0_0_#e2e8f0]">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={`${stickyClass(header.column.id, true)} ${columnWidthClass(header.column.id)} whitespace-nowrap`}
-                  >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
+          {/* Search + dropdowns */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              placeholder="Search name / customer id / tax number"
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="w-full md:w-[300px]"
+            />
+            <Select
+              value={activeCustomerStatus}
+              onValueChange={(v) =>
+                table.getColumn("customerStatus")?.setFilterValue(v === "ALL" ? undefined : v)
+              }
+            >
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Customer Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                {CUSTOMER_STATUS_OPTIONS.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
                 ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">Loading...</TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">No partners found</TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={`${stickyClass(cell.column.id)} ${columnWidthClass(cell.column.id)} whitespace-nowrap align-top`}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </SelectContent>
+            </Select>
+            <Select
+              value={activeCustomerType}
+              onValueChange={(v) =>
+                table.getColumn("customerType")?.setFilterValue(v === "ALL" ? undefined : v)
+              }
+            >
+              <SelectTrigger className="w-full md:w-[160px]">
+                <SelectValue placeholder="Customer Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Types</SelectItem>
+                {CUSTOMER_TYPE_OPTIONS.map((item) => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" disabled={page <= 0} onClick={() => setPage((prev) => prev - 1)}>Previous</Button>
-        <span className="text-sm text-muted-foreground">Page {page + 1} / {Math.max(totalPages, 1)}</span>
-        <Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((prev) => prev + 1)}>Next</Button>
-      </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table.getAllColumns().filter((c) => c.getCanHide()).map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        {/* Table */}
+        <DataTableContent
+          table={table}
+          columnCount={columns.length}
+          loading={loading}
+          emptyMessage="No partners found."
+          maxHeight="430px"
+          containerClassName="relative [&>div]:!overflow-visible shadow-inner"
+          tableClassName="w-max min-w-full"
+          columnClassName={(id, type) => {
+            const isHeader = type === "header"
+            return `${stickyClass(id, isHeader)} ${columnWidthClass(id)} whitespace-nowrap${isHeader ? "" : " align-top"}`
+          }}
+        />
+
+        <DataTablePagination table={table} persistKey="partners-page" />
+      </CardContent>
+    </Card>
+
+    {/* Create / Edit dialog */}
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Partner" : "Create Partner"}</DialogTitle>
@@ -527,11 +594,17 @@ export function PartnerManagementTab() {
           <div className="grid md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2 pb-3 pl-1 scroll-pb-6">
             <div>
               <Label>Name *</Label>
-              <Input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} />
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              />
             </div>
             <div>
               <Label>Tax Number</Label>
-              <Input value={form.taxNumber} onChange={(e) => setForm((prev) => ({ ...prev, taxNumber: e.target.value }))} />
+              <Input
+                value={form.taxNumber}
+                onChange={(e) => setForm((prev) => ({ ...prev, taxNumber: e.target.value }))}
+              />
             </div>
 
             <div className="md:col-span-2 space-y-2">
@@ -554,46 +627,121 @@ export function PartnerManagementTab() {
 
             <div>
               <Label>Customer Status</Label>
-              <Select value={form.customerStatus || "NONE"} onValueChange={(v) => setForm((prev) => ({ ...prev, customerStatus: v === "NONE" ? "" : (v as CustomerStatus) }))}>
-                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+              <Select
+                value={form.customerStatus || "NONE"}
+                onValueChange={(v) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customerStatus: v === "NONE" ? "" : (v as CustomerStatus),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
-                  {CUSTOMER_STATUS_OPTIONS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                  {CUSTOMER_STATUS_OPTIONS.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Customer Type</Label>
-              <Select value={form.customerType || "NONE"} onValueChange={(v) => setForm((prev) => ({ ...prev, customerType: v === "NONE" ? "" : (v as CustomerType) }))}>
-                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+              <Select
+                value={form.customerType || "NONE"}
+                onValueChange={(v) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customerType: v === "NONE" ? "" : (v as CustomerType),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
-                  {CUSTOMER_TYPE_OPTIONS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                  {CUSTOMER_TYPE_OPTIONS.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div><Label>Country</Label><Input value={form.country} onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))} /></div>
-            <div><Label>City</Label><Input value={form.city} onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))} /></div>
-            <div><Label>Contact Email</Label><Input type="email" value={form.contactEmail} onChange={(e) => setForm((prev) => ({ ...prev, contactEmail: e.target.value }))} /></div>
-            <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} /></div>
-            <div><Label>Fax</Label><Input value={form.fax} onChange={(e) => setForm((prev) => ({ ...prev, fax: e.target.value }))} /></div>
-            <div><Label>Tracking URL</Label><Input value={form.trackingUrl} onChange={(e) => setForm((prev) => ({ ...prev, trackingUrl: e.target.value }))} /></div>
-            <div className="md:col-span-2"><Label>Address</Label><Input value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} /></div>
+            <div>
+              <Label>Country</Label>
+              <Input
+                value={form.country}
+                onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>City</Label>
+              <Input
+                value={form.city}
+                onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Contact Email</Label>
+              <Input
+                type="email"
+                value={form.contactEmail}
+                onChange={(e) => setForm((prev) => ({ ...prev, contactEmail: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Phone</Label>
+              <Input
+                value={form.phone}
+                onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Fax</Label>
+              <Input
+                value={form.fax}
+                onChange={(e) => setForm((prev) => ({ ...prev, fax: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Tracking URL</Label>
+              <Input
+                value={form.trackingUrl}
+                onChange={(e) => setForm((prev) => ({ ...prev, trackingUrl: e.target.value }))}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Address</Label>
+              <Input
+                value={form.address}
+                onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+              />
+            </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button disabled={saving} onClick={onSave}>{saving ? "Saving..." : "Save"}</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button disabled={saving} onClick={onSave}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <PartnerImportDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        onImported={loadData}
-      />
-    </div>
+    <PartnerImportDialog
+      open={importDialogOpen}
+      onOpenChange={setImportDialogOpen}
+      onImported={() => void partnersListCache.invalidate()}
+    />
+  </>
   )
 }

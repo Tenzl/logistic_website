@@ -69,6 +69,7 @@ export const API_CONFIG = {
     SEARCH: '/ports/search',
     SEARCH_BY_PROVINCE: (provinceId: number) => `/ports/province/${provinceId}/search`,
     BY_ID: (id: number) => `/ports/${id}`,
+    IMPORT: '/ports/import',
   },
 
   OFFICES: {

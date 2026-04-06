@@ -3,6 +3,7 @@ import type { ApiResponse } from '@/shared/types/api.types'
 import { apiClient } from '@/shared/utils/apiClient'
 import type {
   BookingPartnerDetail,
+  BookingPartnerListItem,
   PartnerImportCommitData,
   PartnerImportMode,
   PartnerImportPreviewData,
@@ -47,6 +48,11 @@ export const partnerManagementService = {
       `${API_CONFIG.BOOKING_PARTNERS.ADMIN_BASE}?${query}`,
     )
     return unwrap<BookingPartnerPageData>(response)
+  },
+
+  async listAll(): Promise<BookingPartnerListItem[]> {
+    const data = await this.list({ page: 0, size: 9999, sort: 'updatedAt,desc' })
+    return data.items || []
   },
 
   async detail(id: number): Promise<BookingPartnerDetail> {

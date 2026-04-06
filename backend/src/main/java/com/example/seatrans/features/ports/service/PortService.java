@@ -84,24 +84,26 @@ public class PortService {
     }
 
     public PortDTO createPort(CreatePortRequest request) {
-        if (request.getProvinceId() == null) {
-            return null;
-        }
-
-        // Check if province exists
-        Optional<Province> provinceOpt = provinceRepository.findById(request.getProvinceId());
-        if (provinceOpt.isEmpty()) {
-            return null;
+        Optional<Province> provinceOpt = Optional.empty();
+        if (request.getProvinceId() != null) {
+            // If provinceId is provided, it must exist.
+            provinceOpt = provinceRepository.findById(request.getProvinceId());
+            if (provinceOpt.isEmpty()) {
+                return null;
+            }
         }
 
         String normalizedName = normalizePortName(request.getName());
         String normalizedPortOfCall = normalizePortOfCall(request.getPortOfCall(), normalizedName);
 
-        // Check if port already exists
-        Optional<Port> existing = portRepository.findByNameAndProvinceId(
-            normalizedName,
-                request.getProvinceId()
-        );
+        // Check if port already exists in the same province scope (including null province).
+        Optional<Port> existing;
+        if (request.getProvinceId() != null) {
+            existing = portRepository.findByNameAndProvinceId(normalizedName, request.getProvinceId());
+        } else {
+            existing = portRepository.findByNameAndProvinceIsNull(normalizedName);
+        }
+
         if (existing.isPresent()) {
             return entityMapper.toPortDTO(existing.get());
         }
@@ -109,7 +111,7 @@ public class PortService {
         Port port = new Port();
         port.setName(normalizedName);
         port.setPortOfCall(normalizedPortOfCall);
-        port.setProvince(provinceOpt.get());
+        port.setProvince(provinceOpt.orElse(null));
 
         // Optional columns
         if (request.getZoneCode() != null) {

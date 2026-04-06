@@ -1,11 +1,15 @@
 "use client"
 
 import * as React from "react"
+import { useEffect, useRef } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
+  type Column,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  type Table as TableInstance,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -13,9 +17,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Loader2 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
+import { cn } from "@/shared/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,6 +36,255 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table"
+
+// ---------------------------------------------------------------------------
+// DataTableSortHeader — ghost-style sortable column header button
+// ---------------------------------------------------------------------------
+
+export function DataTableSortHeader({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  column,
+  children,
+}: {
+  column: Column<any, any>
+  children: React.ReactNode
+}) {
+  return (
+    <Button
+      variant="ghost"
+      className="h-auto w-full justify-start p-0 font-medium hover:bg-transparent"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    >
+      {children}
+      {column.getIsSorted() === "asc" ? (
+        <ArrowUp className="ml-2 h-3.5 w-3.5" />
+      ) : column.getIsSorted() === "desc" ? (
+        <ArrowDown className="ml-2 h-3.5 w-3.5" />
+      ) : (
+        <ArrowUpDown className="ml-2 h-3.5 w-3.5 opacity-40" />
+      )}
+    </Button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// DataTableContent — renders Table from an external Table<TData> instance
+// ---------------------------------------------------------------------------
+
+interface DataTableContentProps<TData> {
+  table: TableInstance<TData>
+  /** Number of visible columns — used for colSpan on empty/loading rows */
+  columnCount: number
+  loading?: boolean
+  emptyMessage?: string
+  /** Max height of the scrollable table container (default "430px") */
+  maxHeight?: string
+  /**
+   * Returns className for a given columnId.
+   * `type` is 'header' for <th> and 'cell' for <td> — use it to apply
+   * different classes (e.g. align-top only on cells, not headers).
+   */
+  columnClassName?: (columnId: string, type: "header" | "cell") => string
+  /** Extra className on the outer scroll container */
+  containerClassName?: string
+  /** Extra className on the <Table> element (e.g. "w-max min-w-full" for sticky cols) */
+  tableClassName?: string
+}
+
+export function DataTableContent<TData>({
+  table,
+  columnCount,
+  loading = false,
+  emptyMessage = "No results.",
+  maxHeight = "430px",
+  columnClassName,
+  containerClassName,
+  tableClassName,
+}: DataTableContentProps<TData>) {
+  return (
+    <div
+      className={cn("overflow-auto rounded-md border", containerClassName)}
+      style={maxHeight ? { maxHeight } : undefined}
+    >
+      <Table className={tableClassName}>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className={columnClassName?.(header.column.id, "header")}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={columnCount} className="h-24 text-center">
+                <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+              </TableCell>
+            </TableRow>
+          ) : table.getRowModel().rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columnCount} className="h-24 text-center">
+                {emptyMessage}
+              </TableCell>
+            </TableRow>
+          ) : (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell
+                    key={cell.id}
+                    className={columnClassName?.(cell.column.id, "cell")}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// DataTablePagination — Previous / Next + URL page persistence
+// ---------------------------------------------------------------------------
+
+/**
+ * Two-phase state machine for URL page persistence:
+ *
+ *   ┌──────────┐  data loads & page applied   ┌──────────┐
+ *   │ RESTORING ├─────────────────────────────►│ SYNCING  │
+ *   └──────────┘                               └──────────┘
+ *        ▲                                          │
+ *        │  (mount, read ?key=N from URL)           │  pageIndex changes
+ *        └──────────────────────────────────────────►│  → write to URL
+ *
+ * "RESTORING" waits until data has loaded (filteredRows > 0) then applies the
+ * target page.  This survives TanStack's autoResetPageIndex which fires when
+ * `data` reference changes ([] → [...items]).
+ *
+ * "SYNCING" writes the current pageIndex to the URL on every change.
+ */
+export function DataTablePagination<TData>({
+  table,
+  persistKey,
+}: {
+  table: TableInstance<TData>
+  persistKey?: string
+}) {
+  const { pageIndex } = table.getState().pagination
+  const pageCount = Math.max(table.getPageCount(), 1)
+  const shownRows = table.getRowModel().rows.length
+  const filteredRows = table.getFilteredRowModel().rows.length
+
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const spRef = useRef(searchParams)
+  spRef.current = searchParams
+
+  // Phase: "restoring" = waiting for data before applying URL page
+  //        "syncing"   = normal operation, write pageIndex → URL
+  const phaseRef = useRef<"restoring" | "syncing">(persistKey ? "restoring" : "syncing")
+  const targetPageRef = useRef(0)
+
+  // On mount: read target page from URL
+  useEffect(() => {
+    if (!persistKey) return
+    const urlPage = parseInt(spRef.current.get(persistKey) ?? "0", 10)
+    if (Number.isFinite(urlPage) && urlPage > 0) {
+      targetPageRef.current = urlPage
+      table.setPageIndex(urlPage)
+    } else {
+      phaseRef.current = "syncing"
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // RESTORING phase: when data loads (filteredRows changes) or autoResetPageIndex
+  // fires, re-apply the target page until we land on it.
+  useEffect(() => {
+    if (phaseRef.current !== "restoring") return
+    const target = targetPageRef.current
+    if (target === 0) { phaseRef.current = "syncing"; return }
+
+    if (pageIndex === target) {
+      phaseRef.current = "syncing"
+      return
+    }
+
+    if (filteredRows > 0) {
+      const maxPage = Math.ceil(filteredRows / table.getState().pagination.pageSize) - 1
+      if (target <= maxPage) {
+        table.setPageIndex(target)
+      } else {
+        phaseRef.current = "syncing"
+      }
+    }
+  }, [filteredRows, pageIndex, table])
+
+  // SYNCING phase: write pageIndex → URL
+  useEffect(() => {
+    if (!persistKey || phaseRef.current !== "syncing") return
+    const currentUrlPage = parseInt(spRef.current.get(persistKey) ?? "0", 10)
+    if (currentUrlPage === pageIndex) return
+
+    const params = new URLSearchParams(spRef.current.toString())
+    if (pageIndex === 0) {
+      params.delete(persistKey)
+    } else {
+      params.set(persistKey, String(pageIndex))
+    }
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, persistKey, pathname])
+
+  // Manual navigation immediately switches to syncing phase
+  const navigate = (action: () => void) => {
+    phaseRef.current = "syncing"
+    targetPageRef.current = 0
+    action()
+  }
+
+  return (
+    <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex-1 text-sm text-muted-foreground">
+        Page {pageIndex + 1} / {pageCount} — Showing {shownRows} of {filteredRows} row(s)
+      </div>
+      <div className="space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(() => table.previousPage())}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(() => table.nextPage())}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]

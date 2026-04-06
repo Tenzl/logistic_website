@@ -99,6 +99,7 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Public content endpoints
                 .requestMatchers("/api/v1/provinces/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/ports/import").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ROLE_INTERNAL", "ADMIN", "EMPLOYEE", "INTERNAL")
                 .requestMatchers(HttpMethod.GET, "/api/v1/ports/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                 .requestMatchers("/api/v1/posts/**").permitAll()

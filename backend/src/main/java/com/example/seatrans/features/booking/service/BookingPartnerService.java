@@ -1,7 +1,6 @@
 package com.example.seatrans.features.booking.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,10 +29,9 @@ import com.example.seatrans.features.booking.model.CustomerType;
 import com.example.seatrans.features.booking.model.PartnerAdditionType;
 import com.example.seatrans.features.booking.repository.BookingPartnerRepository;
 
-import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import org.springframework.data.domain.Page;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 @Service

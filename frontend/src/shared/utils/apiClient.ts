@@ -9,6 +9,8 @@ const TOKEN_KEY = 'auth_token'
 
 export interface ApiClientConfig extends RequestInit {
   skipAuth?: boolean
+  /** Override default timeout (ms). Set to 0 to disable timeout for this request. */
+  timeout?: number
 }
 
 class ApiClient {
@@ -50,10 +52,11 @@ class ApiClient {
     return `${API_CONFIG.API_URL}${normalizedEndpoint}`
   }
 
-  private withTimeout(signal?: AbortSignal | null): AbortSignal | undefined {
-    if (!API_CONFIG.TIMEOUT) return signal ?? undefined
+  private withTimeout(signal?: AbortSignal | null, customTimeout?: number): AbortSignal | undefined {
+    const timeout = customTimeout ?? API_CONFIG.TIMEOUT
+    if (!timeout) return signal ?? undefined
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT)
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
 
     if (signal) {
       signal.addEventListener('abort', () => controller.abort())
@@ -76,7 +79,7 @@ class ApiClient {
   }
 
   async fetch(endpoint: string, config: ApiClientConfig = {}): Promise<Response> {
-    const { skipAuth, headers, signal, ...restConfig } = config
+    const { skipAuth, timeout, headers, signal, ...restConfig } = config
 
     const token = this.getToken()
     const requestHeaders: Record<string, string> = {
@@ -105,7 +108,7 @@ class ApiClient {
         ...restConfig,
         headers: requestHeaders,
         credentials: 'include',
-        signal: this.withTimeout(signal),
+        signal: this.withTimeout(signal, timeout),
       })
 
       // Handle 401 Unauthorized - token expired or invalid
