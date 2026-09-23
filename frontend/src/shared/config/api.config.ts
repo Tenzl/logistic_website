@@ -83,9 +83,6 @@ export const API_CONFIG = {
     ADMIN_BY_ID: (id: number) => `/admin/booking-management/partners/${id}`,
     RESTORE: (id: number) => `/admin/booking-management/partners/${id}/restore`,
     UPDATE_CUSTOMER_STATUS: (id: number) => `/admin/booking-management/partners/${id}/customer-status`,
-    IMPORT_PREVIEW: '/admin/booking-management/partners/import/preview',
-    IMPORT_COMMIT: '/admin/booking-management/partners/import/commit',
-    IMPORT_TEMPLATE: '/admin/booking-management/partners/import/template',
   },
 
   SERVICE_TYPES: {

@@ -4,9 +4,6 @@ import { apiClient } from '@/shared/utils/apiClient'
 import type {
   BookingPartnerDetail,
   BookingPartnerListItem,
-  PartnerImportCommitData,
-  PartnerImportMode,
-  PartnerImportPreviewData,
   BookingPartnerListParams,
   BookingPartnerPageData,
   BookingPartnerUpsertRequest,
@@ -81,34 +78,5 @@ export const partnerManagementService = {
   async delete(id: number): Promise<void> {
     const response = await apiClient.delete<ApiResponse<null>>(API_CONFIG.BOOKING_PARTNERS.ADMIN_BY_ID(id))
     await unwrap(response)
-  },
-
-  async previewImport(file: File): Promise<PartnerImportPreviewData> {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await apiClient.post<ApiResponse<PartnerImportPreviewData>>(
-      API_CONFIG.BOOKING_PARTNERS.IMPORT_PREVIEW,
-      formData,
-    )
-
-    return unwrap<PartnerImportPreviewData>(response)
-  },
-
-  async commitImport(file: File, mode: PartnerImportMode): Promise<PartnerImportCommitData> {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('mode', mode)
-
-    const response = await apiClient.post<ApiResponse<PartnerImportCommitData>>(
-      API_CONFIG.BOOKING_PARTNERS.IMPORT_COMMIT,
-      formData,
-    )
-
-    return unwrap<PartnerImportCommitData>(response)
-  },
-
-  getImportTemplateUrl(): string {
-    return `${API_CONFIG.API_URL}${API_CONFIG.BOOKING_PARTNERS.IMPORT_TEMPLATE}`
   },
 }

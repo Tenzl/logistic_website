@@ -5,9 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,18 +18,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.example.seatrans.features.booking.dto.BookingPartnerDetailResponse;
 import com.example.seatrans.features.booking.dto.BookingPartnerPageResponse;
 import com.example.seatrans.features.booking.dto.BookingPartnerUpsertRequest;
-import com.example.seatrans.features.booking.dto.PartnerImportCommitResponse;
-import com.example.seatrans.features.booking.dto.PartnerImportPreviewResponse;
 import com.example.seatrans.features.booking.dto.UpdateCustomerStatusRequest;
 import com.example.seatrans.features.booking.model.CustomerStatus;
 import com.example.seatrans.features.booking.model.CustomerType;
 import com.example.seatrans.features.booking.model.PartnerAdditionType;
-import com.example.seatrans.features.booking.service.BookingPartnerImportService;
 import com.example.seatrans.features.booking.service.BookingPartnerService;
 import com.example.seatrans.shared.dto.ApiResponse;
 
@@ -45,7 +39,6 @@ import lombok.RequiredArgsConstructor;
 public class AdminBookingPartnerController {
 
     private final BookingPartnerService bookingPartnerService;
-    private final BookingPartnerImportService bookingPartnerImportService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<BookingPartnerPageResponse>> listPartners(
@@ -130,42 +123,6 @@ public class AdminBookingPartnerController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
         }
-    }
-
-    @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<PartnerImportPreviewResponse>> previewImport(
-            @RequestParam("file") MultipartFile file
-    ) {
-        try {
-            PartnerImportPreviewResponse response = bookingPartnerImportService.preview(file);
-            return ResponseEntity.ok(ApiResponse.success("Preview generated successfully", response));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(ex.getMessage()));
-        }
-    }
-
-    @PostMapping(value = "/import/commit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<PartnerImportCommitResponse>> commitImport(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(defaultValue = "CREATE_ONLY") String mode
-    ) {
-        try {
-            PartnerImportCommitResponse response = bookingPartnerImportService.commit(file, mode);
-            return ResponseEntity.ok(ApiResponse.success("Import completed", response));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(ex.getMessage()));
-        }
-    }
-
-    @GetMapping("/import/template")
-    public ResponseEntity<byte[]> downloadImportTemplate() {
-        byte[] template = bookingPartnerImportService.generateTemplate();
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=partner-import-template.xlsx")
-            .contentType(MediaType.parseMediaType(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            ))
-            .body(template);
     }
 
     private Sort parseSort(String sort) {

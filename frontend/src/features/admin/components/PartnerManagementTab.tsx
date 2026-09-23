@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown, FileSpreadsheet, Pencil, Plus, Trash2, Users } from "lucide-react"
+import { ChevronDown, Pencil, Plus, Trash2, Users } from "lucide-react"
 
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -47,7 +47,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
-import { PartnerImportDialog } from "@/features/admin/components/PartnerImportDialog"
 import { partnerManagementService } from "@/features/admin/services/partnerManagementService"
 import type {
   BookingPartnerDetail,
@@ -175,7 +174,6 @@ export function PartnerManagementTab() {
 
   // Dialog / form state
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormState>(initialFormState)
@@ -464,10 +462,6 @@ export function PartnerManagementTab() {
             <CardDescription>Manage booking partners profile data</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
-              Import Excel
-            </Button>
             <Button size="sm" onClick={onOpenCreate} className="gap-2">
               <Plus className="h-4 w-4" />
               Add Partner
@@ -736,12 +730,6 @@ export function PartnerManagementTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-    <PartnerImportDialog
-      open={importDialogOpen}
-      onOpenChange={setImportDialogOpen}
-      onImported={() => void partnersListCache.invalidate()}
-    />
   </>
   )
 }

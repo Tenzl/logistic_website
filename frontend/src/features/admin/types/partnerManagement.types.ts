@@ -13,7 +13,6 @@ export type CustomerStatus = 'LEAD' | 'WINCLIENT'
 export type CustomerType = 'AGENT' | 'DIRECT' | 'OTHER'
 
 export type AdditionTypesMode = 'OR' | 'AND'
-export type PartnerImportMode = 'CREATE_ONLY' | 'UPDATE_ONLY' | 'UPSERT'
 
 export interface BookingPartnerListItem {
   id: number
@@ -75,27 +74,3 @@ export interface BookingPartnerListParams {
   includeArchived?: boolean
 }
 
-export interface PartnerImportRowError {
-  rowIndex: number
-  field?: string
-  message: string
-  code?: string
-}
-
-export interface PartnerImportPreviewData {
-  headers: string[]
-  rows: Array<Record<string, string>>
-  rowErrors: PartnerImportRowError[]
-  summary: {
-    total: number
-    valid: number
-    invalid: number
-  }
-}
-
-export interface PartnerImportCommitData {
-  createdCount: number
-  updatedCount: number
-  failedCount: number
-  rowErrors?: PartnerImportRowError[]
-}
