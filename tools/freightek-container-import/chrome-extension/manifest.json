@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Seatrans FreightEK Shipment Collector",
+  "version": "1.4.0",
+  "description": "Collects every live instruction-form and per-container value from FreightEK using the current Chrome session.",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "downloads",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://seatrans.freightek.com/shipments/management/*/instruction*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "FreightEK Shipment Collector",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://seatrans.freightek.com/shipments/management/*/instruction*"
+      ],
+      "js": ["lib/extract-table.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

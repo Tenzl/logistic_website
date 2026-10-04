@@ -6,6 +6,8 @@ target/
 
 # Environment variables
 .env
+.env.loadtest
+backend2.0/.loadtest/
 .env.*.local
 .env.local
 .env.local.*
@@ -86,3 +88,18 @@ frontend/node_modules
 
 # Application config (sensitive)
 backend/.gitignore
+
+# Main database migration backups contain private inquiry data.
+/migration-backups/
+
+# Independent repositories and local agent worktrees
+/backend2.0/
+/dashboard_admin/
+/.claude/worktrees/
+
+# Local database snapshots, downloaded reference datasets and dependency caches
+/seatrans-db-backups/
+**/node_modules/
+/docs/reports/vessel-enrichment-2026-10-04/*.json
+/docs/reports/vessel-enrichment-2026-10-04/*.csv
+/docs/reports/vessel-enrichment-2026-10-04/*.zip

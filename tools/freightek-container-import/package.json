@@ -1,0 +1,13 @@
+{
+  "name": "seatrans-freightek-container-import",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check chrome-extension/background.js && node --check chrome-extension/content.js && node --check chrome-extension/popup.js && node --check chrome-extension/lib/extract-table.js && node --check chrome-extension/lib/queue.js && node --check chrome-extension/lib/resource-path.js"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

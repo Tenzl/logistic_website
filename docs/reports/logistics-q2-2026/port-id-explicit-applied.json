@@ -1,0 +1,92 @@
+{
+  "mode": "applied",
+  "capturedAt": "2026-09-06T15:50:07.125Z",
+  "authorization": "User-specified CAT LAI TERMINAL/VNCLI and CAI MEP/VNTCI mappings",
+  "before": {
+    "bookings": 72,
+    "booked": "104",
+    "actual": "104"
+  },
+  "after": {
+    "bookings": 72,
+    "booked": "104",
+    "actual": "104"
+  },
+  "changes": [
+    {
+      "bookingId": 66,
+      "bookingNumber": "A59GX18786",
+      "field": "place_of_issue_port_id",
+      "before": {
+        "id": "66",
+        "booking_number": "A59GX18786",
+        "version": 5,
+        "place_of_issue_port_id": null,
+        "place_of_issue_name": "CAI MEP, VN (VNTCI)"
+      },
+      "after": {
+        "place_of_issue_port_id": 35984,
+        "place_of_issue_name": "CAI MEP, VN (VNTCI)",
+        "version": 6
+      },
+      "catalog": {
+        "id": 35984,
+        "name": "CAI MEP",
+        "code": "VNTCI",
+        "type": "PORT",
+        "country_code": "VN",
+        "is_active": true
+      }
+    },
+    {
+      "bookingId": 67,
+      "bookingNumber": "A59GX18837",
+      "field": "place_of_issue_port_id",
+      "before": {
+        "id": "67",
+        "booking_number": "A59GX18837",
+        "version": 5,
+        "place_of_issue_port_id": null,
+        "place_of_issue_name": "CAI MEP, VN (VNTCI)"
+      },
+      "after": {
+        "place_of_issue_port_id": 35984,
+        "place_of_issue_name": "CAI MEP, VN (VNTCI)",
+        "version": 6
+      },
+      "catalog": {
+        "id": 35984,
+        "name": "CAI MEP",
+        "code": "VNTCI",
+        "type": "PORT",
+        "country_code": "VN",
+        "is_active": true
+      }
+    },
+    {
+      "bookingId": 435,
+      "bookingNumber": "A59GX07103",
+      "field": "place_of_issue_port_id",
+      "before": {
+        "id": "435",
+        "booking_number": "A59GX07103",
+        "version": 6,
+        "place_of_issue_port_id": null,
+        "place_of_issue_name": "CAT LAI PORT HOCHIMINH, VIETNAM"
+      },
+      "after": {
+        "place_of_issue_port_id": 35988,
+        "place_of_issue_name": "CAT LAI TERMINAL, VN (VNCLI)",
+        "version": 7
+      },
+      "catalog": {
+        "id": 35988,
+        "name": "Cat Lai",
+        "code": "VNCLI",
+        "type": "TERMINAL",
+        "country_code": "VN",
+        "is_active": true
+      }
+    }
+  ]
+}

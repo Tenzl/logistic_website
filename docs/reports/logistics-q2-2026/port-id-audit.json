@@ -1,0 +1,62 @@
+{
+  "mode": "dry-run",
+  "at": "2026-09-06T09:56:36.179Z",
+  "bookingsScanned": 319,
+  "bookingsUpdated": 0,
+  "fieldsUpdated": 0,
+  "before": [
+    {
+      "booking_flow": "EXPORT",
+      "bookings": 319,
+      "booked": "416",
+      "actual": "411"
+    }
+  ],
+  "after": [
+    {
+      "booking_flow": "EXPORT",
+      "bookings": 319,
+      "booked": "416",
+      "actual": "411"
+    }
+  ],
+  "changes": [],
+  "unresolved": [
+    {
+      "bookingId": "66",
+      "bookingNumber": "A59GX18786",
+      "flow": "EXPORT",
+      "field": "place_of_issue_port_id",
+      "value": "CAI MEP, VN (VNTCI)",
+      "before": null,
+      "versionBefore": 5,
+      "id": null,
+      "reason": "no exact match",
+      "candidates": []
+    },
+    {
+      "bookingId": "67",
+      "bookingNumber": "A59GX18837",
+      "flow": "EXPORT",
+      "field": "place_of_issue_port_id",
+      "value": "CAI MEP, VN (VNTCI)",
+      "before": null,
+      "versionBefore": 5,
+      "id": null,
+      "reason": "no exact match",
+      "candidates": []
+    },
+    {
+      "bookingId": "435",
+      "bookingNumber": "A59GX07103",
+      "flow": "EXPORT",
+      "field": "place_of_issue_port_id",
+      "value": "CAT LAI PORT HOCHIMINH, VIETNAM",
+      "before": null,
+      "versionBefore": 6,
+      "id": null,
+      "reason": "no exact match",
+      "candidates": []
+    }
+  ]
+}

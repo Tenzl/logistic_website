@@ -341,16 +341,16 @@ const buildAARows = (
     const garbageRemoval = formatAmount(garbageRemovalValue)
     
     const defaultRows: QuoteRow[] = [
-      { item: 'Tonnage', details: 'USD 0.034 / GRT x 2 (in & out)', amount: tonnage },
-      { item: 'Navigation due', details: 'USD 0.058 / GRT x 2 (in & out)', amount: navigationDue },
+      { item: 'Tonnage', details: 'USD 0.034 / GRT x2 (in  & out)', amount: tonnage },
+      { item: 'Navigation due', details: 'USD 0.058 / GRT x2 (in  & out)', amount: navigationDue },
       {
         item: 'Pilotage',
-        details: 'USD0.0034 / GRT x 2 (in & out)',
+        details: 'USD0.0034 / GRT x2 (in  & out)',
         add: pilotageMilesText,
-        remark: 'Min USD600: in & out',
+        remark: 'Min USD600: x2 (in  & out)',
         amount: pilotage,
       },
-      { item: 'Tug assistance charge', details: '(in & out)', amount: tugAssistance },
+      { item: 'Tug assistance charge', details: 'x2 (in  & out)', amount: tugAssistance },
       { item: 'Moor / Unmooring', details: '', amount: moorUnmoor },
       {
         item: 'Berth due',

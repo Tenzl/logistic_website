@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FreightEK Shipment Collector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">SEATRANS DATA TOOL</p>
+        <h1>Shipment collector</h1>
+        <p class="subtitle">Shared queue with up to 3 FreightEK tabs at once.</p>
+      </header>
+
+      <section class="shipment-input">
+        <label for="shipmentIdsInput">Shipment IDs</label>
+        <textarea id="shipmentIdsInput" rows="4" spellcheck="false"
+          placeholder="S2609001, S2609002, S2609003"
+          aria-describedby="shipmentIdsHint shipmentIdsCount shipmentIdsError"></textarea>
+        <p id="shipmentIdsHint" class="subtitle">Paste IDs separated by commas. Line breaks also work.</p>
+        <p id="shipmentIdsCount" class="subtitle" aria-live="polite">0 unique Shipment IDs</p>
+        <p id="shipmentIdsError" class="error" role="alert" hidden></p>
+      </section>
+
+      <section class="status-card" aria-live="polite">
+        <div class="status-line">
+          <span id="statusDot" class="status-dot"></span>
+          <strong id="statusText">Loading…</strong>
+          <span id="progressText">0 / 0</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <dl>
+          <div>
+            <dt>Shipment</dt>
+            <dd id="shipmentText">—</dd>
+          </div>
+          <div>
+            <dt>Booking No.</dt>
+            <dd id="bookingText">—</dd>
+          </div>
+          <div>
+            <dt>Successful</dt>
+            <dd id="successText">0</dd>
+          </div>
+          <div>
+            <dt>Failed</dt>
+            <dd id="failedText">0</dd>
+          </div>
+        </dl>
+        <div class="live-progress">
+          <p class="progress-label">Collection threads</p>
+          <ol id="workerList" class="worker-list" aria-live="polite"></ol>
+          <p class="progress-label">Current step</p>
+          <p id="stageText" class="stage-text">Preparing collector…</p>
+          <ol id="activityLog" class="activity-log"></ol>
+        </div>
+        <p id="errorText" class="error" hidden></p>
+      </section>
+
+      <section class="actions">
+        <button id="startButton" class="primary" type="button">
+          Collect entered IDs
+        </button>
+        <button id="pauseButton" type="button">Pause</button>
+        <button id="resumeButton" type="button">Resume</button>
+        <button id="exportButton" type="button">Export JSON</button>
+      </section>
+
+      <div class="utility-row">
+        <button id="resetButton" class="text-button danger" type="button">
+          Reset progress
+        </button>
+      </div>
+
+      <p class="hint">
+        Starting a different list replaces the current progress. Export JSON
+        first if you need the previous results.
+        Keep the collection tabs open. Pause stops all threads. If the session
+        expires, log in to FreightEK again and press Resume.
+      </p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

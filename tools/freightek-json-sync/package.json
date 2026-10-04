@@ -1,0 +1,9 @@
+{
+  "name": "seatrans-freightek-json-sync",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "plan": "node index.mjs --mode plan"
+  }
+}

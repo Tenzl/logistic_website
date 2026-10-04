@@ -1,0 +1,16 @@
+{
+  "mode": "dry-run",
+  "capturedAt": "2026-09-06T15:50:08.144Z",
+  "authorization": "User-specified CAT LAI TERMINAL/VNCLI and CAI MEP/VNTCI mappings",
+  "before": {
+    "bookings": 72,
+    "booked": "104",
+    "actual": "104"
+  },
+  "after": {
+    "bookings": 72,
+    "booked": "104",
+    "actual": "104"
+  },
+  "changes": []
+}

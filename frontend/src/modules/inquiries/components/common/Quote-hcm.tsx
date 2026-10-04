@@ -397,30 +397,30 @@ const buildAARows = (
     const pushNumbered = (row: QuoteRow) => defaultRows.push({ ...row, no: row.no ?? nextNo() })
     const pushUnnumbered = (row: QuoteRow) => defaultRows.push({ ...row, no: '' })
 
-    pushNumbered({ item: 'Tonnage', details: 'USD 0.034 / GRT x 2 (in & out)', amount: tonnage })
-    pushNumbered({ item: 'Navigation due', details: 'USD 0.1 / GRT x 2 (in & out)', amount: navigationDue })
+    pushNumbered({ item: 'Tonnage', details: 'USD 0.034 / GRT x2 (in  & out)', amount: tonnage })
+    pushNumbered({ item: 'Navigation due', details: 'USD 0.1 / GRT x2 (in  & out)', amount: navigationDue })
     pushNumbered({
       item: 'Pilotage',
-      details: 'USD0.0034 / GRT (in+out)',
+      details: 'USD0.0034 / GRT x2 (in  & out)',
       add: `${pilotageFirstMiles} miles`,
       remark: '1st 10 miles',
       amount: pilotageFirst,
     })
     pushUnnumbered({
       item: '',
-      details: 'USD0.0022 / GRT (in+out)',
+      details: 'USD0.0022 / GRT x2 (in  & out)',
       add: `${pilotageSecondMiles} miles`,
       remark: '2nd 20 miles',
       amount: pilotageSecond,
     })
     pushUnnumbered({
       item: '',
-      details: 'USD0.0015 / GRT (in+out)',
+      details: 'USD0.0015 / GRT x2 (in  & out)',
       add: `${pilotageThirdMiles} miles`,
       remark: `3rd ${pilotageThirdMiles} miles`,
       amount: pilotageThird,
     })
-    pushNumbered({ item: 'Tug assistance charge', details: '(in & out)', amount: tugAssistance })
+    pushNumbered({ item: 'Tug assistance charge', details: 'x2 (in  & out)', amount: tugAssistance })
     pushNumbered({ item: 'Moor / Unmooring', details: '', amount: moorUnmoor })
 
     if (mooringLocation === 'anchorage') {
