@@ -1,0 +1,130 @@
+{
+  "scope": [
+    "backend2.0",
+    "dashboard_admin"
+  ],
+  "asvs_requirements": 253,
+  "operational_requirements": 12,
+  "total_rows": 265,
+  "statuses": {
+    "Chưa kiểm chứng": 71,
+    "Đạt một phần": 80,
+    "Không áp dụng": 59,
+    "Đạt": 32,
+    "Không đạt": 23
+  },
+  "lower_bound_score_out_of_100": 25.39,
+  "weighted_verification_coverage_percent": 72.79,
+  "groups": [
+    {
+      "group": "governance",
+      "name": "Quản trị rủi ro",
+      "weight": 5,
+      "active_requirements": 4,
+      "verified_requirements": 0,
+      "score": 0.0,
+      "coverage": 0.0
+    },
+    {
+      "group": "authentication",
+      "name": "Xác thực",
+      "weight": 12,
+      "active_requirements": 26,
+      "verified_requirements": 21,
+      "score": 19.23,
+      "coverage": 80.77
+    },
+    {
+      "group": "authorization",
+      "name": "Phân quyền",
+      "weight": 18,
+      "active_requirements": 7,
+      "verified_requirements": 7,
+      "score": 33.33,
+      "coverage": 100.0
+    },
+    {
+      "group": "session",
+      "name": "Phiên/token",
+      "weight": 10,
+      "active_requirements": 27,
+      "verified_requirements": 22,
+      "score": 39.51,
+      "coverage": 81.48
+    },
+    {
+      "group": "data",
+      "name": "Bảo vệ dữ liệu",
+      "weight": 10,
+      "active_requirements": 32,
+      "verified_requirements": 16,
+      "score": 15.62,
+      "coverage": 50.0
+    },
+    {
+      "group": "input",
+      "name": "An toàn đầu vào",
+      "weight": 10,
+      "active_requirements": 30,
+      "verified_requirements": 19,
+      "score": 22.22,
+      "coverage": 63.33
+    },
+    {
+      "group": "files",
+      "name": "Tệp/tài liệu",
+      "weight": 8,
+      "active_requirements": 9,
+      "verified_requirements": 8,
+      "score": 33.33,
+      "coverage": 88.89
+    },
+    {
+      "group": "web",
+      "name": "API/trình duyệt",
+      "weight": 7,
+      "active_requirements": 22,
+      "verified_requirements": 17,
+      "score": 36.36,
+      "coverage": 77.27
+    },
+    {
+      "group": "availability",
+      "name": "Chống lạm dụng",
+      "weight": 5,
+      "active_requirements": 3,
+      "verified_requirements": 3,
+      "score": 33.33,
+      "coverage": 100.0
+    },
+    {
+      "group": "logging",
+      "name": "Nhật ký/phát hiện",
+      "weight": 5,
+      "active_requirements": 17,
+      "verified_requirements": 9,
+      "score": 15.69,
+      "coverage": 52.94
+    },
+    {
+      "group": "deployment",
+      "name": "Phụ thuộc/triển khai",
+      "weight": 5,
+      "active_requirements": 26,
+      "verified_requirements": 11,
+      "score": 11.54,
+      "coverage": 42.31
+    },
+    {
+      "group": "recovery",
+      "name": "Phục hồi/ứng phó",
+      "weight": 5,
+      "active_requirements": 3,
+      "verified_requirements": 2,
+      "score": 22.22,
+      "coverage": 66.67
+    }
+  ],
+  "interpretation": "Lower-bound assurance evidence score, not percent security and not ASVS compliance. UNKNOWN stays in denominator; N/A excluded; no grade3 without recurring assurance evidence.",
+  "database": "Historical dumps read without executing SQL; current/live DB not verified."
+}

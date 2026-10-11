@@ -1,0 +1,457 @@
+{
+  "advisories": {
+    "1139427": {
+      "findings": [
+        {
+          "version": "3.3.17",
+          "paths": [
+            ".>next>postcss>nanoid"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1139427,
+      "title": "nanoid: custom generators can loop indefinitely when size is zero",
+      "module_name": "nanoid",
+      "vulnerable_versions": "<3.3.18",
+      "patched_versions": ">=3.3.18",
+      "severity": "high",
+      "cwe": "CWE-835",
+      "github_advisory_id": "GHSA-2v37-7h3g-55p8",
+      "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8"
+    },
+    "1193677": {
+      "findings": [
+        {
+          "version": "15.5.22",
+          "paths": [
+            ".>next"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193677,
+      "title": "Next.js: Unauthenticated Remote Code Execution on windows-hosted servers",
+      "module_name": "next",
+      "vulnerable_versions": ">=13.4.0 <15.5.24",
+      "patched_versions": ">=15.5.24",
+      "severity": "critical",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-p293-qw3h-jr36",
+      "url": "https://github.com/advisories/GHSA-p293-qw3h-jr36"
+    },
+    "1193725": {
+      "findings": [
+        {
+          "version": "0.35.0",
+          "paths": [
+            ".>next>sharp"
+          ],
+          "dev": false,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1193725,
+      "title": "sharp: Vulnerabilities in libheif: GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545",
+      "module_name": "sharp",
+      "vulnerable_versions": "<0.35.4",
+      "patched_versions": ">=0.35.4",
+      "severity": "high",
+      "cwe": "CWE-122",
+      "github_advisory_id": "GHSA-rgj7-g3m4-5g8c",
+      "url": "https://github.com/advisories/GHSA-rgj7-g3m4-5g8c"
+    },
+    "1193733": {
+      "findings": [
+        {
+          "version": "15.5.22",
+          "paths": [
+            ".>next"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193733,
+      "title": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used",
+      "module_name": "next",
+      "vulnerable_versions": ">=10.0.0 <15.5.24",
+      "patched_versions": ">=15.5.24",
+      "severity": "critical",
+      "cwe": "CWE-1395",
+      "github_advisory_id": "GHSA-2xp9-vwfh-vxw4",
+      "url": "https://github.com/advisories/GHSA-2xp9-vwfh-vxw4"
+    },
+    "1240600": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240600,
+      "title": "Axios: Prototype pollution gadget in fetch adapter can alter outbound requests",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.7.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "moderate",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-vh66-26gq-q6x8",
+      "url": "https://github.com/advisories/GHSA-vh66-26gq-q6x8"
+    },
+    "1240601": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240601,
+      "title": "Axios: Prototype-Pollution Gadget in the Default Instance Allows Inherited Object.prototype.method to Override HTTP Method",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.0.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "moderate",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-9fr6-4gfg-395g",
+      "url": "https://github.com/advisories/GHSA-9fr6-4gfg-395g"
+    },
+    "1240603": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240603,
+      "title": "Axios: ReDoS in fromDataURI data: URL parser freezes the Node event loop (DoS)",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.16.1 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-1333",
+      "github_advisory_id": "GHSA-c29m-xwm3-cm6r",
+      "url": "https://github.com/advisories/GHSA-c29m-xwm3-cm6r"
+    },
+    "1240604": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240604,
+      "title": "Axios: ReDoS (O(N²)) in shouldBypassProxy host normalization, reachable via untrusted redirect Location",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.15.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-1333",
+      "github_advisory_id": "GHSA-mghh-pgcx-3jjj",
+      "url": "https://github.com/advisories/GHSA-mghh-pgcx-3jjj"
+    },
+    "1240605": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240605,
+      "title": "Axios: Prototype Pollution Gadget in axios toFormData Options",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.15.1 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-x97p-jq2g-jp4f",
+      "url": "https://github.com/advisories/GHSA-x97p-jq2g-jp4f"
+    },
+    "1240607": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240607,
+      "title": "Axios: HTTP/2 adapter bypasses configured DNS lookup and proxy controls",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.13.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-918",
+      "github_advisory_id": "GHSA-3pq3-5fj3-cg6v",
+      "url": "https://github.com/advisories/GHSA-3pq3-5fj3-cg6v"
+    },
+    "1240608": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240608,
+      "title": "Axios: Denial of Service via Unhandled 'error' Event in HTTP/2 ClientHttp2Session Initialization",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.13.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-400",
+      "github_advisory_id": "GHSA-542g-h47m-68v8",
+      "url": "https://github.com/advisories/GHSA-542g-h47m-68v8"
+    },
+    "1240626": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240626,
+      "title": "Axios: Header Injection via Inherited headers After Minimal Interceptor",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.0.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "moderate",
+      "cwe": "CWE-74, CWE-1321",
+      "github_advisory_id": "GHSA-j8rh-479h-cp32",
+      "url": "https://github.com/advisories/GHSA-j8rh-479h-cp32"
+    },
+    "1240627": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240627,
+      "title": "Axios: Fetch Adapter Header Injection via Inherited FormData getHeaders",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.12.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "moderate",
+      "cwe": "CWE-74, CWE-693, CWE-1321",
+      "github_advisory_id": "GHSA-4hqw-qxg8-jxx2",
+      "url": "https://github.com/advisories/GHSA-4hqw-qxg8-jxx2"
+    },
+    "1240628": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240628,
+      "title": "Axios: Node HTTP adapter prototype-pollution gadget allows request socket hijack via inherited createConnection",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.15.2 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-441, CWE-1321",
+      "github_advisory_id": "GHSA-m8m8-qj5v-23w3",
+      "url": "https://github.com/advisories/GHSA-m8m8-qj5v-23w3"
+    },
+    "1240629": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240629,
+      "title": "Axios: CIDR-form NO_PROXY entries are ignored, causing proxy exclusion bypass for internal IP ranges",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.15.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "moderate",
+      "cwe": "CWE-693",
+      "github_advisory_id": "GHSA-44g4-m2mj-wpvx",
+      "url": "https://github.com/advisories/GHSA-44g4-m2mj-wpvx"
+    },
+    "1240634": {
+      "findings": [
+        {
+          "version": "1.19.0",
+          "paths": [
+            ".>axios"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240634,
+      "title": "Axios: maxRedirects: 0 is not enforced by the fetch adapter, allowing redirect-based SSRF",
+      "module_name": "axios",
+      "vulnerable_versions": ">=1.17.0 <1.20.0",
+      "patched_versions": ">=1.20.0",
+      "severity": "high",
+      "cwe": "CWE-441, CWE-601",
+      "github_advisory_id": "GHSA-r4gj-5m52-g5wh",
+      "url": "https://github.com/advisories/GHSA-r4gj-5m52-g5wh"
+    },
+    "1241209": {
+      "findings": [
+        {
+          "version": "1.2.1",
+          "paths": [
+            ".>next>postcss>source-map-js"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241209,
+      "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+      "module_name": "source-map-js",
+      "vulnerable_versions": ">=1.0.0 <1.2.2",
+      "patched_versions": ">=1.2.2",
+      "severity": "high",
+      "cwe": "CWE-1284",
+      "github_advisory_id": "GHSA-68fv-2mgg-jv7q",
+      "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+    },
+    "1241331": {
+      "findings": [
+        {
+          "version": "0.35.0",
+          "paths": [
+            ".>next>sharp"
+          ],
+          "dev": false,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1241331,
+      "title": "sharp : Vulnerability in librsvg dependency CVE-2026-96889",
+      "module_name": "sharp",
+      "vulnerable_versions": "<0.35.5",
+      "patched_versions": ">=0.35.5",
+      "severity": "high",
+      "cwe": "CWE-416, CWE-1395",
+      "github_advisory_id": "GHSA-wq5f-xc86-pv6w",
+      "url": "https://github.com/advisories/GHSA-wq5f-xc86-pv6w"
+    },
+    "1241491": {
+      "findings": [
+        {
+          "version": "15.5.22",
+          "paths": [
+            ".>next"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241491,
+      "title": "Next.js has cache poisoning of SSG and ISR pages in self-hosted applications",
+      "module_name": "next",
+      "vulnerable_versions": ">=15.0.0 <15.5.27",
+      "patched_versions": ">=15.5.27",
+      "severity": "moderate",
+      "cwe": "CWE-524",
+      "github_advisory_id": "GHSA-4jqv-mc3x-m676",
+      "url": "https://github.com/advisories/GHSA-4jqv-mc3x-m676"
+    },
+    "1241494": {
+      "findings": [
+        {
+          "version": "15.5.22",
+          "paths": [
+            ".>next"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241494,
+      "title": "Next.js has cache poisoning in SSG/ISR rendering that leads to cross-user content substitution and persistent denial of service",
+      "module_name": "next",
+      "vulnerable_versions": ">=15.0.0 <15.5.27",
+      "patched_versions": ">=15.5.27",
+      "severity": "moderate",
+      "cwe": "CWE-524",
+      "github_advisory_id": "GHSA-mcj8-r9mp-w47p",
+      "url": "https://github.com/advisories/GHSA-mcj8-r9mp-w47p"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 7,
+      "high": 11,
+      "critical": 2
+    },
+    "dependencies": 215,
+    "devDependencies": 0,
+    "optionalDependencies": 75,
+    "totalDependencies": 290
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "directory": "D:\\University\\Seatrans-website\\seatrans-audit-20261011-puc27kl8",
+  "guard": "D:\\University\\Seatrans-website\\seatrans-audit-20261011-puc27kl8\\deny-network.cjs",
+  "copied_env_files": 0,
+  "tcp_connections": "denied",
+  "source": "current working tree; dependencies linked, not installed"
+}

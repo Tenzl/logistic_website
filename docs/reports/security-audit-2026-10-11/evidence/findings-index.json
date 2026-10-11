@@ -1,0 +1,98 @@
+[
+  {
+    "id": "F01",
+    "priority": "P1",
+    "title": "Công thức và hệ số EPDA được phát trong bundle công khai",
+    "confidence": "Đã xác nhận — source, production build và GET local không cookie"
+  },
+  {
+    "id": "F02",
+    "priority": "P1",
+    "title": "API trả bộ tham số/biểu phí nội bộ xuống dashboard",
+    "confidence": "Đã xác nhận — đường source/mapper; chưa gọi API live"
+  },
+  {
+    "id": "F03",
+    "priority": "P1",
+    "title": "Cloudinary upload public mặc định và signed URL không mang TTL như dự kiến",
+    "confidence": "Đã xác nhận — source và SDK với credential giả; quyền object live chưa kiểm chứng"
+  },
+  {
+    "id": "F04",
+    "priority": "P1",
+    "title": "Dependency production có advisory High/Critical",
+    "confidence": "Đã xác nhận — pnpm lockfile audit và advisory chính thức; exploitation production chưa kiểm chứng"
+  },
+  {
+    "id": "F05",
+    "priority": "P1",
+    "title": "Rollback upload song song không chờ worker còn chạy",
+    "confidence": "Đã xác nhận — orchestrator thật, repository/storage mock"
+  },
+  {
+    "id": "F06",
+    "priority": "P2",
+    "title": "Idempotency không phân biệt nội dung file và có khoảng hở sau commit",
+    "confidence": "Đã xác nhận hash collision nghiệp vụ; retry sau crash là nguy cơ từ source"
+  },
+  {
+    "id": "F07",
+    "priority": "P2",
+    "title": "CSV export giữ tiền tố công thức bảng tính",
+    "confidence": "Đã xác nhận — serializer thật với ô giả vô hại"
+  },
+  {
+    "id": "F08",
+    "priority": "P1",
+    "title": "Xác thực chưa đạt ASVS Level 2 và mật khẩu dài bị bcrypt cắt",
+    "confidence": "Đã xác nhận source; password truncation tái hiện bằng bcrypt thật"
+  },
+  {
+    "id": "F09",
+    "priority": "P2",
+    "title": "CSP, cookie prefix và anti-cache chưa đầy đủ",
+    "confidence": "Đã xác nhận source và header dashboard local; cache production chưa kiểm chứng"
+  },
+  {
+    "id": "F10",
+    "priority": "P2",
+    "title": "Giới hạn chống lạm dụng theo process và hàng đợi PDF chưa có hard cap",
+    "confidence": "Nguy cơ có căn cứ — source; quy mô/topology production chưa kiểm chứng"
+  },
+  {
+    "id": "F11",
+    "priority": "P2",
+    "title": "Kiểm tra file chưa đồng nhất và chưa có malware scanning",
+    "confidence": "Đã xác nhận phần code thiếu; bảo vệ provider chưa kiểm chứng"
+  },
+  {
+    "id": "F12",
+    "priority": "P2",
+    "title": "Có đường cấu hình TLS database không xác minh certificate",
+    "confidence": "Nguy cơ có căn cứ — source và phép đo lịch sử; config live chưa kiểm chứng"
+  },
+  {
+    "id": "F13",
+    "priority": "P1",
+    "title": "Bốn CSV dữ liệu nghiệp vụ thật được theo dõi trong Git",
+    "confidence": "Đã xác nhận — git ls-files và đọc CSV chỉ xuất aggregate"
+  },
+  {
+    "id": "F14",
+    "priority": "P2",
+    "title": "Phép đo lịch sử xác nhận nghẽn pool/round-trip; trạng thái hiện tại chưa được đo",
+    "confidence": "Đã xác nhận từ artifact lịch sử; chưa kiểm chứng current deployment"
+  },
+  {
+    "id": "F15",
+    "priority": "P2",
+    "title": "Security audit logs và redaction chưa bao phủ đầy đủ",
+    "confidence": "Đã xác nhận thiếu coverage từ source; leak log thực tế chưa xác nhận"
+  },
+  {
+    "id": "F16",
+    "priority": "P2",
+    "title": "Forgot-password và OTP là flow mô phỏng trong production build",
+    "confidence": "Đã xác nhận — source và route table production build"
+  }
+]

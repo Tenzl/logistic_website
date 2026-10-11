@@ -1,0 +1,8 @@
+{
+  "mode": "backend-build",
+  "exit_code": 0,
+  "seconds": 12.47,
+  "isolated": true,
+  "network": "TCP denied",
+  "env": "allowlist + dummy API origin"
+}

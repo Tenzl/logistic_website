@@ -1,0 +1,46 @@
+{
+  "cloudinary": {
+    "different_ttl_same_url": true,
+    "url_contains_expiry": false,
+    "url_delivery_type_authenticated": true,
+    "method": "Actual compiled service + SDK, dummy credentials; no network"
+  },
+  "idempotency": {
+    "different_file_content_same_request_hash": true,
+    "method": "Actual compiled pure hash method, no repository calls"
+  },
+  "attachment_rollback": {
+    "events": [
+      "submission-rejected",
+      "late-upload-persisted"
+    ],
+    "late_success_after_rejection": true,
+    "rollback_deleted_late_success": false,
+    "method": "Actual compiled orchestrator; uploadResolved/deleteDocument mocked in memory; no DB or Cloudinary calls"
+  },
+  "csv_export": {
+    "formula_prefix_preserved": true,
+    "method": "Actual compiled CSV serializer with harmless synthetic cell; no spreadsheet launched"
+  },
+  "password": {
+    "different_73_byte_passwords_compare_equal": true,
+    "method": "Installed bcrypt with dummy passwords; no accounts or DB"
+  },
+  "formula_default_parity": {
+    "comparisons": [
+      {
+        "variant": "HCM",
+        "different_field_paths": []
+      },
+      {
+        "variant": "QN",
+        "different_field_paths": []
+      },
+      {
+        "variant": "HN",
+        "different_field_paths": []
+      }
+    ],
+    "method": "Actual pure default functions, source-vs-compiled; no tariff values copied into report. Differences are not proof that either rate is incorrect."
+  }
+}

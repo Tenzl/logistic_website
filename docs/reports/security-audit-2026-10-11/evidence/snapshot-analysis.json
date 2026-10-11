@@ -1,0 +1,488 @@
+[
+  {
+    "path": "backend2.0/.loadtest/source.dump",
+    "sha256": "4e0a9f679958a38349ef32c14c2ba06f963e88623f8b32a3939c92ac2a688044",
+    "tables": {
+      "admin_audit_logs": 94,
+      "app_data_migrations": 3,
+      "app_schema_migrations": 38,
+      "arrival_notice_containers": 0,
+      "arrival_notice_records": 0,
+      "bill_of_lading_containers": 411,
+      "bill_of_lading_records": 313,
+      "booking_cargo_volumes": 328,
+      "booking_partner_addition_types": 281,
+      "booking_partners": 129,
+      "booking_records": 329,
+      "cargo_types": 3,
+      "categories": 5,
+      "chartering_broking_inquiries": 0,
+      "commodities": 24,
+      "commodity_groups": 6,
+      "commodity_types": 108,
+      "customer_id_sequences": 2,
+      "delivery_order_containers": 0,
+      "delivery_order_records": 0,
+      "epda_parameter_change_logs": 115,
+      "epda_parameter_group_members": 0,
+      "epda_parameter_set": 12,
+      "freight_forwarding_inquiries": 0,
+      "gallery_images": 32,
+      "inquiry_documents": 0,
+      "inquiry_idempotency_keys": 0,
+      "notifications": 29,
+      "offices": 1,
+      "ports": 13919,
+      "post_categories": 2,
+      "post_images": 1,
+      "posts": 1,
+      "provinces": 28,
+      "role_section_access": 15,
+      "roles": 6,
+      "service_types": 5,
+      "shipping_agency_field_change_logs": 292,
+      "shipping_agency_inquiries": 11,
+      "special_request_inquiries": 0,
+      "total_logistics_inquiries": 0,
+      "users": 11
+    },
+    "duplicates": [
+      {
+        "table": "users",
+        "key_columns": [
+          "email"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "users",
+        "key_columns": [
+          "username"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "roles",
+        "key_columns": [
+          "name"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "booking_partners",
+        "key_columns": [
+          "customer_id"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "epda_parameter_group_members",
+        "key_columns": [
+          "port_id"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "port_locations",
+        "key_columns": [
+          "port_id",
+          "name"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "bill_of_lading_records",
+        "key_columns": [
+          "fbl_number"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "booking_records",
+        "key_columns": [
+          "booking_number"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "shipping_agency_inquiries",
+        "key_columns": [
+          "code"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      }
+    ],
+    "explicit_orphan_checks": [
+      {
+        "table": "shipping_agency_inquiries",
+        "column": "user_id",
+        "parent": "users",
+        "orphan_rows": 0
+      }
+    ],
+    "inquiry_document_urls": {
+      "rows": 0,
+      "public_raw_upload": 0,
+      "public_image_upload": 0,
+      "authenticated": 0
+    },
+    "limits": "Historical snapshots, not current database. Normalized duplicate candidates are not automatically invalid business records. No SQL was executed."
+  },
+  {
+    "path": "backend2.0/migration-backups/booking-partner-address-only-2026-09-25T12-18-45-438Z.dump",
+    "sha256": "193ff101b2087769ae88745b993f81e99002a17128f6f19db8af121008a87f8c",
+    "tables": {
+      "audit_log_entries": 0,
+      "custom_oauth_providers": 0,
+      "flow_state": 0,
+      "identities": 0,
+      "instances": 0,
+      "mfa_amr_claims": 0,
+      "mfa_challenges": 0,
+      "mfa_factors": 0,
+      "mfa_recovery_code_sets": 0,
+      "mfa_recovery_codes": 0,
+      "oauth_authorizations": 0,
+      "oauth_client_states": 0,
+      "oauth_clients": 0,
+      "oauth_consents": 0,
+      "one_time_tokens": 0,
+      "refresh_tokens": 0,
+      "saml_providers": 0,
+      "saml_relay_states": 0,
+      "schema_migrations": 82,
+      "scim_tokens": 0,
+      "scim_users": 0,
+      "sessions": 0,
+      "sso_domains": 0,
+      "sso_providers": 0,
+      "users": 11,
+      "webauthn_challenges": 0,
+      "webauthn_credentials": 0,
+      "admin_audit_logs": 101,
+      "app_data_migrations": 4,
+      "app_schema_migrations": 49,
+      "arrival_notice_containers": 0,
+      "arrival_notice_records": 0,
+      "bill_of_lading_containers": 445,
+      "bill_of_lading_records": 343,
+      "booking_cargo_volumes": 347,
+      "booking_partner_addition_types": 291,
+      "booking_partners": 134,
+      "booking_records": 348,
+      "cargo_types": 3,
+      "categories": 5,
+      "chartering_broking_inquiries": 0,
+      "commodities": 25,
+      "commodity_groups": 6,
+      "commodity_types": 108,
+      "customer_id_sequences": 4,
+      "delivery_order_containers": 0,
+      "delivery_order_records": 0,
+      "epda_parameter_change_logs": 126,
+      "epda_parameter_group_members": 0,
+      "epda_parameter_set": 13,
+      "freight_forwarding_inquiries": 0,
+      "gallery_images": 32,
+      "inquiry_documents": 0,
+      "inquiry_idempotency_keys": 0,
+      "notifications": 29,
+      "offices": 1,
+      "ports": 13920,
+      "post_categories": 2,
+      "post_images": 1,
+      "posts": 1,
+      "provinces": 28,
+      "role_section_access": 15,
+      "roles": 6,
+      "service_types": 5,
+      "shipping_agency_field_change_logs": 390,
+      "shipping_agency_inquiries": 13,
+      "special_request_inquiries": 0,
+      "total_logistics_inquiries": 0,
+      "subscription": 0,
+      "buckets": 0,
+      "buckets_analytics": 0,
+      "buckets_vectors": 0,
+      "migrations": 68,
+      "objects": 0,
+      "s3_multipart_uploads": 0,
+      "s3_multipart_uploads_parts": 0,
+      "vector_indexes": 0,
+      "secrets": 0
+    },
+    "duplicates": [
+      {
+        "table": "users",
+        "key_columns": [
+          "email"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "users",
+        "key_columns": [
+          "username"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "roles",
+        "key_columns": [
+          "name"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "booking_partners",
+        "key_columns": [
+          "customer_id"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "epda_parameter_group_members",
+        "key_columns": [
+          "port_id"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "port_locations",
+        "key_columns": [
+          "port_id",
+          "name"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "bill_of_lading_records",
+        "key_columns": [
+          "fbl_number"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "booking_records",
+        "key_columns": [
+          "booking_number"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "shipping_agency_inquiries",
+        "key_columns": [
+          "code"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      }
+    ],
+    "explicit_orphan_checks": [
+      {
+        "table": "shipping_agency_inquiries",
+        "column": "user_id",
+        "parent": "users",
+        "orphan_rows": 0
+      }
+    ],
+    "inquiry_document_urls": {
+      "rows": 0,
+      "public_raw_upload": 0,
+      "public_image_upload": 0,
+      "authenticated": 0
+    },
+    "limits": "Historical snapshots, not current database. Normalized duplicate candidates are not automatically invalid business records. No SQL was executed."
+  },
+  {
+    "path": "backend2.0/migration-backups/booking-partner-approval-2026-09-23T04-05-15-023Z.dump",
+    "sha256": "bd17e1e6c727760c63ef215e294201efe1687be31c9bccb0b7e84b9227cb1d57",
+    "tables": {
+      "audit_log_entries": 0,
+      "custom_oauth_providers": 0,
+      "flow_state": 0,
+      "identities": 0,
+      "instances": 0,
+      "mfa_amr_claims": 0,
+      "mfa_challenges": 0,
+      "mfa_factors": 0,
+      "mfa_recovery_code_sets": 0,
+      "mfa_recovery_codes": 0,
+      "oauth_authorizations": 0,
+      "oauth_client_states": 0,
+      "oauth_clients": 0,
+      "oauth_consents": 0,
+      "one_time_tokens": 0,
+      "refresh_tokens": 0,
+      "saml_providers": 0,
+      "saml_relay_states": 0,
+      "schema_migrations": 82,
+      "scim_tokens": 0,
+      "scim_users": 0,
+      "sessions": 0,
+      "sso_domains": 0,
+      "sso_providers": 0,
+      "users": 11,
+      "webauthn_challenges": 0,
+      "webauthn_credentials": 0,
+      "admin_audit_logs": 101,
+      "app_data_migrations": 4,
+      "app_schema_migrations": 48,
+      "arrival_notice_containers": 0,
+      "arrival_notice_records": 0,
+      "bill_of_lading_containers": 438,
+      "bill_of_lading_records": 338,
+      "booking_cargo_volumes": 347,
+      "booking_partner_addition_types": 288,
+      "booking_partners": 134,
+      "booking_records": 348,
+      "cargo_types": 3,
+      "categories": 5,
+      "chartering_broking_inquiries": 0,
+      "commodities": 25,
+      "commodity_groups": 6,
+      "commodity_types": 108,
+      "customer_id_sequences": 4,
+      "delivery_order_containers": 0,
+      "delivery_order_records": 0,
+      "epda_parameter_change_logs": 126,
+      "epda_parameter_group_members": 0,
+      "epda_parameter_set": 13,
+      "freight_forwarding_inquiries": 0,
+      "gallery_images": 32,
+      "inquiry_documents": 0,
+      "inquiry_idempotency_keys": 0,
+      "notifications": 29,
+      "offices": 1,
+      "ports": 13920,
+      "post_categories": 2,
+      "post_images": 1,
+      "posts": 1,
+      "provinces": 28,
+      "role_section_access": 15,
+      "roles": 6,
+      "service_types": 5,
+      "shipping_agency_field_change_logs": 390,
+      "shipping_agency_inquiries": 13,
+      "special_request_inquiries": 0,
+      "total_logistics_inquiries": 0,
+      "subscription": 0,
+      "buckets": 0,
+      "buckets_analytics": 0,
+      "buckets_vectors": 0,
+      "migrations": 68,
+      "objects": 0,
+      "s3_multipart_uploads": 0,
+      "s3_multipart_uploads_parts": 0,
+      "vector_indexes": 0,
+      "secrets": 0
+    },
+    "duplicates": [
+      {
+        "table": "users",
+        "key_columns": [
+          "email"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "users",
+        "key_columns": [
+          "username"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "roles",
+        "key_columns": [
+          "name"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "booking_partners",
+        "key_columns": [
+          "customer_id"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "epda_parameter_group_members",
+        "key_columns": [
+          "port_id"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "port_locations",
+        "key_columns": [
+          "port_id",
+          "name"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "bill_of_lading_records",
+        "key_columns": [
+          "fbl_number"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "booking_records",
+        "key_columns": [
+          "booking_number"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      },
+      {
+        "table": "shipping_agency_inquiries",
+        "key_columns": [
+          "code"
+        ],
+        "duplicate_groups": 0,
+        "extra_rows": 0
+      }
+    ],
+    "explicit_orphan_checks": [
+      {
+        "table": "shipping_agency_inquiries",
+        "column": "user_id",
+        "parent": "users",
+        "orphan_rows": 0
+      }
+    ],
+    "inquiry_document_urls": {
+      "rows": 0,
+      "public_raw_upload": 0,
+      "public_image_upload": 0,
+      "authenticated": 0
+    },
+    "limits": "Historical snapshots, not current database. Normalized duplicate candidates are not automatically invalid business records. No SQL was executed."
+  }
+]

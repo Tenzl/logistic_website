@@ -1,0 +1,48 @@
+{
+  "checks": {
+    "all_253_asvs_l1_l2_present_once": true,
+    "12_operational_requirements": true,
+    "every_row_has_status_evidence_links_and_notes": true,
+    "score_independently_recalculated": true,
+    "coverage_independently_recalculated": true,
+    "weights_total_100": true,
+    "unknown_and_na_have_no_claimed_points": true,
+    "na_has_reason": true,
+    "findings_references_resolve": true,
+    "all_16_findings_have_anchors": true,
+    "markdown_source_links_valid": true,
+    "all_baseline_source_hashes_preserved": true,
+    "both_repo_heads_and_user_changes_preserved": true,
+    "dump_files_unchanged": true,
+    "csv_exports_unchanged": true,
+    "both_builds_passed": true,
+    "selected_tests_passed": true,
+    "deliverables_do_not_contain_known_local_secrets": true
+  },
+  "passed": true,
+  "failures": [],
+  "source_files_rehashed": 969,
+  "changed_sources": [],
+  "repo_preservation": [
+    {
+      "repo": "dashboard_admin",
+      "head_preserved": true,
+      "status_preserved": true
+    },
+    {
+      "repo": "backend2.0",
+      "head_preserved": true,
+      "status_preserved": true
+    }
+  ],
+  "score_out_of_100": 25.39,
+  "weighted_coverage_percent": 72.79,
+  "tests_passed": {
+    "backend": 341,
+    "dashboard": 153
+  },
+  "audit_artifacts_scanned_for_known_secrets": 43,
+  "secret_matches": [],
+  "invalid_links": [],
+  "privacy_limits": "Exact comparison only; sanitized metadata and synthetic test inputs retained. No database connection or SQL execution."
+}

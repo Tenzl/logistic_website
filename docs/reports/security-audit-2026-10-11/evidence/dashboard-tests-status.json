@@ -1,0 +1,8 @@
+{
+  "mode": "dashboard-tests",
+  "exit_code": 0,
+  "seconds": 7.8,
+  "isolated": true,
+  "network": "TCP denied",
+  "env": "allowlist + dummy API origin"
+}

@@ -1,0 +1,106 @@
+[
+  {
+    "asset": "/_next/static/chunks/109-7704f1419d29305a.js",
+    "http_status": 200,
+    "sent_cookie": false,
+    "sent_authorization": false,
+    "sha256_matches_build": true,
+    "signatures": [
+      "tonnagePerGrt",
+      "tankerFactor",
+      "moorUnmoorBerthTariff",
+      "epdaWorkingParams",
+      "goGiaBuoyMode",
+      "goGiaBuoyPerCargoTon"
+    ],
+    "headers": {
+      "Content-Type": "application/javascript; charset=UTF-8",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Content-Security-Policy": "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+      "X-Content-Type-Options": "nosniff"
+    },
+    "target": "isolated loopback build, not production"
+  },
+  {
+    "asset": "/_next/static/chunks/4908-e82ba4d4d2480633.js",
+    "http_status": 200,
+    "sent_cookie": false,
+    "sent_authorization": false,
+    "sha256_matches_build": true,
+    "signatures": [
+      "tonnagePerGrt",
+      "tankerFactor",
+      "moorUnmoorBerthTariff",
+      "goGiaBuoyPerCargoTon"
+    ],
+    "headers": {
+      "Content-Type": "application/javascript; charset=UTF-8",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Content-Security-Policy": "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+      "X-Content-Type-Options": "nosniff"
+    },
+    "target": "isolated loopback build, not production"
+  },
+  {
+    "asset": "/_next/static/chunks/6989-a024760fcdad43dc.js",
+    "http_status": 200,
+    "sent_cookie": false,
+    "sent_authorization": false,
+    "sha256_matches_build": true,
+    "signatures": [
+      "tonnagePerGrt",
+      "tankerFactor",
+      "moorUnmoorBerthTariff",
+      "epdaWorkingParams",
+      "goGiaBuoyMode",
+      "goGiaBuoyPerCargoTon",
+      "Math.ceil"
+    ],
+    "headers": {
+      "Content-Type": "application/javascript; charset=UTF-8",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Content-Security-Policy": "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+      "X-Content-Type-Options": "nosniff"
+    },
+    "target": "isolated loopback build, not production"
+  },
+  {
+    "asset": "/_next/static/chunks/900-45456e8317da329b.js",
+    "http_status": 200,
+    "sent_cookie": false,
+    "sent_authorization": false,
+    "sha256_matches_build": true,
+    "signatures": [
+      "tonnagePerGrt",
+      "tankerFactor"
+    ],
+    "headers": {
+      "Content-Type": "application/javascript; charset=UTF-8",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Content-Security-Policy": "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+      "X-Content-Type-Options": "nosniff"
+    },
+    "target": "isolated loopback build, not production"
+  },
+  {
+    "asset": "/_next/static/chunks/app/(authenticated)/epda/parameter/page-b9c14d749307e812.js",
+    "http_status": 200,
+    "sent_cookie": false,
+    "sent_authorization": false,
+    "sha256_matches_build": true,
+    "signatures": [
+      "tonnagePerGrt",
+      "tankerFactor",
+      "moorUnmoorBerthTariff",
+      "goGiaBuoyPerCargoTon",
+      "Math.ceil"
+    ],
+    "headers": {
+      "Content-Type": "application/javascript; charset=UTF-8",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Content-Security-Policy": "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+      "X-Content-Type-Options": "nosniff"
+    },
+    "target": "isolated loopback build, not production"
+  }
+]

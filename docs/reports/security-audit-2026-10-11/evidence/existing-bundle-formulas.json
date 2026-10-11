@@ -1,0 +1,23 @@
+[
+  {
+    "path": "dashboard_admin/.next/static/chunks/app/layout.js",
+    "bytes": 1461488,
+    "sha256": "cba5f4388c509f26f9c996b56c2994532c8c7f5b295a271f10fa96dc0ce3ee52",
+    "formula_signatures": [
+      "tonnagePerGrt",
+      "tankerFactor"
+    ]
+  },
+  {
+    "path": "dashboard_admin/.next/static/chunks/app/(authenticated)/epda/create-epda/page.js",
+    "bytes": 8008459,
+    "sha256": "f28def6d477c15a711c80abdbcbc3363598eeac17b431dc12774ebfdbed99cb1",
+    "formula_signatures": [
+      "tonnagePerGrt",
+      "tankerFactor",
+      "moorUnmoorBerthTariff",
+      "epdaWorkingParams",
+      "goGiaBuoyMode"
+    ]
+  }
+]
