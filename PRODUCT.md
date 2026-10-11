@@ -16,7 +16,7 @@ Operators plan a call, confirm its arrival at a location, then finalize cargo an
 The user explicitly requested manual arrivals, location cards and a single quantity locked at departure. Repository tests and isolated PostgreSQL lifecycle checks validate behavior. A separate mock browser walkthrough confirmed search/occupancy, Arrive into a berth, Move to PS and Depart with zero quantity, including a small viewport. No usage analytics is connected. An operator walkthrough remains necessary to validate usability: find a due vessel, Arrive without a planned location, edit cargo In port, Move to PS, then Depart with zero or positive cargo. Record observed wrong clicks and errors without inventing metrics.
 
 ## Boundaries
-Preserve permissions and master pickers. Migrations archive previous settings/quantities and reconcile departed totals; do not convert non-TON legacy cargo silently. No waiting queue, map or analytics system is added.
+Preserve permissions and master pickers. Migrations archive previous settings/quantities and reconcile departed totals; do not convert non-TON legacy cargo silently. No waiting queue or map is added. Departed Summary analytics use existing operational records.
 
 ## Shared table and simpler Port Operations (2026-10-03)
 - Shared tables use 14px text, centered headers and number/date cells, left-aligned text, fixed column widths and ellipsis with hover/keyboard tooltips. Actions are last, centered in the header, right-aligned in cells and sized to their controls.
